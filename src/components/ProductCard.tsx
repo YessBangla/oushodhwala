@@ -13,9 +13,10 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
-      <Link to="/product/$id" params={{ id: p.id }} className="relative grid h-24 place-items-center bg-secondary text-3xl">
+      <Link to="/product/$id" params={{ id: p.id }} className="relative grid h-24 shrink-0 place-items-center overflow-hidden bg-secondary text-3xl">
         {p.image ? (
-          <img src={p.image} alt={p.name} loading="lazy" className="h-full w-full object-contain p-1" />
+          <img src={p.image} alt={p.name} loading="lazy" className="max-h-20 max-w-[70%] object-contain p-1" />
+
         ) : (
           p.emoji
         )}
