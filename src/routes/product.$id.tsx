@@ -13,7 +13,11 @@ export const Route = createFileRoute("/product/$id")({
   loader: async ({ params }) => {
     const res = await getProductById({ data: { id: params.id } });
     if (!res) throw notFound();
-    return { product: mapProduct(res.row), related: res.related.map(mapProduct) };
+    return {
+      product: mapProduct(res.row),
+      related: res.related.map(mapProduct),
+      variants: res.variants ?? [],
+    };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
