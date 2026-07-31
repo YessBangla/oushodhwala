@@ -75,7 +75,10 @@ function ProductPage() {
     variants: Variant[];
     generic: GenericInfo;
   };
+  const { lang } = useLang();
+  const isEn = lang === "en";
   const g = (k: string) => ((generic?.[k] as string) ?? "").trim();
+
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
 
