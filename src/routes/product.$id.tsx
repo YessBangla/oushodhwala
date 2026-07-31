@@ -163,7 +163,7 @@ function ProductPage() {
 
           {variants.length > 1 && (
             <div className="mt-3">
-              <p className="text-xs font-bold">উপলব্ধ মাত্রা ও ধরন / Available strengths</p>
+              <p className="text-xs font-bold">{isEn ? "Available strengths" : "উপলব্ধ মাত্রা ও ধরন"}</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {variants.map((v) => {
                   const active = v.id === p.id;
