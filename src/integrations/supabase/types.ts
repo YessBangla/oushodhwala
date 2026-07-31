@@ -429,6 +429,27 @@ export type Database = {
         }
         Relationships: []
       }
+      product_image_map: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          url?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
@@ -601,6 +622,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      apply_product_image_map: { Args: never; Returns: number }
       claim_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
