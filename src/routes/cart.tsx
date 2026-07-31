@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
+import { useCatalog } from "@/lib/catalog-db";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -17,14 +18,16 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
-const COUPONS: Record<string, number> = { OUSHODH10: 10, NEW15: 15 };
-
 function CartPage() {
-  const { cart, setQty, remove, subtotal, discount, clear } = useStore();
-  const [coupon, setCoupon] = useState("");
-  const [applied, setApplied] = useState<{ code: string; pct: number } | null>(null);
+  const { cart, setQty, remove, subtotal, discount, clear, couponCode, setCouponCode } = useStore();
+  const { offers } = useCatalog();
+  const [coupon, setCoupon] = useState(couponCode ?? "");
+  const [invalid, setInvalid] = useState(false);
 
-  const couponCut = applied ? Math.round((subtotal * applied.pct) / 100) : 0;
+  const applied = offers.find((o) => o.code === couponCode && subtotal >= o.minOrder) ?? null;
+  const couponCut = applied
+    ? Math.min(Math.round((subtotal * applied.discountPct) / 100), applied.maxDiscount || Infinity)
+    : 0;
   const delivery = subtotal - couponCut >= 500 || subtotal === 0 ? 0 : 60;
   const total = Math.max(0, subtotal - couponCut + delivery);
 
@@ -75,21 +78,27 @@ function CartPage() {
             <input
               value={coupon}
               onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-              placeholder="কুপন কোড (OUSHODH10)"
+              placeholder="কুপন কোড"
               className="w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
             />
             <button
               onClick={() => {
-                const pct = COUPONS[coupon];
-                setApplied(pct ? { code: coupon, pct } : null);
+                const found = offers.find((o) => o.code === coupon);
+                if (found && subtotal >= found.minOrder) {
+                  setCouponCode(found.code);
+                  setInvalid(false);
+                } else {
+                  setCouponCode(null);
+                  setInvalid(true);
+                }
               }}
               className="rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
             >
               প্রয়োগ
             </button>
           </div>
-          {applied && <p className="mt-1 text-[11px] font-semibold text-primary">{applied.code} প্রয়োগ হয়েছে ({bn(applied.pct)}% ছাড়)</p>}
-          {coupon && !applied && <p className="mt-1 text-[11px] text-destructive">কুপন কোডটি সঠিক নয়</p>}
+          {applied && <p className="mt-1 text-[11px] font-semibold text-primary">{applied.code} প্রয়োগ হয়েছে ({bn(applied.discountPct)}% ছাড়)</p>}
+          {invalid && !applied && <p className="mt-1 text-[11px] text-destructive">কুপন কোডটি সঠিক নয় বা সর্বনিম্ন অর্ডার পূরণ হয়নি</p>}
 
           <dl className="mt-3 space-y-1.5 text-xs">
             <Row k="সাবটোটাল" v={`৳${bn(subtotal)}`} />

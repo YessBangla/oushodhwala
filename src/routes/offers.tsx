@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { products, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/offers")({
@@ -14,12 +15,8 @@ export const Route = createFileRoute("/offers")({
   component: Offers,
 });
 
-const coupons = [
-  { code: "OUSHODH10", d: "সব অর্ডারে ১০% ছাড়" },
-  { code: "NEW15", d: "প্রথম অর্ডারে ১৫% ছাড়" },
-];
-
 function Offers() {
+  const { products, offers } = useCatalog();
   const deals = [...products]
     .map((p) => ({ p, off: (p.mrp - p.price) / p.mrp }))
     .sort((a, b) => b.off - a.off)
@@ -30,12 +27,13 @@ function Offers() {
       <h1 className="text-base font-bold">অফার ও ক্যাম্পেইন</h1>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {coupons.map((c) => (
-          <div key={c.code} className="flex items-center gap-3 rounded-xl border border-dashed border-primary bg-secondary p-3">
-            <span className="text-lg">🎟️</span>
+        {offers.map((c) => (
+          <div key={c.id} className="flex items-center gap-3 rounded-xl border border-dashed border-primary bg-secondary p-3">
+            <span className="text-lg">{c.emoji}</span>
             <span>
               <span className="block text-sm font-bold text-primary-dark">{c.code}</span>
-              <span className="block text-[11px] text-muted-foreground">{c.d}</span>
+              <span className="block text-[11px] font-semibold">{c.title}</span>
+              <span className="block text-[11px] text-muted-foreground">{c.subtitle}</span>
             </span>
           </div>
         ))}

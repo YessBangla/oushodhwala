@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { categories, products, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 
 export const Route = createFileRoute("/categories")({
   head: () => ({
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/categories")({
 });
 
 function Categories() {
+  const { products, categories } = useCatalog();
   return (
     <div className="pt-4">
       <h1 className="mb-3 text-base font-bold">সব ক্যাটাগরি</h1>

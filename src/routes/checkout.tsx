@@ -1,7 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
+import { useCatalog, catalogQueryKey } from "@/lib/catalog-db";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -24,8 +29,13 @@ const payments = [
 ];
 
 function Checkout() {
-  const { cart, subtotal, addresses, activeAddress, setActiveAddress, addAddress, placeOrder } = useStore();
+  const { cart, subtotal, addresses, activeAddress, setActiveAddress, addAddress, clear, couponCode, setCouponCode } = useStore();
+  const { offers, products } = useCatalog();
+  const { user, profile } = useAuth();
+  const qc = useQueryClient();
   const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [payRef, setPayRef] = useState("");
   const [payment, setPayment] = useState("cod");
   const [note, setNote] = useState("");
   const [slot, setSlot] = useState("যত দ্রুত সম্ভব");
@@ -33,9 +43,76 @@ function Checkout() {
   const [showForm, setShowForm] = useState(false);
   const [placed, setPlaced] = useState<string | null>(null);
 
-  const delivery = subtotal >= 500 || subtotal === 0 ? 0 : 60;
-  const total = subtotal + delivery;
+  const appliedOffer = offers.find((o) => o.code === couponCode && subtotal >= o.minOrder) ?? null;
+  const couponCut = appliedOffer
+    ? Math.min(Math.round((subtotal * appliedOffer.discountPct) / 100), appliedOffer.maxDiscount || Infinity)
+    : 0;
+  const delivery = subtotal - couponCut >= 500 || subtotal === 0 ? 0 : 60;
+  const total = Math.max(0, subtotal - couponCut + delivery);
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
+
+  const stockIssues = cart
+    .filter((l) => l.kind === "product")
+    .map((l) => ({ line: l, p: products.find((x) => x.id === l.id) }))
+    .filter(({ line, p }) => p && p.stock < line.qty);
+
+  const needsRef = payment === "bkash" || payment === "nagad" || payment === "card";
+
+  const submit = async () => {
+    if (!user) {
+      toast.error("অর্ডার করতে লগইন করুন");
+      void navigate({ to: "/auth" });
+      return;
+    }
+    if (!addr) {
+      toast.error("ডেলিভারি ঠিকানা যোগ করুন");
+      return;
+    }
+    if (stockIssues.length > 0) {
+      toast.error("কিছু পণ্যের স্টক নেই — কার্ট আপডেট করুন");
+      return;
+    }
+    setBusy(true);
+    try {
+      let ref = "";
+      if (needsRef) {
+        // সিমুলেটেড পেমেন্ট গেটওয়ে — কনফার্মেশনের পরে ট্রানজেকশন আইডি তৈরি হয়
+        await new Promise((r) => setTimeout(r, 900));
+        ref = payRef.trim() || `${payment.toUpperCase()}${Math.floor(1e9 + Math.random() * 8e9)}`;
+      }
+      const { data, error } = await supabase.rpc("place_order", {
+        _items: cart.map((l) => ({ id: l.id, kind: l.kind, name: l.name, price: l.price, qty: l.qty })),
+        _customer_name: profile?.name || user.email || "গ্রাহক",
+        _phone: addr.phone,
+        _address: `${addr.label} · ${addr.area} — ${addr.details}${note.trim() ? ` (${note.trim()})` : ""}`,
+        _slot: slot,
+        _delivery_fee: delivery,
+        _discount: couponCut,
+        _payment_method: payment,
+        _payment_ref: ref,
+      });
+      if (error) throw error;
+      clear();
+      setCouponCode(null);
+      void qc.invalidateQueries({ queryKey: catalogQueryKey });
+      void qc.invalidateQueries({ queryKey: ["my-orders"] });
+      void qc.invalidateQueries({ queryKey: ["my-notifications"] });
+      setPlaced(data?.order_no ?? "");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "অর্ডার সম্পন্ন হয়নি";
+      if (msg.startsWith("OUT_OF_STOCK")) {
+        const [, name, left] = msg.split(":");
+        toast.error(`${name} এর পর্যাপ্ত স্টক নেই (বাকি ${left} টি)`);
+        void qc.invalidateQueries({ queryKey: catalogQueryKey });
+      } else if (msg.includes("AUTH_REQUIRED")) {
+        toast.error("অর্ডার করতে লগইন করুন");
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (placed) {
     return (
@@ -147,6 +224,20 @@ function Checkout() {
                 </label>
               ))}
             </div>
+            {needsRef && (
+              <div className="mt-2 rounded-lg bg-secondary p-3">
+                <p className="text-[11px] font-semibold">
+                  {payment === "card" ? "কার্ড পেমেন্ট" : payment === "bkash" ? "bKash পেমেন্ট" : "Nagad পেমেন্ট"} — সিমুলেটেড গেটওয়ে
+                </p>
+                <input
+                  value={payRef}
+                  onChange={(e) => setPayRef(e.target.value)}
+                  placeholder={payment === "card" ? "কার্ডের শেষ ৪ সংখ্যা (ঐচ্ছিক)" : "ট্রানজেকশন আইডি (ঐচ্ছিক)"}
+                  className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+                />
+                <p className="mt-1 text-[10px] text-muted-foreground">খালি রাখলে স্বয়ংক্রিয়ভাবে একটি রেফারেন্স তৈরি হবে।</p>
+              </div>
+            )}
           </section>
 
           <section className="rounded-xl border border-border bg-card p-4">
@@ -171,6 +262,12 @@ function Checkout() {
               </li>
             ))}
           </ul>
+          {couponCut > 0 && (
+            <div className="mt-2 flex justify-between text-xs">
+              <span className="text-muted-foreground">কুপন ছাড় ({couponCode})</span>
+              <span className="font-semibold text-primary">− ৳{bn(couponCut)}</span>
+            </div>
+          )}
           <div className="mt-2 flex justify-between text-xs">
             <span className="text-muted-foreground">ডেলিভারি</span>
             <span className="font-semibold">{delivery === 0 ? "ফ্রি" : `৳${bn(delivery)}`}</span>
@@ -179,21 +276,22 @@ function Checkout() {
             <span>সর্বমোট</span>
             <span className="text-primary-dark">৳{bn(total)}</span>
           </div>
+          {stockIssues.length > 0 && (
+            <p className="mt-2 rounded-lg bg-secondary p-2 text-[11px] font-semibold text-sale">
+              স্টক সীমিত: {stockIssues.map(({ line, p }) => `${line.name} (বাকি ${bn(p?.stock ?? 0)})`).join(", ")}
+            </p>
+          )}
+          {!user && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              অর্ডার করতে <Link to="/auth" className="font-semibold text-primary underline">লগইন</Link> করুন।
+            </p>
+          )}
           <button
-            onClick={() => {
-              const order = placeOrder({
-                items: cart,
-                total,
-                payment: payments.find((x) => x.id === payment)?.t ?? "COD",
-                address: addr ? `${addr.area} — ${addr.details}` : "",
-                phone: addr?.phone ?? "",
-              });
-              setPlaced(order.id);
-              void navigate;
-            }}
-            className="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
+            disabled={busy}
+            onClick={() => void submit()}
+            className="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            অর্ডার নিশ্চিত করুন
+            {busy ? "প্রসেস হচ্ছে..." : needsRef ? "পেমেন্ট করে অর্ডার নিশ্চিত করুন" : "অর্ডার নিশ্চিত করুন"}
           </button>
         </aside>
       </div>

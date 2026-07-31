@@ -17,10 +17,12 @@ import {
   Phone,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
 import { bn } from "@/data/catalog";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count, addresses, activeAddress, wishlist } = useStore();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -54,6 +56,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link to="/doctor-consultation" className="hover:underline">ডাক্তার</Link>
               <Link to="/offers" className="hover:underline">অফার</Link>
               <Link to="/help" className="hover:underline">সহায়তা</Link>
+              {isAdmin && <Link to="/admin" className="rounded-full bg-primary-foreground/15 px-2.5 py-1 hover:underline">অ্যাডমিন</Link>}
             </nav>
 
             <div className="ml-auto flex items-center gap-4">

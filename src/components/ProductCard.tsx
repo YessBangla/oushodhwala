@@ -3,10 +3,13 @@ import { Heart, Plus, Minus } from "lucide-react";
 import { bn, type Product } from "@/data/catalog";
 import { useStore, toLine } from "@/lib/store";
 
-export function ProductCard({ p }: { p: Product }) {
+export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: number } }) {
   const { cart, add, setQty, wishlist, toggleWish } = useStore();
   const line = cart.find((l) => l.id === p.id);
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+  const stock = p.stock ?? Infinity;
+  const soldOut = stock <= 0;
+  const low = !soldOut && stock <= (p.lowStock ?? 0);
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
@@ -15,6 +18,11 @@ export function ProductCard({ p }: { p: Product }) {
         {off > 0 && (
           <span className="absolute left-2 top-2 rounded bg-sale px-1.5 py-0.5 text-[10px] font-bold text-sale-foreground">
             {bn(off)}% OFF
+          </span>
+        )}
+        {soldOut && (
+          <span className="absolute inset-0 grid place-items-center bg-background/70 text-[11px] font-bold text-sale">
+            স্টক শেষ
           </span>
         )}
         {p.rx && (
@@ -43,13 +51,23 @@ export function ProductCard({ p }: { p: Product }) {
             <span className="text-[10px] text-muted-foreground line-through">৳{bn(p.mrp)}</span>
           )}
         </div>
-        {line ? (
+        {low && <p className="mt-1 text-[10px] font-semibold text-sale">মাত্র {bn(stock)} টি বাকি</p>}
+        {soldOut ? (
+          <button disabled className="mt-2 rounded-lg bg-muted py-1.5 text-[11px] font-semibold text-muted-foreground">
+            স্টক শেষ
+          </button>
+        ) : line ? (
           <div className="mt-2 flex items-center justify-between rounded-lg bg-primary px-2 py-1 text-primary-foreground">
             <button onClick={() => setQty(p.id, line.qty - 1)} aria-label="কমান">
               <Minus className="h-3.5 w-3.5" />
             </button>
             <span className="text-[11px] font-bold">{bn(line.qty)}</span>
-            <button onClick={() => setQty(p.id, line.qty + 1)} aria-label="বাড়ান">
+            <button
+              disabled={line.qty >= stock}
+              onClick={() => setQty(p.id, line.qty + 1)}
+              aria-label="বাড়ান"
+              className="disabled:opacity-40"
+            >
               <Plus className="h-3.5 w-3.5" />
             </button>
           </div>
