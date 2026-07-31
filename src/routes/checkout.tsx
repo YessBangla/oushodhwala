@@ -48,8 +48,10 @@ function Checkout() {
   const couponCut = appliedOffer
     ? Math.min(Math.round((subtotal * appliedOffer.discountPct) / 100), appliedOffer.maxDiscount || Infinity)
     : 0;
-  const delivery = subtotal - couponCut >= 500 || subtotal === 0 ? 0 : 60;
+  const delivery = deliveryChargeFor(subtotal - couponCut, settings);
   const total = Math.max(0, subtotal - couponCut + delivery);
+  const payments = ALL_PAYMENTS.filter((m) => settings[m.key]);
+
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
   const stockIssues = cart
