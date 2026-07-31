@@ -9,6 +9,7 @@ import { ProductImage } from "@/components/ProductImage";
 
 import { useStore, toLine } from "@/lib/store";
 import { useLang, pick } from "@/lib/lang";
+import { cleanMedText } from "@/lib/medtext";
 
 
 export const Route = createFileRoute("/product/$id")({
@@ -254,12 +255,12 @@ function ProductPage() {
         </div>
       </div>
 
-      {(pick(lang, p.desc, p.descEn) || p.manufacturer) && (
+      {(cleanMedText(pick(lang, p.desc, p.descEn)) || p.manufacturer) && (
         <section className="pt-6">
           <h2 className="mb-2 text-sm font-bold">{isEn ? "Product Description" : "পণ্যের বিবরণ"}</h2>
           <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
-            {pick(lang, p.desc, p.descEn) && (
-              <p className="text-muted-foreground">{pick(lang, p.desc, p.descEn)}</p>
+            {cleanMedText(pick(lang, p.desc, p.descEn)) && (
+              <p className="whitespace-pre-line text-muted-foreground">{cleanMedText(pick(lang, p.desc, p.descEn))}</p>
             )}
             {p.manufacturer && (
               <p>
@@ -286,7 +287,7 @@ function ProductPage() {
         { bnT: "থেরাপিউটিক ক্লাস", enT: "Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
         { bnT: "সংরক্ষণ", enT: "Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
       ]
-        .map((s) => ({ t: isEn ? s.enT : s.bnT, body: pick(lang, s.bnv, s.env) }))
+        .map((s) => ({ t: isEn ? s.enT : s.bnT, body: cleanMedText(pick(lang, s.bnv, s.env)) }))
         .filter((s) => s.body)
         .map((s) => (
           <section key={s.t} className="pt-6">
