@@ -97,11 +97,11 @@ function SectionCard({
   s: MedSection;
   defaultOpen: boolean;
   forceOpen: boolean;
-  badgeText?: string;
+  badgeText?: string | undefined;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const shown = forceOpen || open;
-  const tone = TONE[s.kind ?? "plain"] ?? TONE.plain!;
+  const tone = TONE[s.kind ?? "plain"] ?? TONE["plain"]!;
   const Icon = tone.icon;
 
   return (
@@ -142,7 +142,7 @@ export function MedSections({
   sections: MedSection[];
   /** রিডিং মোডে সব সেকশন খোলা থাকে */
   reading: boolean;
-  badgeText?: string;
+  badgeText?: string | undefined;
 }) {
   return (
     <div className="mt-6 space-y-3">
