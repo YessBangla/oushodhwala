@@ -85,6 +85,7 @@ function ProductPage() {
 
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
+  const [reading, setReading] = useState(false);
 
   const [shot, setShot] = useState(0);
   const shots = [p.image, p.medicineImage].filter(Boolean) as string[];
@@ -92,8 +93,8 @@ function ProductPage() {
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
 
   return (
-    <div className="pt-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className={reading ? "mx-auto max-w-2xl pt-4" : "pt-4"}>
+      <div className={`grid gap-4 sm:grid-cols-2 ${reading ? "hidden" : ""}`}>
         <div className="relative overflow-hidden rounded-xl border border-border bg-secondary">
           <ProductImage
             src={shots[Math.min(shot, Math.max(shots.length - 1, 0))]}
