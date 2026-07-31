@@ -69,7 +69,7 @@ export const getProductById = createServerFn({ method: "GET" })
       row.base_name
         ? supabase
             .from("products")
-            .select("id, name, en, strength, form, pack, price, mrp, stock, emoji, image_url")
+            .select("id, name, en, strength, form, pack, price, mrp, stock, emoji, image_url, medicine_image_url")
             .eq("active", true)
             .eq("base_name", row.base_name)
             .eq("brand", row.brand)

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Heart, Star, Truck, ShieldCheck, Minus, Plus, RotateCcw, BookOpen } from "lucide-react";
 import { MedSections, type MedSection } from "@/components/MedSections";
 import { bn } from "@/data/catalog";
@@ -73,12 +74,20 @@ type Variant = {
 type GenericInfo = Record<string, string | null> | null;
 
 function ProductPage() {
-  const { product: p, related, variants, generic } = Route.useLoaderData() as {
+  const loaded = Route.useLoaderData() as {
     product: ShopProduct;
     related: ShopProduct[];
     variants: Variant[];
     generic: GenericInfo;
   };
+  const fetchProduct = useServerFn(getProductById);
+  const [data, setData] = useState(loaded);
+  const [switching, setSwitching] = useState<string | null>(null);
+  useEffect(() => {
+    setData(loaded);
+  }, [loaded]);
+
+  const { product: p, related, variants, generic } = data;
   const { lang } = useLang();
   const isEn = lang === "en";
   const num = (v: number | string) => (isEn ? String(v) : bn(v as never));
@@ -92,6 +101,28 @@ function ProductPage() {
   const shots = [p.image, p.medicineImage].filter(Boolean) as string[];
   const line = cart.find((l) => l.id === p.id);
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+
+  async function selectVariant(id: string) {
+    if (id === p.id || switching) return;
+    setSwitching(id);
+    try {
+      const res = await fetchProduct({ data: { id } });
+      if (res) {
+        setData({
+          product: mapProduct(res.row),
+          related: res.related.map(mapProduct),
+          variants: (res.variants?.length ? res.variants : variants) as Variant[],
+          generic: res.generic ?? null,
+        });
+        setShot(0);
+        setLocalQty(1);
+        if (typeof window !== "undefined") window.history.replaceState(null, "", `/product/${id}`);
+      }
+    } finally {
+      setSwitching(null);
+    }
+  }
+
 
   return (
     <div className={reading ? "mx-auto max-w-2xl pt-4" : "pt-4"}>
@@ -167,23 +198,24 @@ function ProductPage() {
 
           {variants.length > 1 && (
             <div className="mt-3">
-              <p className="text-xs font-bold">{isEn ? "Available strengths" : "উপলব্ধ মাত্রা ও ধরন"}</p>
+              <p className="text-xs font-bold">{isEn ? "Available strengths & forms" : "উপলব্ধ মাত্রা ও ধরন"}</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {variants.map((v) => {
                   const active = v.id === p.id;
                   return (
-                    <Link
+                    <button
                       key={v.id}
-                      to="/product/$id"
-                      params={{ id: v.id }}
-                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                      type="button"
+                      onClick={() => selectVariant(v.id)}
+                      aria-pressed={active}
+                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
                         active ? "border-primary bg-primary/10 text-primary-dark" : "border-border bg-card"
-                      } ${v.stock <= 0 ? "opacity-60" : ""}`}
+                      } ${v.stock <= 0 ? "opacity-60" : ""} ${switching === v.id ? "animate-pulse" : ""}`}
                     >
                       <span>{v.strength || v.en || v.name}</span>
                       <span className="ml-1 text-muted-foreground">· {v.form}</span>
                       <span className="ml-1 text-muted-foreground">৳{num(Number(v.price))}</span>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
