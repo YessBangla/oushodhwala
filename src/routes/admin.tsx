@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { bn } from "@/data/catalog";
 import { catalogQueryKey } from "@/lib/catalog-db";
+import { MediaGallery, MediaPickerModal } from "@/components/MediaGallery";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -31,6 +32,7 @@ const TABS = [
   { id: "lab", t: "ল্যাব টেস্ট" },
   { id: "doctors", t: "ডাক্তার" },
   { id: "rx", t: "প্রেসক্রিপশন" },
+  { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
@@ -134,6 +136,7 @@ function Admin() {
         {tab === "lab" && <LabTests />}
         {tab === "doctors" && <Doctors />}
         {tab === "rx" && <Prescriptions />}
+        {tab === "gallery" && <MediaGallery />}
         {tab === "settings" && <Settings />}
       </div>
     </div>
@@ -390,6 +393,7 @@ const emptyProduct = {
   description: "",
   description_en: "",
   image_url: "",
+  medicine_image_url: "",
   manufacturer: "",
   indications: "",
   indications_en: "",
@@ -407,6 +411,7 @@ function Products() {
   const { data, isLoading } = useProducts();
   const [edit, setEdit] = useState<typeof emptyProduct | null>(null);
   const [q, setQ] = useState("");
+  const [picker, setPicker] = useState<"image_url" | "medicine_image_url" | null>(null);
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["admin-products"] });
@@ -457,7 +462,8 @@ function Products() {
               ["pack", "প্যাক"],
               ["emoji", "ইমোজি"],
               ["category", "ক্যাটাগরি স্লাগ"],
-              ["image_url", "ছবির লিংক (URL)"],
+              ["image_url", "বক্সের ছবির লিংক (URL)"],
+              ["medicine_image_url", "ঔষধের ছবির লিংক (URL)"],
               ["manufacturer", "প্রস্তুতকারক"],
             ] as const
           ).map(([k, label]) => (
@@ -488,8 +494,34 @@ function Products() {
             />
           ))}
         </div>
-        {edit.image_url && (
-          <img src={edit.image_url} alt="প্রিভিউ" className="mt-2 h-20 w-20 rounded-lg border border-border object-contain" />
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <div className="text-center">
+            {edit.image_url ? (
+              <img src={edit.image_url} alt="বক্সের ছবি" className="h-20 w-20 rounded-lg border border-border object-contain" />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-border text-[10px] text-muted-foreground">বক্স</div>
+            )}
+            <button type="button" onClick={() => setPicker("image_url")} className="mt-1 rounded border border-border px-2 py-0.5 text-[10px] font-semibold">
+              গ্যালারি থেকে
+            </button>
+          </div>
+          <div className="text-center">
+            {edit.medicine_image_url ? (
+              <img src={edit.medicine_image_url} alt="ঔষধের ছবি" className="h-20 w-20 rounded-lg border border-border object-contain" />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-border text-[10px] text-muted-foreground">ঔষধ</div>
+            )}
+            <button type="button" onClick={() => setPicker("medicine_image_url")} className="mt-1 rounded border border-border px-2 py-0.5 text-[10px] font-semibold">
+              গ্যালারি থেকে
+            </button>
+          </div>
+        </div>
+        {picker && (
+          <MediaPickerModal
+            kind={picker === "image_url" ? "box" : "medicine"}
+            onClose={() => setPicker(null)}
+            onPick={(a) => setEdit({ ...edit, [picker]: a.url })}
+          />
         )}
         {(
           [
@@ -584,6 +616,7 @@ function Products() {
                   description: p.description,
                   description_en: p.description_en,
                   image_url: p.image_url,
+                  medicine_image_url: (p as { medicine_image_url?: string }).medicine_image_url ?? "",
                   manufacturer: p.manufacturer,
                   indications: p.indications,
                   indications_en: p.indications_en,

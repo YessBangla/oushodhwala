@@ -11,6 +11,7 @@ export type ShopProduct = Product & {
   stock: number;
   lowStock: number;
   image: string;
+  medicineImage?: string;
   descEn: string;
   indications: string;
   indicationsEn: string;
@@ -128,6 +129,7 @@ export function mapProduct(r: ProductRow): ShopProduct {
     stock: r.stock,
     lowStock: r.low_stock_threshold,
     image: r.image_url ?? "",
+    medicineImage: (r as { medicine_image_url?: string }).medicine_image_url ?? "",
     descEn: r.description_en ?? "",
     indications: r.indications ?? "",
     indicationsEn: r.indications_en ?? "",

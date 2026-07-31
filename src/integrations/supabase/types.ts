@@ -152,6 +152,42 @@ export type Database = {
         }
         Relationships: []
       }
+      media_assets: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          path: string
+          size: number
+          tags: string[]
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          path?: string
+          size?: number
+          tags?: string[]
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          path?: string
+          size?: number
+          tags?: string[]
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
@@ -413,6 +449,7 @@ export type Database = {
           indications_en: string
           low_stock_threshold: number
           manufacturer: string
+          medicine_image_url: string
           mrp: number
           name: string
           pack: string
@@ -444,6 +481,7 @@ export type Database = {
           indications_en?: string
           low_stock_threshold?: number
           manufacturer?: string
+          medicine_image_url?: string
           mrp?: number
           name: string
           pack?: string
@@ -475,6 +513,7 @@ export type Database = {
           indications_en?: string
           low_stock_threshold?: number
           manufacturer?: string
+          medicine_image_url?: string
           mrp?: number
           name?: string
           pack?: string
