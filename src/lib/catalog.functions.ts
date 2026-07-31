@@ -64,7 +64,7 @@ export const getProductById = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row } = await supabase.from("products").select("*").eq("id", data.id).maybeSingle();
     if (!row) return null;
-    const [{ data: related }, { data: variants }] = await Promise.all([
+    const [{ data: related }, { data: variants }, { data: generic }] = await Promise.all([
       supabase.from("products").select("*").eq("active", true).eq("category", row.category).neq("id", row.id).limit(4),
       row.base_name
         ? supabase
@@ -76,6 +76,12 @@ export const getProductById = createServerFn({ method: "GET" })
             .order("form")
             .limit(30)
         : Promise.resolve({ data: [] as never[] }),
+      supabase
+        .from("generic_info")
+        .select("*")
+        .eq("key", (row.generic ?? "").trim().toLowerCase())
+        .maybeSingle(),
     ]);
-    return { row, related: related ?? [], variants: variants ?? [] };
+    return { row, related: related ?? [], variants: variants ?? [], generic: generic ?? null };
   });
+
