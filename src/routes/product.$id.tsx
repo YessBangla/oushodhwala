@@ -53,8 +53,23 @@ export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
 });
 
+type Variant = {
+  id: string;
+  name: string;
+  en: string;
+  strength: string;
+  form: string;
+  pack: string;
+  price: number | string;
+  stock: number;
+};
+
 function ProductPage() {
-  const { product: p, related } = Route.useLoaderData() as { product: ShopProduct; related: ShopProduct[] };
+  const { product: p, related, variants } = Route.useLoaderData() as {
+    product: ShopProduct;
+    related: ShopProduct[];
+    variants: Variant[];
+  };
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
   const [shot, setShot] = useState(0);
