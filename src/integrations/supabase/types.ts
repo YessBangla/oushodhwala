@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          label: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          label?: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          key?: string
+          label?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           active: boolean
@@ -41,6 +62,93 @@ export type Database = {
           en?: string
           slug?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      doctors: {
+        Row: {
+          active: boolean
+          created_at: string
+          degree: string
+          emoji: string
+          exp: string
+          fee: number
+          id: string
+          name: string
+          photo_url: string
+          sort_order: number
+          spec: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          degree?: string
+          emoji?: string
+          exp?: string
+          fee?: number
+          id?: string
+          name: string
+          photo_url?: string
+          sort_order?: number
+          spec?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          degree?: string
+          emoji?: string
+          exp?: string
+          fee?: number
+          id?: string
+          name?: string
+          photo_url?: string
+          sort_order?: number
+          spec?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lab_tests: {
+        Row: {
+          active: boolean
+          bn: string
+          created_at: string
+          en: string
+          grp: string
+          id: string
+          mrp: number
+          prep: string
+          price: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          bn: string
+          created_at?: string
+          en?: string
+          grp?: string
+          id: string
+          mrp?: number
+          prep?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          bn?: string
+          created_at?: string
+          en?: string
+          grp?: string
+          id?: string
+          mrp?: number
+          prep?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -249,6 +357,42 @@ export type Database = {
         }
         Relationships: []
       }
+      prescriptions: {
+        Row: {
+          admin_note: string
+          created_at: string
+          file_urls: string[]
+          id: string
+          note: string
+          phone: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string
+          created_at?: string
+          file_urls?: string[]
+          id?: string
+          note?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string
+          created_at?: string
+          file_urls?: string[]
+          id?: string
+          note?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
@@ -256,12 +400,19 @@ export type Database = {
           category: string
           created_at: string
           description: string
+          description_en: string
+          dosage: string
+          dosage_en: string
           emoji: string
           en: string
           form: string
           generic: string
           id: string
+          image_url: string
+          indications: string
+          indications_en: string
           low_stock_threshold: number
+          manufacturer: string
           mrp: number
           name: string
           pack: string
@@ -269,6 +420,8 @@ export type Database = {
           rating: number
           reviews: number
           rx: boolean
+          side_effects: string
+          side_effects_en: string
           stock: number
           updated_at: string
         }
@@ -278,12 +431,19 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          description_en?: string
+          dosage?: string
+          dosage_en?: string
           emoji?: string
           en?: string
           form?: string
           generic?: string
           id: string
+          image_url?: string
+          indications?: string
+          indications_en?: string
           low_stock_threshold?: number
+          manufacturer?: string
           mrp?: number
           name: string
           pack?: string
@@ -291,6 +451,8 @@ export type Database = {
           rating?: number
           reviews?: number
           rx?: boolean
+          side_effects?: string
+          side_effects_en?: string
           stock?: number
           updated_at?: string
         }
@@ -300,12 +462,19 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          description_en?: string
+          dosage?: string
+          dosage_en?: string
           emoji?: string
           en?: string
           form?: string
           generic?: string
           id?: string
+          image_url?: string
+          indications?: string
+          indications_en?: string
           low_stock_threshold?: number
+          manufacturer?: string
           mrp?: number
           name?: string
           pack?: string
@@ -313,6 +482,8 @@ export type Database = {
           rating?: number
           reviews?: number
           rx?: boolean
+          side_effects?: string
+          side_effects_en?: string
           stock?: number
           updated_at?: string
         }
