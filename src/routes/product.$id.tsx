@@ -179,8 +179,31 @@ function ProductPage() {
 
       <section className="pt-6">
         <h2 className="mb-2 text-sm font-bold">পণ্যের বিবরণ</h2>
-        <p className="rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">{p.desc}</p>
+        <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
+          <p className="text-muted-foreground">{p.desc}</p>
+          {p.descEn && <p className="text-muted-foreground">{p.descEn}</p>}
+          {p.manufacturer && (
+            <p><span className="font-semibold">প্রস্তুতকারক / Manufacturer:</span> <span className="text-muted-foreground">{p.manufacturer}</span></p>
+          )}
+        </div>
       </section>
+
+      {[
+        { t: "নির্দেশনা / Indications", bnv: p.indications, env: p.indicationsEn },
+        { t: "মাত্রা ও সেবনবিধি / Dosage", bnv: p.dosage, env: p.dosageEn },
+        { t: "পার্শ্বপ্রতিক্রিয়া / Side Effects", bnv: p.sideEffects, env: p.sideEffectsEn },
+      ]
+        .filter((s) => s.bnv || s.env)
+        .map((s) => (
+          <section key={s.t} className="pt-6">
+            <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
+            <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+              {s.bnv && <p>{s.bnv}</p>}
+              {s.env && <p>{s.env}</p>}
+            </div>
+          </section>
+        ))}
+
 
       <section className="pt-6">
         <h2 className="mb-2 text-sm font-bold">সম্পর্কিত পণ্য</h2>
