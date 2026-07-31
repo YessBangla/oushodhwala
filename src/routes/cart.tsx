@@ -20,7 +20,7 @@ export const Route = createFileRoute("/cart")({
 
 function CartPage() {
   const { cart, setQty, remove, subtotal, discount, clear, couponCode, setCouponCode } = useStore();
-  const { offers, products } = useCatalog();
+  const { offers, products, settings } = useCatalog();
   const stockOf = (id: string, kind: string) =>
     kind === "lab" ? null : (products.find((p) => p.id === id)?.stock ?? null);
 
@@ -31,8 +31,9 @@ function CartPage() {
   const couponCut = applied
     ? Math.min(Math.round((subtotal * applied.discountPct) / 100), applied.maxDiscount || Infinity)
     : 0;
-  const delivery = subtotal - couponCut >= 500 || subtotal === 0 ? 0 : 60;
+  const delivery = deliveryChargeFor(subtotal - couponCut, settings);
   const total = Math.max(0, subtotal - couponCut + delivery);
+
 
   if (cart.length === 0) {
     return (
