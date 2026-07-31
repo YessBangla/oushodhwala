@@ -49,7 +49,20 @@ export const Route = createFileRoute("/product/$id")({
 function ProductPage() {
   const { products } = useCatalog();
   const { product: base } = Route.useLoaderData();
-  const p = products.find((x) => x.id === base.id) ?? { ...base, stock: 50, lowStock: 10 };
+  const p = products.find((x) => x.id === base.id) ?? {
+    ...base,
+    stock: 50,
+    lowStock: 10,
+    image: "",
+    descEn: "",
+    indications: "",
+    indicationsEn: "",
+    dosage: "",
+    dosageEn: "",
+    sideEffects: "",
+    sideEffectsEn: "",
+    manufacturer: "",
+  };
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
   const line = cart.find((l) => l.id === p.id);
@@ -59,14 +72,19 @@ function ProductPage() {
   return (
     <div className="pt-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="relative grid h-56 place-items-center rounded-xl bg-secondary text-7xl">
-          {p.emoji}
+        <div className="relative grid h-56 place-items-center overflow-hidden rounded-xl bg-secondary text-7xl">
+          {p.image ? (
+            <img src={p.image} alt={p.name} className="h-full w-full object-contain p-3" />
+          ) : (
+            p.emoji
+          )}
           {off > 0 && (
             <span className="absolute left-3 top-3 rounded bg-sale px-2 py-0.5 text-[11px] font-bold text-sale-foreground">
               {bn(off)}% OFF
             </span>
           )}
         </div>
+
 
         <div>
           <h1 className="text-lg font-bold leading-snug">{p.name}</h1>
