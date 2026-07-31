@@ -125,16 +125,17 @@ function ProductPage() {
 
 
         <div>
-          <h1 className="text-lg font-bold leading-snug">{p.name}</h1>
-          <p className="mt-1 text-xs text-muted-foreground">{p.en}</p>
+          <h1 className="text-lg font-bold leading-snug">{isEn ? p.en || p.name : p.name}</h1>
+          {!isEn && p.en && <p className="mt-1 text-xs text-muted-foreground">{p.en}</p>}
           <div className="mt-2 flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star key={i} className={`h-3.5 w-3.5 ${i < Math.round(p.rating) ? "fill-current text-sale" : "text-muted-foreground"}`} />
             ))}
             <span className="ml-1 text-xs text-muted-foreground">
-              {bn(p.rating)} ({bn(p.reviews)} রিভিউ)
+              {isEn ? `${p.rating} (${p.reviews} reviews)` : `${bn(p.rating)} (${bn(p.reviews)} রিভিউ)`}
             </span>
           </div>
+
 
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-primary-dark">৳{bn(p.price)}</span>
