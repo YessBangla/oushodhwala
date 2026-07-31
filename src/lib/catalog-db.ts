@@ -20,6 +20,18 @@ export type ShopProduct = Product & {
   sideEffects: string;
   sideEffectsEn: string;
   manufacturer: string;
+  strength: string;
+  baseName: string;
+  contraindications: string;
+  contraindicationsEn: string;
+  pregnancy: string;
+  pregnancyEn: string;
+  precautions: string;
+  precautionsEn: string;
+  therapeuticClass: string;
+  therapeuticClassEn: string;
+  storage: string;
+  storageEn: string;
 };
 
 export type ShopOffer = {
