@@ -259,7 +259,8 @@ function ProductPage() {
       </div>
 
       {(() => {
-        const raw: { t: string; body: string; kind?: MedSection["kind"] }[] = [
+        type Raw = { t: string; body: string; kind?: MedSection["kind"] };
+        const raw: Raw[] = ([
           { t: isEn ? "Product Description" : "পণ্যের বিবরণ", body: cleanMedText(pick(lang, p.desc, p.descEn)) },
           { t: isEn ? "Indications" : "নির্দেশনা", body: cleanMedText(pick(lang, p.indications || g("indications"), p.indicationsEn || g("indications_en"))) },
           { t: isEn ? "Pharmacology" : "ফার্মাকোলজি", body: cleanMedText(pick(lang, g("pharmacology"), g("pharmacology_en"))) },
@@ -274,7 +275,7 @@ function ProductPage() {
           { t: isEn ? "Therapeutic Class" : "থেরাপিউটিক ক্লাস", body: cleanMedText(pick(lang, p.therapeuticClass || g("therapeutic_class"), p.therapeuticClassEn || g("therapeutic_class_en"))) },
           { t: isEn ? "Storage Conditions" : "সংরক্ষণ", body: cleanMedText(pick(lang, p.storage || g("storage"), p.storageEn || g("storage_en"))) },
           ...(p.manufacturer ? [{ t: isEn ? "Manufacturer" : "প্রস্তুতকারক", body: p.manufacturer }] : []),
-        ].filter((s) => Boolean(s.body));
+        ] as Raw[]).filter((s) => Boolean(s.body));
 
         const kinds = new Map(raw.map((s) => [s.t, s.kind]));
         const sections: MedSection[] = dedupeSections(raw.map((s) => ({ t: s.t, body: s.body }))).map((s) => ({
