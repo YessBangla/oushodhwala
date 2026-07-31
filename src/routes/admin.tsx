@@ -28,6 +28,10 @@ const TABS = [
   { id: "products", t: "প্রোডাক্ট" },
   { id: "categories", t: "ক্যাটাগরি" },
   { id: "offers", t: "অফার" },
+  { id: "lab", t: "ল্যাব টেস্ট" },
+  { id: "doctors", t: "ডাক্তার" },
+  { id: "rx", t: "প্রেসক্রিপশন" },
+  { id: "settings", t: "সেটিংস" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -127,6 +131,10 @@ function Admin() {
         {tab === "products" && <Products />}
         {tab === "categories" && <Categories />}
         {tab === "offers" && <Offers />}
+        {tab === "lab" && <LabTests />}
+        {tab === "doctors" && <Doctors />}
+        {tab === "rx" && <Prescriptions />}
+        {tab === "settings" && <Settings />}
       </div>
     </div>
   );
@@ -380,6 +388,15 @@ const emptyProduct = {
   rx: false,
   emoji: "💊",
   description: "",
+  description_en: "",
+  image_url: "",
+  manufacturer: "",
+  indications: "",
+  indications_en: "",
+  dosage: "",
+  dosage_en: "",
+  side_effects: "",
+  side_effects_en: "",
   stock: 0,
   low_stock_threshold: 10,
   active: true,
@@ -440,6 +457,8 @@ function Products() {
               ["pack", "প্যাক"],
               ["emoji", "ইমোজি"],
               ["category", "ক্যাটাগরি স্লাগ"],
+              ["image_url", "ছবির লিংক (URL)"],
+              ["manufacturer", "প্রস্তুতকারক"],
             ] as const
           ).map(([k, label]) => (
             <input
@@ -469,13 +488,30 @@ function Products() {
             />
           ))}
         </div>
-        <textarea
-          value={edit.description}
-          onChange={(e) => setEdit({ ...edit, description: e.target.value })}
-          rows={3}
-          placeholder="বিবরণ"
-          className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs outline-none"
-        />
+        {edit.image_url && (
+          <img src={edit.image_url} alt="প্রিভিউ" className="mt-2 h-20 w-20 rounded-lg border border-border object-contain" />
+        )}
+        {(
+          [
+            ["description", "বিবরণ (বাংলা)"],
+            ["description_en", "Description (English)"],
+            ["indications", "নির্দেশনা (বাংলা)"],
+            ["indications_en", "Indications (English)"],
+            ["dosage", "মাত্রা ও সেবনবিধি (বাংলা)"],
+            ["dosage_en", "Dosage (English)"],
+            ["side_effects", "পার্শ্বপ্রতিক্রিয়া (বাংলা)"],
+            ["side_effects_en", "Side effects (English)"],
+          ] as const
+        ).map(([k, label]) => (
+          <textarea
+            key={k}
+            value={String(edit[k])}
+            onChange={(e) => setEdit({ ...edit, [k]: e.target.value })}
+            rows={2}
+            placeholder={label}
+            className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs outline-none"
+          />
+        ))}
         <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={edit.rx} onChange={(e) => setEdit({ ...edit, rx: e.target.checked })} /> প্রেসক্রিপশন লাগবে
@@ -519,7 +555,11 @@ function Products() {
       <div className="space-y-2">
         {list.map((p) => (
           <div key={p.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
-            <span className="text-lg">{p.emoji}</span>
+            {p.image_url ? (
+              <img src={p.image_url} alt="" className="h-9 w-9 rounded object-contain" />
+            ) : (
+              <span className="text-lg">{p.emoji}</span>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold">{p.name} {!p.active && <span className="text-muted-foreground">(নিষ্ক্রিয়)</span>}</p>
               <p className="text-[10px] text-muted-foreground">
@@ -542,6 +582,15 @@ function Products() {
                   rx: p.rx,
                   emoji: p.emoji,
                   description: p.description,
+                  description_en: p.description_en,
+                  image_url: p.image_url,
+                  manufacturer: p.manufacturer,
+                  indications: p.indications,
+                  indications_en: p.indications_en,
+                  dosage: p.dosage,
+                  dosage_en: p.dosage_en,
+                  side_effects: p.side_effects,
+                  side_effects_en: p.side_effects_en,
                   stock: p.stock,
                   low_stock_threshold: p.low_stock_threshold,
                   active: p.active,
