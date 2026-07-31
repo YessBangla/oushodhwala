@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { doctors, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 
 export const Route = createFileRoute("/doctor-consultation")({
   head: () => ({
@@ -14,11 +15,12 @@ export const Route = createFileRoute("/doctor-consultation")({
   component: Consultation,
 });
 
-const specs = ["সব", "মেডিসিন বিশেষজ্ঞ", "শিশু বিশেষজ্ঞ", "চর্ম ও যৌন রোগ", "হৃদরোগ বিশেষজ্ঞ", "গাইনি ও প্রসূতি", "ডায়াবেটিস ও হরমোন"];
-
 function Consultation() {
+  const { doctors } = useCatalog();
   const [spec, setSpec] = useState("সব");
   const [booked, setBooked] = useState<string | null>(null);
+
+  const specs = ["সব", ...Array.from(new Set(doctors.map((d) => d.spec).filter(Boolean)))];
   const list = doctors.filter((d) => spec === "সব" || d.spec === spec);
 
   return (
@@ -46,11 +48,17 @@ function Consultation() {
         </p>
       )}
 
+      {list.length === 0 && <p className="mt-4 text-xs text-muted-foreground">এই মুহূর্তে কোনো ডাক্তার নেই।</p>}
+
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((d) => (
           <article key={d.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-xl">{d.emoji}</span>
+              {d.photo ? (
+                <img src={d.photo} alt={d.name} loading="lazy" className="h-11 w-11 rounded-full object-cover" />
+              ) : (
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-xl">{d.emoji}</span>
+              )}
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold">{d.name}</p>
                 <p className="text-[10px] text-muted-foreground">{d.spec}</p>
