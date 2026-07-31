@@ -110,6 +110,98 @@ export type Database = {
         }
         Relationships: []
       }
+      image_import_failures: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string
+          reason: string
+          resolved: boolean
+          run_id: string | null
+          source: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name?: string
+          reason?: string
+          resolved?: boolean
+          run_id?: string | null
+          source?: string
+          updated_at?: string
+          url?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string
+          reason?: string
+          resolved?: boolean
+          run_id?: string | null
+          source?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_import_failures_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "image_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      image_import_runs: {
+        Row: {
+          created_at: string
+          fail_count: number
+          finished_at: string | null
+          id: string
+          mode: string
+          note: string
+          ok_count: number
+          skipped_count: number
+          source: string
+          status: string
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          fail_count?: number
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          note?: string
+          ok_count?: number
+          skipped_count?: number
+          source?: string
+          status?: string
+          total?: number
+        }
+        Update: {
+          created_at?: string
+          fail_count?: number
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          note?: string
+          ok_count?: number
+          skipped_count?: number
+          source?: string
+          status?: string
+          total?: number
+        }
+        Relationships: []
+      }
       lab_tests: {
         Row: {
           active: boolean
@@ -426,6 +518,42 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      product_image_audit: {
+        Row: {
+          box_url: string
+          checked_at: string
+          http_status: number
+          medicine_url: string
+          note: string
+          product_id: string
+          product_name: string
+          source: string
+          status: string
+        }
+        Insert: {
+          box_url?: string
+          checked_at?: string
+          http_status?: number
+          medicine_url?: string
+          note?: string
+          product_id: string
+          product_name?: string
+          source?: string
+          status?: string
+        }
+        Update: {
+          box_url?: string
+          checked_at?: string
+          http_status?: number
+          medicine_url?: string
+          note?: string
+          product_id?: string
+          product_name?: string
+          source?: string
+          status?: string
         }
         Relationships: []
       }

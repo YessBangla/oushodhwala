@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, Plus, Minus } from "lucide-react";
 import { bn, type Product } from "@/data/catalog";
 import { useStore, toLine } from "@/lib/store";
+import { ProductImage } from "@/components/ProductImage";
 
 export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: number; image?: string } }) {
   const { cart, add, setQty, wishlist, toggleWish } = useStore();
@@ -13,13 +14,9 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
-      <Link to="/product/$id" params={{ id: p.id }} className="relative grid h-24 shrink-0 place-items-center overflow-hidden bg-secondary text-3xl">
-        {p.image ? (
-          <img src={p.image} alt={p.name} loading="lazy" className="max-h-20 max-w-[70%] object-contain p-1" />
+      <Link to="/product/$id" params={{ id: p.id }} className="relative block shrink-0 overflow-hidden">
+        <ProductImage src={p.image} alt={p.name} emoji={p.emoji} ratio="card" />
 
-        ) : (
-          p.emoji
-        )}
 
         {off > 0 && (
           <span className="absolute left-2 top-2 rounded bg-sale px-1.5 py-0.5 text-[10px] font-bold text-sale-foreground">
