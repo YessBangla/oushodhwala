@@ -9,7 +9,7 @@ import { ProductImage } from "@/components/ProductImage";
 
 import { useStore, toLine } from "@/lib/store";
 import { useLang, pick } from "@/lib/lang";
-import { cleanMedText } from "@/lib/medtext";
+import { cleanMedText, dedupeSections } from "@/lib/medtext";
 
 
 export const Route = createFileRoute("/product/$id")({
