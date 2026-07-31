@@ -99,11 +99,26 @@ function ProductPage() {
             </p>
           )}
 
+          {p.stock <= 0 ? (
+            <p className="mt-3 rounded-lg bg-secondary p-2 text-[11px] font-bold text-sale">এই পণ্যটির স্টক শেষ।</p>
+          ) : p.stock <= p.lowStock ? (
+            <p className="mt-3 rounded-lg bg-secondary p-2 text-[11px] font-bold text-sale">
+              কম স্টক — মাত্র {bn(p.stock)} টি বাকি।
+            </p>
+          ) : null}
+
           <div className="mt-4 flex items-center gap-3">
             <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
               <button onClick={() => setLocalQty((q) => Math.max(1, q - 1))} aria-label="কমান"><Minus className="h-4 w-4" /></button>
               <span className="text-sm font-bold">{bn(qty)}</span>
-              <button onClick={() => setLocalQty((q) => q + 1)} aria-label="বাড়ান"><Plus className="h-4 w-4" /></button>
+              <button
+                disabled={qty >= p.stock}
+                onClick={() => setLocalQty((q) => Math.min(p.stock, q + 1))}
+                aria-label="বাড়ান"
+                className="disabled:opacity-40"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             {line ? (
               <div className="flex flex-1 items-center gap-2">
@@ -117,10 +132,11 @@ function ProductPage() {
               </div>
             ) : (
               <button
-                onClick={() => add(toLine(p), qty)}
-                className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                disabled={p.stock <= 0}
+                onClick={() => add(toLine(p), Math.min(qty, p.stock))}
+                className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                কার্টে যোগ করুন
+                {p.stock <= 0 ? "স্টক শেষ" : "কার্টে যোগ করুন"}
               </button>
             )}
             <button onClick={() => toggleWish(p.id)} className="rounded-lg border border-border p-2.5" aria-label="উইশলিস্ট">
