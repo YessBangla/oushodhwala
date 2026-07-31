@@ -131,6 +131,9 @@ export function cleanMedText(input?: string | null): string {
     .replace(/\s+([,.;:%])/g, "$1")
     .replace(/\(\s+/g, "(")
     .replace(/\s+\)/g, ")")
+    .replace(/মি\s*[:ঃ]\s*গ্রা\s*[:ঃ]?(?=\s|$|[।,])/g, "মিগ্রা")
+    .replace(/মি\s*[:ঃ]\s*গ্রা/g, "মিগ্রা")
+    .replace(/মি\s*[:ঃ]\s*লি/g, "মিলি")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
