@@ -70,11 +70,18 @@ export function cleanMedText(input?: string | null): string {
       continue;
     }
 
-    // বিরামচিহ্ন দিয়ে শুরু → আগের লাইনের সাথে
-    if (canJoin && /^[/,.);:%°]/.test(line)) {
+    // "(C" + "max) occur at ..." → "(Cmax) occur at ..."
+    if (canJoin && /(^|[\s(])[A-Z]$/.test(prev) && /^(max|min|ss|avg|eff)\b/i.test(line)) {
       out[out.length - 1] = prev + line;
       continue;
     }
+
+    // বিরামচিহ্ন দিয়ে শুরু → আগের লাইনের সাথে
+    if (canJoin && /^[/,.);:%°–—-]/.test(line)) {
+      out[out.length - 1] = prev + line;
+      continue;
+    }
+
 
     // আগের লাইন অসম্পূর্ণ (খোলা বন্ধনী, সুপারস্ক্রিপ্ট, খুব ছোট টুকরো,
     // বা শেষে যতিচিহ্ন নেই এবং নতুন লাইন ছোট হাতের অক্ষরে শুরু)
