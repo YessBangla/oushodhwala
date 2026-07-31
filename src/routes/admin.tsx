@@ -483,6 +483,10 @@ function Products() {
               ["image_url", "বক্সের ছবির লিংক (URL)"],
               ["medicine_image_url", "ঔষধের ছবির লিংক (URL)"],
               ["manufacturer", "প্রস্তুতকারক"],
+              ["strength", "মাত্রা (যেমন ৫০০ mg)"],
+              ["base_name", "মূল নাম (একই ঔষধের বিভিন্ন মাত্রা গ্রুপ)"],
+              ["therapeutic_class", "থেরাপিউটিক ক্লাস (বাংলা)"],
+              ["therapeutic_class_en", "Therapeutic class (English)"],
             ] as const
           ).map(([k, label]) => (
             <input
