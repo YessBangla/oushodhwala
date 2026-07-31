@@ -1,16 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart, Star, Truck, ShieldCheck, Minus, Plus, RotateCcw } from "lucide-react";
-import { products as staticProducts, bn } from "@/data/catalog";
-import { useCatalog } from "@/lib/catalog-db";
+import { bn } from "@/data/catalog";
+import { mapProduct, type ShopProduct } from "@/lib/catalog-db";
+import { getProductById } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore, toLine } from "@/lib/store";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const product = staticProducts.find((p) => p.id === params.id);
-    if (!product) throw notFound();
-    return { product };
+  loader: async ({ params }) => {
+    const res = await getProductById({ data: { id: params.id } });
+    if (!res) throw notFound();
+    return { product: mapProduct(res.row), related: res.related.map(mapProduct) };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
@@ -47,27 +48,11 @@ export const Route = createFileRoute("/product/$id")({
 });
 
 function ProductPage() {
-  const { products } = useCatalog();
-  const { product: base } = Route.useLoaderData();
-  const p = products.find((x) => x.id === base.id) ?? {
-    ...base,
-    stock: 50,
-    lowStock: 10,
-    image: "",
-    descEn: "",
-    indications: "",
-    indicationsEn: "",
-    dosage: "",
-    dosageEn: "",
-    sideEffects: "",
-    sideEffectsEn: "",
-    manufacturer: "",
-  };
+  const { product: p, related } = Route.useLoaderData() as { product: ShopProduct; related: ShopProduct[] };
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
   const line = cart.find((l) => l.id === p.id);
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
-  const related = products.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4);
 
   return (
     <div className="pt-4">

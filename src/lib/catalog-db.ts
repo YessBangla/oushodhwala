@@ -106,6 +106,39 @@ const fallback: Catalog = {
   settings: defaultSettings,
 };
 
+type ProductRow = Awaited<ReturnType<typeof getCatalog>>["products"][number];
+
+export function mapProduct(r: ProductRow): ShopProduct {
+  return {
+    id: r.id,
+    name: r.name,
+    en: r.en,
+    brand: r.brand,
+    generic: r.generic,
+    form: r.form,
+    pack: r.pack,
+    price: Number(r.price),
+    mrp: Number(r.mrp),
+    category: r.category,
+    rx: r.rx,
+    rating: Number(r.rating),
+    reviews: r.reviews,
+    emoji: r.emoji,
+    desc: r.description,
+    stock: r.stock,
+    lowStock: r.low_stock_threshold,
+    image: r.image_url ?? "",
+    descEn: r.description_en ?? "",
+    indications: r.indications ?? "",
+    indicationsEn: r.indications_en ?? "",
+    dosage: r.dosage ?? "",
+    dosageEn: r.dosage_en ?? "",
+    sideEffects: r.side_effects ?? "",
+    sideEffectsEn: r.side_effects_en ?? "",
+    manufacturer: r.manufacturer ?? "",
+  };
+}
+
 export const catalogQueryKey = ["catalog"] as const;
 
 export function useCatalog(): Catalog {
@@ -121,34 +154,7 @@ export function useCatalog(): Catalog {
       };
       const bool = (k: string) => map.get(k) !== "false";
       return {
-        products: raw.products.map((r) => ({
-          id: r.id,
-          name: r.name,
-          en: r.en,
-          brand: r.brand,
-          generic: r.generic,
-          form: r.form,
-          pack: r.pack,
-          price: Number(r.price),
-          mrp: Number(r.mrp),
-          category: r.category,
-          rx: r.rx,
-          rating: Number(r.rating),
-          reviews: r.reviews,
-          emoji: r.emoji,
-          desc: r.description,
-          stock: r.stock,
-          lowStock: r.low_stock_threshold,
-          image: r.image_url ?? "",
-          descEn: r.description_en ?? "",
-          indications: r.indications ?? "",
-          indicationsEn: r.indications_en ?? "",
-          dosage: r.dosage ?? "",
-          dosageEn: r.dosage_en ?? "",
-          sideEffects: r.side_effects ?? "",
-          sideEffectsEn: r.side_effects_en ?? "",
-          manufacturer: r.manufacturer ?? "",
-        })),
+        products: raw.products.map(mapProduct),
         categories: raw.categories.map((c) => ({ slug: c.slug, bn: c.bn, en: c.en, emoji: c.emoji })),
         offers: raw.offers.map((o) => ({
           id: o.id,

@@ -50,7 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
 
             <nav className="ml-6 hidden items-center gap-5 text-sm font-medium lg:flex">
-              <Link to="/products" className="hover:underline">স্টোর</Link>
+              <Link to="/products" search={{ q: "", category: "all", sort: "popular" }} className="hover:underline">স্টোর</Link>
               <Link to="/categories" className="hover:underline">ক্যাটাগরি</Link>
               <Link to="/lab-test" className="hover:underline">ল্যাব টেস্ট</Link>
               <Link to="/doctor-consultation" className="hover:underline">ডাক্তার</Link>

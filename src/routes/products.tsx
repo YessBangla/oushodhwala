@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { bn } from "@/data/catalog";
-import { useCatalog } from "@/lib/catalog-db";
+import { useCatalog, mapProduct } from "@/lib/catalog-db";
+import { searchProducts } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
 
 type Search = { q: string; category: string; sort: string };
@@ -24,28 +26,38 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
-  const { products, categories } = useCatalog();
+  const { categories } = useCatalog();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [maxPrice, setMaxPrice] = useState(6000);
   const [rxOnly, setRxOnly] = useState(false);
+  const [page, setPage] = useState(0);
+  const PAGE = 40;
 
-  const list = useMemo(() => {
-    const q = search.q.trim().toLowerCase();
-    let out = products.filter((p) => {
-      const inCat = search.category === "all" || p.category === search.category;
-      const matches =
-        !q ||
-        [p.name, p.en, p.brand, p.generic].some((f) => f.toLowerCase().includes(q));
-      return inCat && matches && p.price <= maxPrice && (!rxOnly || p.rx);
-    });
-    if (search.sort === "low") out = [...out].sort((a, b) => a.price - b.price);
-    if (search.sort === "high") out = [...out].sort((a, b) => b.price - a.price);
-    if (search.sort === "discount")
-      out = [...out].sort((a, b) => (b.mrp - b.price) / b.mrp - (a.mrp - a.price) / a.mrp);
-    if (search.sort === "rating") out = [...out].sort((a, b) => b.rating - a.rating);
-    return out;
-  }, [search, maxPrice, rxOnly]);
+  useEffect(() => {
+    setPage(0);
+  }, [search.q, search.category, search.sort, maxPrice, rxOnly]);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["products-search", search.q, search.category, search.sort, maxPrice, rxOnly, page],
+    queryFn: () =>
+      searchProducts({
+        data: {
+          q: search.q,
+          category: search.category,
+          sort: search.sort,
+          rx: rxOnly,
+          maxPrice,
+          offset: page * PAGE,
+          limit: PAGE,
+        },
+      }),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+
+  const list = (data?.rows ?? []).map(mapProduct);
+  const total = data?.count ?? 0;
 
   const set = (patch: Partial<Search>) => navigate({ search: (prev: Search) => ({ ...prev, ...patch }) });
 
@@ -53,7 +65,7 @@ function ProductsPage() {
     <div className="pt-4">
       <h1 className="text-base font-bold">
         {search.q ? `“${search.q}” এর ফলাফল` : "সব পণ্য"}{" "}
-        <span className="text-xs font-normal text-muted-foreground">({bn(list.length)} টি)</span>
+        <span className="text-xs font-normal text-muted-foreground">({bn(total)} টি)</span>
       </h1>
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -126,6 +138,28 @@ function ProductsPage() {
           {list.map((p) => (
             <ProductCard key={p.id} p={p} />
           ))}
+        </div>
+      )}
+
+      {total > PAGE && (
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <button
+            disabled={page === 0 || isFetching}
+            onClick={() => setPage((n) => Math.max(0, n - 1))}
+            className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold disabled:opacity-40"
+          >
+            আগের
+          </button>
+          <span className="text-xs text-muted-foreground">
+            পৃষ্ঠা {bn(page + 1)} / {bn(Math.ceil(total / PAGE))}
+          </span>
+          <button
+            disabled={(page + 1) * PAGE >= total || isFetching}
+            onClick={() => setPage((n) => n + 1)}
+            className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold disabled:opacity-40"
+          >
+            পরের
+          </button>
         </div>
       )}
     </div>

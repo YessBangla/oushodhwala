@@ -1,6 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { categories as staticCategories, bn } from "@/data/catalog";
-import { useCatalog } from "@/lib/catalog-db";
+import { mapProduct } from "@/lib/catalog-db";
+import { searchProducts } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/category/$slug")({
@@ -28,9 +30,14 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 function CategoryPage() {
-  const { products } = useCatalog();
   const { cat } = Route.useLoaderData();
-  const list = products.filter((p) => p.category === cat.slug);
+  const { data } = useQuery({
+    queryKey: ["category-products", cat.slug],
+    queryFn: () => searchProducts({ data: { category: cat.slug, limit: 60 } }),
+    staleTime: 30_000,
+  });
+  const list = (data?.rows ?? []).map(mapProduct);
+  const total = data?.count ?? 0;
 
   return (
     <div className="pt-4">
@@ -39,7 +46,7 @@ function CategoryPage() {
         <div>
           <h1 className="text-base font-bold">{cat.bn}</h1>
           <p className="text-xs text-muted-foreground">
-            {cat.en} · {bn(list.length)} টি পণ্য
+            {cat.en} · {bn(total)} টি পণ্য
           </p>
         </div>
         <Link
