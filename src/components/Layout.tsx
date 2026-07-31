@@ -31,13 +31,15 @@ export function Layout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
+  const en = lang === "en";
   const nav = [
-    { icon: Home, t: "হোম", to: "/" as const },
-    { icon: LayoutGrid, t: "ক্যাটাগরি", to: "/categories" as const },
-    { icon: FlaskConical, t: "ল্যাব টেস্ট", to: "/lab-test" as const },
-    { icon: FileText, t: "অর্ডার", to: "/orders" as const },
-    { icon: User, t: "একাউন্ট", to: "/account" as const },
+    { icon: Home, t: en ? "Home" : "হোম", to: "/" as const },
+    { icon: LayoutGrid, t: en ? "Categories" : "ক্যাটাগরি", to: "/categories" as const },
+    { icon: FlaskConical, t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test" as const },
+    { icon: FileText, t: en ? "Orders" : "অর্ডার", to: "/orders" as const },
+    { icon: User, t: en ? "Account" : "একাউন্ট", to: "/account" as const },
   ];
+
 
   return (
     <div className="min-h-screen bg-background pb-20 font-sans">
