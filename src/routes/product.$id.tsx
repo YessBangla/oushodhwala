@@ -254,16 +254,23 @@ function ProductPage() {
         </div>
       </div>
 
-      <section className="pt-6">
-        <h2 className="mb-2 text-sm font-bold">পণ্যের বিবরণ</h2>
-        <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
-          <p className="text-muted-foreground">{p.desc}</p>
-          {p.descEn && <p className="text-muted-foreground">{p.descEn}</p>}
-          {p.manufacturer && (
-            <p><span className="font-semibold">প্রস্তুতকারক / Manufacturer:</span> <span className="text-muted-foreground">{p.manufacturer}</span></p>
-          )}
-        </div>
-      </section>
+      {(pick(lang, p.desc, p.descEn) || p.manufacturer) && (
+        <section className="pt-6">
+          <h2 className="mb-2 text-sm font-bold">{isEn ? "Product Description" : "পণ্যের বিবরণ"}</h2>
+          <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
+            {pick(lang, p.desc, p.descEn) && (
+              <p className="text-muted-foreground">{pick(lang, p.desc, p.descEn)}</p>
+            )}
+            {p.manufacturer && (
+              <p>
+                <span className="font-semibold">{isEn ? "Manufacturer:" : "প্রস্তুতকারক:"}</span>{" "}
+                <span className="text-muted-foreground">{p.manufacturer}</span>
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
 
       {[
         { bnT: "নির্দেশনা", enT: "Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
