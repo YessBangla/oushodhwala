@@ -17,24 +17,29 @@ import {
   Phone,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useLang } from "@/lib/lang";
+
 import { useAuth } from "@/hooks/useAuth";
 import { bn } from "@/data/catalog";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count, addresses, activeAddress, wishlist } = useStore();
+  const { lang, setLang } = useLang();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
+  const en = lang === "en";
   const nav = [
-    { icon: Home, t: "হোম", to: "/" as const },
-    { icon: LayoutGrid, t: "ক্যাটাগরি", to: "/categories" as const },
-    { icon: FlaskConical, t: "ল্যাব টেস্ট", to: "/lab-test" as const },
-    { icon: FileText, t: "অর্ডার", to: "/orders" as const },
-    { icon: User, t: "একাউন্ট", to: "/account" as const },
+    { icon: Home, t: en ? "Home" : "হোম", to: "/" as const },
+    { icon: LayoutGrid, t: en ? "Categories" : "ক্যাটাগরি", to: "/categories" as const },
+    { icon: FlaskConical, t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test" as const },
+    { icon: FileText, t: en ? "Orders" : "অর্ডার", to: "/orders" as const },
+    { icon: User, t: en ? "Account" : "একাউন্ট", to: "/account" as const },
   ];
+
 
   return (
     <div className="min-h-screen bg-background pb-20 font-sans">
@@ -50,16 +55,29 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
 
             <nav className="ml-6 hidden items-center gap-5 text-sm font-medium lg:flex">
-              <Link to="/products" search={{ q: "", category: "all", sort: "popular" }} className="hover:underline">স্টোর</Link>
-              <Link to="/categories" className="hover:underline">ক্যাটাগরি</Link>
-              <Link to="/lab-test" className="hover:underline">ল্যাব টেস্ট</Link>
-              <Link to="/doctor-consultation" className="hover:underline">ডাক্তার</Link>
-              <Link to="/offers" className="hover:underline">অফার</Link>
-              <Link to="/help" className="hover:underline">সহায়তা</Link>
-              {isAdmin && <Link to="/admin" className="rounded-full bg-primary-foreground/15 px-2.5 py-1 hover:underline">অ্যাডমিন</Link>}
+              <Link to="/products" search={{ q: "", category: "all", sort: "popular" }} className="hover:underline">{lang === "en" ? "Store" : "স্টোর"}</Link>
+              <Link to="/categories" className="hover:underline">{lang === "en" ? "Categories" : "ক্যাটাগরি"}</Link>
+              <Link to="/lab-test" className="hover:underline">{lang === "en" ? "Lab Test" : "ল্যাব টেস্ট"}</Link>
+              <Link to="/doctor-consultation" className="hover:underline">{lang === "en" ? "Doctors" : "ডাক্তার"}</Link>
+              <Link to="/offers" className="hover:underline">{lang === "en" ? "Offers" : "অফার"}</Link>
+              <Link to="/help" className="hover:underline">{lang === "en" ? "Help" : "সহায়তা"}</Link>
+              {isAdmin && <Link to="/admin" className="rounded-full bg-primary-foreground/15 px-2.5 py-1 hover:underline">{lang === "en" ? "Admin" : "অ্যাডমিন"}</Link>}
             </nav>
 
             <div className="ml-auto flex items-center gap-4">
+              <div className="flex items-center rounded-full bg-primary-foreground/15 p-0.5 text-[11px] font-bold" role="group" aria-label="ভাষা / Language">
+                {(["bn", "en"] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    aria-pressed={lang === l}
+                    className={`rounded-full px-2 py-1 ${lang === l ? "bg-primary-foreground text-primary" : "opacity-80"}`}
+                  >
+                    {l === "bn" ? "বাংলা" : "EN"}
+                  </button>
+                ))}
+              </div>
+
               <Link to="/wishlist" className="relative" aria-label="উইশলিস্ট">
                 <Heart className="h-5 w-5" />
                 {wishlist.length > 0 && (

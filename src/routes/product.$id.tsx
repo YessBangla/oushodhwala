@@ -8,6 +8,8 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 
 import { useStore, toLine } from "@/lib/store";
+import { useLang, pick } from "@/lib/lang";
+
 
 export const Route = createFileRoute("/product/$id")({
   loader: async ({ params }) => {
@@ -75,7 +77,10 @@ function ProductPage() {
     variants: Variant[];
     generic: GenericInfo;
   };
+  const { lang } = useLang();
+  const isEn = lang === "en";
   const g = (k: string) => ((generic?.[k] as string) ?? "").trim();
+
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
 
@@ -120,16 +125,17 @@ function ProductPage() {
 
 
         <div>
-          <h1 className="text-lg font-bold leading-snug">{p.name}</h1>
-          <p className="mt-1 text-xs text-muted-foreground">{p.en}</p>
+          <h1 className="text-lg font-bold leading-snug">{isEn ? p.en || p.name : p.name}</h1>
+          {!isEn && p.en && <p className="mt-1 text-xs text-muted-foreground">{p.en}</p>}
           <div className="mt-2 flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star key={i} className={`h-3.5 w-3.5 ${i < Math.round(p.rating) ? "fill-current text-sale" : "text-muted-foreground"}`} />
             ))}
             <span className="ml-1 text-xs text-muted-foreground">
-              {bn(p.rating)} ({bn(p.reviews)} রিভিউ)
+              {isEn ? `${p.rating} (${p.reviews} reviews)` : `${bn(p.rating)} (${bn(p.reviews)} রিভিউ)`}
             </span>
           </div>
+
 
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-primary-dark">৳{bn(p.price)}</span>
@@ -137,24 +143,27 @@ function ProductPage() {
           </div>
 
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div><dt className="text-muted-foreground">ব্র্যান্ড</dt><dd className="font-semibold">{p.brand}</dd></div>
-            <div><dt className="text-muted-foreground">জেনেরিক</dt><dd className="font-semibold">{p.generic}</dd></div>
-            <div><dt className="text-muted-foreground">ধরন / Dosage form</dt><dd className="font-semibold">{p.form}</dd></div>
-            <div><dt className="text-muted-foreground">প্যাক সাইজ</dt><dd className="font-semibold">{p.pack}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Brand" : "ব্র্যান্ড"}</dt><dd className="font-semibold">{p.brand}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Generic" : "জেনেরিক"}</dt><dd className="font-semibold">{p.generic}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Dosage form" : "ধরন"}</dt><dd className="font-semibold">{p.form}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Pack size" : "প্যাক সাইজ"}</dt><dd className="font-semibold">{p.pack}</dd></div>
             {p.strength && (
-              <div><dt className="text-muted-foreground">মাত্রা / Strength</dt><dd className="font-semibold">{p.strength}</dd></div>
+              <div><dt className="text-muted-foreground">{isEn ? "Strength" : "মাত্রা"}</dt><dd className="font-semibold">{p.strength}</dd></div>
             )}
-            {(p.therapeuticClass || p.therapeuticClassEn) && (
+            {pick(lang, p.therapeuticClass || g("therapeutic_class"), p.therapeuticClassEn || g("therapeutic_class_en")) && (
               <div>
-                <dt className="text-muted-foreground">থেরাপিউটিক ক্লাস</dt>
-                <dd className="font-semibold">{p.therapeuticClass || p.therapeuticClassEn}</dd>
+                <dt className="text-muted-foreground">{isEn ? "Therapeutic class" : "থেরাপিউটিক ক্লাস"}</dt>
+                <dd className="font-semibold">
+                  {pick(lang, p.therapeuticClass || g("therapeutic_class"), p.therapeuticClassEn || g("therapeutic_class_en"))}
+                </dd>
               </div>
             )}
           </dl>
 
+
           {variants.length > 1 && (
             <div className="mt-3">
-              <p className="text-xs font-bold">উপলব্ধ মাত্রা ও ধরন / Available strengths</p>
+              <p className="text-xs font-bold">{isEn ? "Available strengths" : "উপলব্ধ মাত্রা ও ধরন"}</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {variants.map((v) => {
                   const active = v.id === p.id;
@@ -180,8 +189,8 @@ function ProductPage() {
 
           {p.rx && (
             <p className="mt-3 rounded-lg border border-sale/40 bg-sale/10 p-2 text-[11px] font-semibold text-sale">
-              এই ঔষধটি কিনতে ডাক্তারের প্রেসক্রিপশন প্রয়োজন।{" "}
-              <Link to="/prescription" className="underline">আপলোড করুন</Link>
+              {isEn ? "A doctor's prescription is required to buy this medicine." : "এই ঔষধটি কিনতে ডাক্তারের প্রেসক্রিপশন প্রয়োজন।"}{" "}
+              <Link to="/prescription" className="underline">{isEn ? "Upload" : "আপলোড করুন"}</Link>
             </p>
           )}
 
@@ -222,7 +231,7 @@ function ProductPage() {
                 onClick={() => add(toLine(p), Math.min(qty, p.stock))}
                 className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {p.stock <= 0 ? "স্টক শেষ" : "কার্টে যোগ করুন"}
+                {p.stock <= 0 ? (isEn ? "Out of stock" : "স্টক শেষ") : isEn ? "Add to cart" : "কার্টে যোগ করুন"}
               </button>
             )}
             <button onClick={() => toggleWish(p.id)} className="rounded-lg border border-border p-2.5" aria-label="উইশলিস্ট">
@@ -232,9 +241,9 @@ function ProductPage() {
 
           <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
             {[
-              { icon: Truck, t: "ঢাকায় ২ ঘণ্টায়" },
-              { icon: ShieldCheck, t: "১০০% অরিজিনাল" },
-              { icon: RotateCcw, t: "সহজ রিটার্ন" },
+              { icon: Truck, t: isEn ? "2-hour Dhaka delivery" : "ঢাকায় ২ ঘণ্টায়" },
+              { icon: ShieldCheck, t: isEn ? "100% authentic" : "১০০% অরিজিনাল" },
+              { icon: RotateCcw, t: isEn ? "Easy returns" : "সহজ রিটার্ন" },
             ].map(({ icon: Icon, t }) => (
               <div key={t} className="rounded-lg border border-border bg-card p-2 text-center">
                 <Icon className="mx-auto h-4 w-4 text-primary" />
@@ -245,46 +254,54 @@ function ProductPage() {
         </div>
       </div>
 
-      <section className="pt-6">
-        <h2 className="mb-2 text-sm font-bold">পণ্যের বিবরণ</h2>
-        <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
-          <p className="text-muted-foreground">{p.desc}</p>
-          {p.descEn && <p className="text-muted-foreground">{p.descEn}</p>}
-          {p.manufacturer && (
-            <p><span className="font-semibold">প্রস্তুতকারক / Manufacturer:</span> <span className="text-muted-foreground">{p.manufacturer}</span></p>
-          )}
-        </div>
-      </section>
+      {(pick(lang, p.desc, p.descEn) || p.manufacturer) && (
+        <section className="pt-6">
+          <h2 className="mb-2 text-sm font-bold">{isEn ? "Product Description" : "পণ্যের বিবরণ"}</h2>
+          <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
+            {pick(lang, p.desc, p.descEn) && (
+              <p className="text-muted-foreground">{pick(lang, p.desc, p.descEn)}</p>
+            )}
+            {p.manufacturer && (
+              <p>
+                <span className="font-semibold">{isEn ? "Manufacturer:" : "প্রস্তুতকারক:"}</span>{" "}
+                <span className="text-muted-foreground">{p.manufacturer}</span>
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
 
       {[
-        { t: "নির্দেশনা / Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
-        { t: "ফার্মাকোলজি / Pharmacology", bnv: g("pharmacology"), env: g("pharmacology_en") },
-        { t: "মাত্রা ও সেবনবিধি / Dosage & Administration", bnv: p.dosage || g("dosage"), env: p.dosageEn || g("dosage_en") },
-        { t: "ঔষধের মিথস্ক্রিয়া / Interaction", bnv: g("interaction"), env: g("interaction_en") },
-        { t: "প্রতিনির্দেশনা / Contraindications", bnv: p.contraindications || g("contraindications"), env: p.contraindicationsEn || g("contraindications_en") },
-        { t: "পার্শ্বপ্রতিক্রিয়া / Side Effects", bnv: p.sideEffects || g("side_effects"), env: p.sideEffectsEn || g("side_effects_en") },
-        { t: "গর্ভাবস্থায় ও স্তন্যদানকালে / Pregnancy & Lactation", bnv: p.pregnancy || g("pregnancy"), env: p.pregnancyEn || g("pregnancy_en") },
-        { t: "সতর্কতা / Precautions & Warnings", bnv: p.precautions || g("precautions"), env: p.precautionsEn || g("precautions_en") },
-        { t: "বিশেষ ক্ষেত্রে ব্যবহার / Use in Special Populations", bnv: g("special_populations"), env: g("special_populations_en") },
-        { t: "মাত্রাধিক্য / Overdose Effects", bnv: g("overdose"), env: g("overdose_en") },
-        { t: "থেরাপিউটিক ক্লাস / Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
-        { t: "সংরক্ষণ / Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
+        { bnT: "নির্দেশনা", enT: "Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
+        { bnT: "ফার্মাকোলজি", enT: "Pharmacology", bnv: g("pharmacology"), env: g("pharmacology_en") },
+        { bnT: "মাত্রা ও সেবনবিধি", enT: "Dosage & Administration", bnv: p.dosage || g("dosage"), env: p.dosageEn || g("dosage_en") },
+        { bnT: "ঔষধের মিথস্ক্রিয়া", enT: "Interaction", bnv: g("interaction"), env: g("interaction_en") },
+        { bnT: "প্রতিনির্দেশনা", enT: "Contraindications", bnv: p.contraindications || g("contraindications"), env: p.contraindicationsEn || g("contraindications_en") },
+        { bnT: "পার্শ্বপ্রতিক্রিয়া", enT: "Side Effects", bnv: p.sideEffects || g("side_effects"), env: p.sideEffectsEn || g("side_effects_en") },
+        { bnT: "গর্ভাবস্থায় ও স্তন্যদানকালে", enT: "Pregnancy & Lactation", bnv: p.pregnancy || g("pregnancy"), env: p.pregnancyEn || g("pregnancy_en") },
+        { bnT: "সতর্কতা", enT: "Precautions & Warnings", bnv: p.precautions || g("precautions"), env: p.precautionsEn || g("precautions_en") },
+        { bnT: "বিশেষ ক্ষেত্রে ব্যবহার", enT: "Use in Special Populations", bnv: g("special_populations"), env: g("special_populations_en") },
+        { bnT: "মাত্রাধিক্য", enT: "Overdose Effects", bnv: g("overdose"), env: g("overdose_en") },
+        { bnT: "থেরাপিউটিক ক্লাস", enT: "Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
+        { bnT: "সংরক্ষণ", enT: "Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
       ]
-        .filter((s) => s.bnv || s.env)
+        .map((s) => ({ t: isEn ? s.enT : s.bnT, body: pick(lang, s.bnv, s.env) }))
+        .filter((s) => s.body)
         .map((s) => (
           <section key={s.t} className="pt-6">
             <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
             <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
-              {s.bnv && <p className="whitespace-pre-line">{s.bnv}</p>}
-              {s.env && <p className="whitespace-pre-line">{s.env}</p>}
+              <p className="whitespace-pre-line">{s.body}</p>
             </div>
           </section>
         ))}
 
 
 
+
       <section className="pt-6">
-        <h2 className="mb-2 text-sm font-bold">সম্পর্কিত পণ্য</h2>
+        <h2 className="mb-2 text-sm font-bold">{isEn ? "Related products" : "সম্পর্কিত পণ্য"}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {related.map((r) => (
             <ProductCard key={r.id} p={r} />
