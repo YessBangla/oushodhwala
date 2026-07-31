@@ -17,6 +17,8 @@ import {
   Phone,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useLang } from "@/lib/lang";
+
 import { useAuth } from "@/hooks/useAuth";
 import { bn } from "@/data/catalog";
 
