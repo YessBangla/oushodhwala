@@ -189,8 +189,8 @@ function ProductPage() {
 
           {p.rx && (
             <p className="mt-3 rounded-lg border border-sale/40 bg-sale/10 p-2 text-[11px] font-semibold text-sale">
-              এই ঔষধটি কিনতে ডাক্তারের প্রেসক্রিপশন প্রয়োজন।{" "}
-              <Link to="/prescription" className="underline">আপলোড করুন</Link>
+              {isEn ? "A doctor's prescription is required to buy this medicine." : "এই ঔষধটি কিনতে ডাক্তারের প্রেসক্রিপশন প্রয়োজন।"}{" "}
+              <Link to="/prescription" className="underline">{isEn ? "Upload" : "আপলোড করুন"}</Link>
             </p>
           )}
 
@@ -231,7 +231,7 @@ function ProductPage() {
                 onClick={() => add(toLine(p), Math.min(qty, p.stock))}
                 className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
               >
-                {p.stock <= 0 ? "স্টক শেষ" : "কার্টে যোগ করুন"}
+                {p.stock <= 0 ? (isEn ? "Out of stock" : "স্টক শেষ") : isEn ? "Add to cart" : "কার্টে যোগ করুন"}
               </button>
             )}
             <button onClick={() => toggleWish(p.id)} className="rounded-lg border border-border p-2.5" aria-label="উইশলিস্ট">
@@ -241,9 +241,9 @@ function ProductPage() {
 
           <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
             {[
-              { icon: Truck, t: "ঢাকায় ২ ঘণ্টায়" },
-              { icon: ShieldCheck, t: "১০০% অরিজিনাল" },
-              { icon: RotateCcw, t: "সহজ রিটার্ন" },
+              { icon: Truck, t: isEn ? "2-hour Dhaka delivery" : "ঢাকায় ২ ঘণ্টায়" },
+              { icon: ShieldCheck, t: isEn ? "100% authentic" : "১০০% অরিজিনাল" },
+              { icon: RotateCcw, t: isEn ? "Easy returns" : "সহজ রিটার্ন" },
             ].map(({ icon: Icon, t }) => (
               <div key={t} className="rounded-lg border border-border bg-card p-2 text-center">
                 <Icon className="mx-auto h-4 w-4 text-primary" />
@@ -301,7 +301,7 @@ function ProductPage() {
 
 
       <section className="pt-6">
-        <h2 className="mb-2 text-sm font-bold">সম্পর্কিত পণ্য</h2>
+        <h2 className="mb-2 text-sm font-bold">{isEn ? "Related products" : "সম্পর্কিত পণ্য"}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {related.map((r) => (
             <ProductCard key={r.id} p={r} />
