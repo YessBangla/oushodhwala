@@ -51,6 +51,8 @@ function Checkout() {
   const delivery = deliveryChargeFor(subtotal - couponCut, settings);
   const total = Math.max(0, subtotal - couponCut + delivery);
   const payments = ALL_PAYMENTS.filter((m) => settings[m.key]);
+  const method: string = payments.some((m) => m.id === payment) ? payment : (payments[0]?.id ?? "cod");
+
 
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
