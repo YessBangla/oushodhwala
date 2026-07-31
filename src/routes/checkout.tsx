@@ -84,7 +84,7 @@ function Checkout() {
         _items: cart.map((l) => ({ id: l.id, kind: l.kind, name: l.name, price: l.price, qty: l.qty })),
         _customer_name: profile?.name || user.email || "গ্রাহক",
         _phone: addr.phone,
-        _address: `${addr.label} · ${addr.area} — ${addr.details}`,
+        _address: `${addr.label} · ${addr.area} — ${addr.details}${note.trim() ? ` (${note.trim()})` : ""}`,
         _slot: slot,
         _delivery_fee: delivery,
         _discount: couponCut,
