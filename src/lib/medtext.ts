@@ -54,7 +54,7 @@ export function cleanMedText(input?: string | null): string {
       continue;
     }
 
-    const prev = out.length ? out[out.length - 1] : "";
+    const prev: string = (out.length ? out[out.length - 1] : "") ?? "";
     const canJoin = prev !== "" && out.length > 0;
 
     // "H" + "+" → "H⁺"
