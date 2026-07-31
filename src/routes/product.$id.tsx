@@ -51,6 +51,8 @@ function ProductPage() {
   const { product: p, related } = Route.useLoaderData() as { product: ShopProduct; related: ShopProduct[] };
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
+  const [shot, setShot] = useState(0);
+  const shots = [p.image, p.medicineImage].filter(Boolean) as string[];
   const line = cart.find((l) => l.id === p.id);
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
 
@@ -58,8 +60,8 @@ function ProductPage() {
     <div className="pt-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="relative grid h-56 place-items-center overflow-hidden rounded-xl bg-secondary text-7xl">
-          {p.image ? (
-            <img src={p.image} alt={p.name} className="h-full w-full object-contain p-3" />
+          {shots.length > 0 ? (
+            <img src={shots[Math.min(shot, shots.length - 1)]} alt={p.name} className="h-full w-full object-contain p-3" />
           ) : (
             p.emoji
           )}
@@ -67,6 +69,20 @@ function ProductPage() {
             <span className="absolute left-3 top-3 rounded bg-sale px-2 py-0.5 text-[11px] font-bold text-sale-foreground">
               {bn(off)}% OFF
             </span>
+          )}
+          {shots.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2">
+              {shots.map((src, i) => (
+                <button
+                  key={src}
+                  onClick={() => setShot(i)}
+                  aria-label={i === 0 ? "বক্সের ছবি" : "ঔষধের ছবি"}
+                  className={`h-11 w-11 overflow-hidden rounded-lg border bg-background ${i === shot ? "border-primary" : "border-border"}`}
+                >
+                  <img src={src} alt="" className="h-full w-full object-contain" />
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
