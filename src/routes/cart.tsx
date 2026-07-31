@@ -20,7 +20,10 @@ export const Route = createFileRoute("/cart")({
 
 function CartPage() {
   const { cart, setQty, remove, subtotal, discount, clear, couponCode, setCouponCode } = useStore();
-  const { offers } = useCatalog();
+  const { offers, products } = useCatalog();
+  const stockOf = (id: string, kind: string) =>
+    kind === "lab" ? null : (products.find((p) => p.id === id)?.stock ?? null);
+
   const [coupon, setCoupon] = useState(couponCode ?? "");
   const [invalid, setInvalid] = useState(false);
 
