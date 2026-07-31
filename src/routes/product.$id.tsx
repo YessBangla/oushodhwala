@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { Heart, Star, Truck, ShieldCheck, Minus, Plus, RotateCcw } from "lucide-react";
+import { Heart, Star, Truck, ShieldCheck, Minus, Plus, RotateCcw, BookOpen } from "lucide-react";
+import { MedSections, type MedSection } from "@/components/MedSections";
 import { bn } from "@/data/catalog";
 import { mapProduct, type ShopProduct } from "@/lib/catalog-db";
 import { getProductById } from "@/lib/catalog.functions";
