@@ -586,6 +586,8 @@ export type Database = {
           active: boolean
           brand: string
           category: string
+          contraindications: string
+          contraindications_en: string
           created_at: string
           description: string
           description_en: string
@@ -605,6 +607,10 @@ export type Database = {
           mrp: number
           name: string
           pack: string
+          precautions: string
+          precautions_en: string
+          pregnancy: string
+          pregnancy_en: string
           price: number
           rating: number
           reviews: number
@@ -612,12 +618,19 @@ export type Database = {
           side_effects: string
           side_effects_en: string
           stock: number
+          storage: string
+          storage_en: string
+          strength: string
+          therapeutic_class: string
+          therapeutic_class_en: string
           updated_at: string
         }
         Insert: {
           active?: boolean
           brand?: string
           category?: string
+          contraindications?: string
+          contraindications_en?: string
           created_at?: string
           description?: string
           description_en?: string
@@ -637,6 +650,10 @@ export type Database = {
           mrp?: number
           name: string
           pack?: string
+          precautions?: string
+          precautions_en?: string
+          pregnancy?: string
+          pregnancy_en?: string
           price?: number
           rating?: number
           reviews?: number
@@ -644,12 +661,19 @@ export type Database = {
           side_effects?: string
           side_effects_en?: string
           stock?: number
+          storage?: string
+          storage_en?: string
+          strength?: string
+          therapeutic_class?: string
+          therapeutic_class_en?: string
           updated_at?: string
         }
         Update: {
           active?: boolean
           brand?: string
           category?: string
+          contraindications?: string
+          contraindications_en?: string
           created_at?: string
           description?: string
           description_en?: string
@@ -669,6 +693,10 @@ export type Database = {
           mrp?: number
           name?: string
           pack?: string
+          precautions?: string
+          precautions_en?: string
+          pregnancy?: string
+          pregnancy_en?: string
           price?: number
           rating?: number
           reviews?: number
@@ -676,6 +704,11 @@ export type Database = {
           side_effects?: string
           side_effects_en?: string
           stock?: number
+          storage?: string
+          storage_en?: string
+          strength?: string
+          therapeutic_class?: string
+          therapeutic_class_en?: string
           updated_at?: string
         }
         Relationships: []
