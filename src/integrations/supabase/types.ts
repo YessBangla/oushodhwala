@@ -584,6 +584,7 @@ export type Database = {
       products: {
         Row: {
           active: boolean
+          base_name: string
           brand: string
           category: string
           contraindications: string
@@ -627,6 +628,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          base_name?: string
           brand?: string
           category?: string
           contraindications?: string
@@ -670,6 +672,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          base_name?: string
           brand?: string
           category?: string
           contraindications?: string
