@@ -61,7 +61,7 @@ function Checkout() {
     .map((l) => ({ line: l, p: products.find((x) => x.id === l.id) }))
     .filter(({ line, p }) => p && p.stock < line.qty);
 
-  const needsRef = payment === "bkash" || payment === "nagad" || payment === "card";
+  const needsRef = method === "bkash" || method === "nagad" || method === "card";
 
   const submit = async () => {
     if (!user) {
@@ -83,7 +83,7 @@ function Checkout() {
       if (needsRef) {
         // সিমুলেটেড পেমেন্ট গেটওয়ে — কনফার্মেশনের পরে ট্রানজেকশন আইডি তৈরি হয়
         await new Promise((r) => setTimeout(r, 900));
-        ref = payRef.trim() || `${payment.toUpperCase()}${Math.floor(1e9 + Math.random() * 8e9)}`;
+        ref = payRef.trim() || `${method.toUpperCase()}${Math.floor(1e9 + Math.random() * 8e9)}`;
       }
       const { data, error } = await supabase.rpc("place_order", {
         _items: cart.map((l) => ({ id: l.id, kind: l.kind, name: l.name, price: l.price, qty: l.qty })),
@@ -93,7 +93,7 @@ function Checkout() {
         _slot: slot,
         _delivery_fee: delivery,
         _discount: couponCut,
-        _payment_method: payment,
+        _payment_method: method,
         _payment_ref: ref,
       });
       if (error) throw error;
@@ -219,8 +219,8 @@ function Checkout() {
             <p className="text-sm font-bold">পেমেন্ট মাধ্যম</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {payments.map((m) => (
-                <label key={m.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 text-xs ${payment === m.id ? "border-primary" : "border-border"}`}>
-                  <input type="radio" checked={payment === m.id} onChange={() => setPayment(m.id)} />
+                <label key={m.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 text-xs ${method === m.id ? "border-primary" : "border-border"}`}>
+                  <input type="radio" checked={method === m.id} onChange={() => setPayment(m.id)} />
                   <span className="text-base">{m.e}</span>
                   <span>
                     <span className="block font-semibold">{m.t}</span>
@@ -232,12 +232,12 @@ function Checkout() {
             {needsRef && (
               <div className="mt-2 rounded-lg bg-secondary p-3">
                 <p className="text-[11px] font-semibold">
-                  {payment === "card" ? "কার্ড পেমেন্ট" : payment === "bkash" ? "bKash পেমেন্ট" : "Nagad পেমেন্ট"} — সিমুলেটেড গেটওয়ে
+                  {method === "card" ? "কার্ড পেমেন্ট" : method === "bkash" ? "bKash পেমেন্ট" : "Nagad পেমেন্ট"} — সিমুলেটেড গেটওয়ে
                 </p>
                 <input
                   value={payRef}
                   onChange={(e) => setPayRef(e.target.value)}
-                  placeholder={payment === "card" ? "কার্ডের শেষ ৪ সংখ্যা (ঐচ্ছিক)" : "ট্রানজেকশন আইডি (ঐচ্ছিক)"}
+                  placeholder={method === "card" ? "কার্ডের শেষ ৪ সংখ্যা (ঐচ্ছিক)" : "ট্রানজেকশন আইডি (ঐচ্ছিক)"}
                   className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
                 />
                 <p className="mt-1 text-[10px] text-muted-foreground">খালি রাখলে স্বয়ংক্রিয়ভাবে একটি রেফারেন্স তৈরি হবে।</p>
