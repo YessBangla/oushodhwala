@@ -561,18 +561,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          medicine_url: string
           product_id: string
           url: string
         }
         Insert: {
           created_at?: string
           id?: string
+          medicine_url?: string
           product_id: string
           url: string
         }
         Update: {
           created_at?: string
           id?: string
+          medicine_url?: string
           product_id?: string
           url?: string
         }
