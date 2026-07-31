@@ -1,11 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { bn } from "@/data/catalog";
+import { categories as staticCategories, bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: ({ params }) => {
-    const cat = categories.find((c) => c.slug === params.slug);
+    const cat = staticCategories.find((c) => c.slug === params.slug);
     if (!cat) throw notFound();
     return { cat };
   },
