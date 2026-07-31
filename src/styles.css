@@ -34,6 +34,11 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-sale: var(--sale);
+  --color-sale-foreground: var(--sale-foreground);
+  --font-sans: "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
