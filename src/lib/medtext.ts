@@ -97,6 +97,12 @@ export function cleanMedText(input?: string | null): string {
     }
 
     // বিরামচিহ্ন দিয়ে শুরু → আগের লাইনের সাথে
+    // বাংলা একক ভেঙে যায়: "৪০ মি" + "গ্রা." → "৪০ মিগ্রা."
+    if (canJoin && /^(গ্রা|লি|টার)\b/.test(line) && /(মি|মিলি|কি|সে|লি)\.?$/.test(prev)) {
+      out[out.length - 1] = prev.replace(/\.$/, "") + line;
+      continue;
+    }
+
     if (canJoin && /^[/,.);:%°–—-]/.test(line)) {
       out[out.length - 1] = prev + line;
       continue;

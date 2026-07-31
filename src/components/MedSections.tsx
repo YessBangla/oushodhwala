@@ -37,7 +37,8 @@ const TONE: Record<
 
 /** "Label: value" ধরনের লাইনকে আলাদা করে */
 function splitRow(line: string): [string, string] | null {
-  const m = line.match(/^([^:：]{2,70})[:：]\s*(.+)$/);
+  const m = line.match(/^([^:：]{6,70})[:：]\s*(.+)$/);
+  if (m && (m[2] ?? "").length < 8) return null;
   if (!m) return null;
   return [m[1]!.trim(), m[2]!.trim()];
 }
