@@ -167,23 +167,24 @@ function ProductPage() {
 
           {variants.length > 1 && (
             <div className="mt-3">
-              <p className="text-xs font-bold">{isEn ? "Available strengths" : "উপলব্ধ মাত্রা ও ধরন"}</p>
+              <p className="text-xs font-bold">{isEn ? "Available strengths & forms" : "উপলব্ধ মাত্রা ও ধরন"}</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {variants.map((v) => {
                   const active = v.id === p.id;
                   return (
-                    <Link
+                    <button
                       key={v.id}
-                      to="/product/$id"
-                      params={{ id: v.id }}
-                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                      type="button"
+                      onClick={() => selectVariant(v.id)}
+                      aria-pressed={active}
+                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
                         active ? "border-primary bg-primary/10 text-primary-dark" : "border-border bg-card"
-                      } ${v.stock <= 0 ? "opacity-60" : ""}`}
+                      } ${v.stock <= 0 ? "opacity-60" : ""} ${switching === v.id ? "animate-pulse" : ""}`}
                     >
                       <span>{v.strength || v.en || v.name}</span>
                       <span className="ml-1 text-muted-foreground">· {v.form}</span>
                       <span className="ml-1 text-muted-foreground">৳{num(Number(v.price))}</span>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
