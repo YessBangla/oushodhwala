@@ -258,55 +258,54 @@ function ProductPage() {
       </div>
 
       {(() => {
-        const all = dedupeSections(
-          [
-            { t: isEn ? "Product Description" : "পণ্যের বিবরণ", body: cleanMedText(pick(lang, p.desc, p.descEn)) },
-            { bnT: "নির্দেশনা", enT: "Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
-            { bnT: "ফার্মাকোলজি", enT: "Pharmacology", bnv: g("pharmacology"), env: g("pharmacology_en") },
-            { bnT: "মাত্রা ও সেবনবিধি", enT: "Dosage & Administration", bnv: p.dosage || g("dosage"), env: p.dosageEn || g("dosage_en") },
-            { bnT: "ঔষধের মিথস্ক্রিয়া", enT: "Interaction", bnv: g("interaction"), env: g("interaction_en") },
-            { bnT: "প্রতিনির্দেশনা", enT: "Contraindications", bnv: p.contraindications || g("contraindications"), env: p.contraindicationsEn || g("contraindications_en") },
-            { bnT: "পার্শ্বপ্রতিক্রিয়া", enT: "Side Effects", bnv: p.sideEffects || g("side_effects"), env: p.sideEffectsEn || g("side_effects_en") },
-            { bnT: "গর্ভাবস্থায় ও স্তন্যদানকালে", enT: "Pregnancy & Lactation", bnv: p.pregnancy || g("pregnancy"), env: p.pregnancyEn || g("pregnancy_en") },
-            { bnT: "সতর্কতা", enT: "Precautions & Warnings", bnv: p.precautions || g("precautions"), env: p.precautionsEn || g("precautions_en") },
-            { bnT: "বিশেষ ক্ষেত্রে ব্যবহার", enT: "Use in Special Populations", bnv: g("special_populations"), env: g("special_populations_en") },
-            { bnT: "মাত্রাধিক্য", enT: "Overdose Effects", bnv: g("overdose"), env: g("overdose_en") },
-            { bnT: "থেরাপিউটিক ক্লাস", enT: "Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
-            { bnT: "সংরক্ষণ", enT: "Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
-          ]
-            .map((s) =>
-              "t" in s
-                ? { t: s.t as string, body: s.body as string }
-                : { t: isEn ? (s as any).enT : (s as any).bnT, body: cleanMedText(pick(lang, (s as any).bnv, (s as any).env)) },
-            )
-            .filter((s): s is { t: string; body: string } => Boolean(s.body)),
-        );
+        const raw: { t: string; body: string; kind?: MedSection["kind"] }[] = [
+          { t: isEn ? "Product Description" : "পণ্যের বিবরণ", body: cleanMedText(pick(lang, p.desc, p.descEn)) },
+          { t: isEn ? "Indications" : "নির্দেশনা", body: cleanMedText(pick(lang, p.indications || g("indications"), p.indicationsEn || g("indications_en"))) },
+          { t: isEn ? "Pharmacology" : "ফার্মাকোলজি", body: cleanMedText(pick(lang, g("pharmacology"), g("pharmacology_en"))) },
+          { t: isEn ? "Dosage & Administration" : "মাত্রা ও সেবনবিধি", kind: "dosage", body: cleanMedText(pick(lang, p.dosage || g("dosage"), p.dosageEn || g("dosage_en"))) },
+          { t: isEn ? "Interaction" : "ঔষধের মিথস্ক্রিয়া", body: cleanMedText(pick(lang, g("interaction"), g("interaction_en"))) },
+          { t: isEn ? "Contraindications" : "প্রতিনির্দেশনা", kind: "warning", body: cleanMedText(pick(lang, p.contraindications || g("contraindications"), p.contraindicationsEn || g("contraindications_en"))) },
+          { t: isEn ? "Side Effects" : "পার্শ্বপ্রতিক্রিয়া", kind: "side-effects", body: cleanMedText(pick(lang, p.sideEffects || g("side_effects"), p.sideEffectsEn || g("side_effects_en"))) },
+          { t: isEn ? "Pregnancy & Lactation" : "গর্ভাবস্থায় ও স্তন্যদানকালে", kind: "pregnancy", body: cleanMedText(pick(lang, p.pregnancy || g("pregnancy"), p.pregnancyEn || g("pregnancy_en"))) },
+          { t: isEn ? "Precautions & Warnings" : "সতর্কতা", kind: "warning", body: cleanMedText(pick(lang, p.precautions || g("precautions"), p.precautionsEn || g("precautions_en"))) },
+          { t: isEn ? "Use in Special Populations" : "বিশেষ ক্ষেত্রে ব্যবহার", body: cleanMedText(pick(lang, g("special_populations"), g("special_populations_en"))) },
+          { t: isEn ? "Overdose Effects" : "মাত্রাধিক্য", kind: "warning", body: cleanMedText(pick(lang, g("overdose"), g("overdose_en"))) },
+          { t: isEn ? "Therapeutic Class" : "থেরাপিউটিক ক্লাস", body: cleanMedText(pick(lang, p.therapeuticClass || g("therapeutic_class"), p.therapeuticClassEn || g("therapeutic_class_en"))) },
+          { t: isEn ? "Storage Conditions" : "সংরক্ষণ", body: cleanMedText(pick(lang, p.storage || g("storage"), p.storageEn || g("storage_en"))) },
+          ...(p.manufacturer ? [{ t: isEn ? "Manufacturer" : "প্রস্তুতকারক", body: p.manufacturer }] : []),
+        ].filter((s) => Boolean(s.body));
+
+        const kinds = new Map(raw.map((s) => [s.t, s.kind]));
+        const sections: MedSection[] = dedupeSections(raw.map((s) => ({ t: s.t, body: s.body }))).map((s) => ({
+          title: s.t,
+          body: s.body,
+          kind: kinds.get(s.t) ?? "plain",
+        }));
 
         return (
-          <>
-            {all.map((s) => (
-              <section key={s.t} className="pt-6">
-                <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
-                <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
-                  <p className="whitespace-pre-line">{s.body}</p>
-                </div>
-              </section>
-            ))}
-            {p.manufacturer && (
-              <section className="pt-6">
-                <h2 className="mb-2 text-sm font-bold">{isEn ? "Manufacturer" : "প্রস্তুতকারক"}</h2>
-                <div className="rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">{p.manufacturer}</div>
-              </section>
-            )}
-          </>
+          <div className="pt-6">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <h2 className="min-w-0 truncate text-sm font-bold">
+                {isEn ? "Medicine information" : "ঔষধের তথ্য"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setReading((r) => !r)}
+                aria-pressed={reading}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
+                  reading ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
+                }`}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                {isEn ? "Reading mode" : "রিডিং মোড"}
+              </button>
+            </div>
+            <MedSections sections={sections} reading={reading} badgeText={isEn ? "Important" : "গুরুত্বপূর্ণ"} />
+          </div>
         );
       })()}
 
-
-
-
-
-      <section className="pt-6">
+      <section className={`pt-6 ${reading ? "hidden" : ""}`}>
         <h2 className="mb-2 text-sm font-bold">{isEn ? "Related products" : "সম্পর্কিত পণ্য"}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {related.map((r) => (
