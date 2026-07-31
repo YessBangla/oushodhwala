@@ -255,48 +255,51 @@ function ProductPage() {
         </div>
       </div>
 
-      {(cleanMedText(pick(lang, p.desc, p.descEn)) || p.manufacturer) && (
-        <section className="pt-6">
-          <h2 className="mb-2 text-sm font-bold">{isEn ? "Product Description" : "পণ্যের বিবরণ"}</h2>
-          <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
-            {cleanMedText(pick(lang, p.desc, p.descEn)) && (
-              <p className="whitespace-pre-line text-muted-foreground">{cleanMedText(pick(lang, p.desc, p.descEn))}</p>
-            )}
+      {(() => {
+        const all = dedupeSections(
+          [
+            { t: isEn ? "Product Description" : "পণ্যের বিবরণ", body: cleanMedText(pick(lang, p.desc, p.descEn)) },
+            { bnT: "নির্দেশনা", enT: "Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
+            { bnT: "ফার্মাকোলজি", enT: "Pharmacology", bnv: g("pharmacology"), env: g("pharmacology_en") },
+            { bnT: "মাত্রা ও সেবনবিধি", enT: "Dosage & Administration", bnv: p.dosage || g("dosage"), env: p.dosageEn || g("dosage_en") },
+            { bnT: "ঔষধের মিথস্ক্রিয়া", enT: "Interaction", bnv: g("interaction"), env: g("interaction_en") },
+            { bnT: "প্রতিনির্দেশনা", enT: "Contraindications", bnv: p.contraindications || g("contraindications"), env: p.contraindicationsEn || g("contraindications_en") },
+            { bnT: "পার্শ্বপ্রতিক্রিয়া", enT: "Side Effects", bnv: p.sideEffects || g("side_effects"), env: p.sideEffectsEn || g("side_effects_en") },
+            { bnT: "গর্ভাবস্থায় ও স্তন্যদানকালে", enT: "Pregnancy & Lactation", bnv: p.pregnancy || g("pregnancy"), env: p.pregnancyEn || g("pregnancy_en") },
+            { bnT: "সতর্কতা", enT: "Precautions & Warnings", bnv: p.precautions || g("precautions"), env: p.precautionsEn || g("precautions_en") },
+            { bnT: "বিশেষ ক্ষেত্রে ব্যবহার", enT: "Use in Special Populations", bnv: g("special_populations"), env: g("special_populations_en") },
+            { bnT: "মাত্রাধিক্য", enT: "Overdose Effects", bnv: g("overdose"), env: g("overdose_en") },
+            { bnT: "থেরাপিউটিক ক্লাস", enT: "Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
+            { bnT: "সংরক্ষণ", enT: "Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
+          ]
+            .map((s) =>
+              "t" in s
+                ? { t: s.t as string, body: s.body as string }
+                : { t: isEn ? (s as any).enT : (s as any).bnT, body: cleanMedText(pick(lang, (s as any).bnv, (s as any).env)) },
+            )
+            .filter((s) => s.body),
+        );
+
+        return (
+          <>
+            {all.map((s) => (
+              <section key={s.t} className="pt-6">
+                <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
+                <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+                  <p className="whitespace-pre-line">{s.body}</p>
+                </div>
+              </section>
+            ))}
             {p.manufacturer && (
-              <p>
-                <span className="font-semibold">{isEn ? "Manufacturer:" : "প্রস্তুতকারক:"}</span>{" "}
-                <span className="text-muted-foreground">{p.manufacturer}</span>
-              </p>
+              <section className="pt-6">
+                <h2 className="mb-2 text-sm font-bold">{isEn ? "Manufacturer" : "প্রস্তুতকারক"}</h2>
+                <div className="rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">{p.manufacturer}</div>
+              </section>
             )}
-          </div>
-        </section>
-      )}
+          </>
+        );
+      })()}
 
-
-      {[
-        { bnT: "নির্দেশনা", enT: "Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
-        { bnT: "ফার্মাকোলজি", enT: "Pharmacology", bnv: g("pharmacology"), env: g("pharmacology_en") },
-        { bnT: "মাত্রা ও সেবনবিধি", enT: "Dosage & Administration", bnv: p.dosage || g("dosage"), env: p.dosageEn || g("dosage_en") },
-        { bnT: "ঔষধের মিথস্ক্রিয়া", enT: "Interaction", bnv: g("interaction"), env: g("interaction_en") },
-        { bnT: "প্রতিনির্দেশনা", enT: "Contraindications", bnv: p.contraindications || g("contraindications"), env: p.contraindicationsEn || g("contraindications_en") },
-        { bnT: "পার্শ্বপ্রতিক্রিয়া", enT: "Side Effects", bnv: p.sideEffects || g("side_effects"), env: p.sideEffectsEn || g("side_effects_en") },
-        { bnT: "গর্ভাবস্থায় ও স্তন্যদানকালে", enT: "Pregnancy & Lactation", bnv: p.pregnancy || g("pregnancy"), env: p.pregnancyEn || g("pregnancy_en") },
-        { bnT: "সতর্কতা", enT: "Precautions & Warnings", bnv: p.precautions || g("precautions"), env: p.precautionsEn || g("precautions_en") },
-        { bnT: "বিশেষ ক্ষেত্রে ব্যবহার", enT: "Use in Special Populations", bnv: g("special_populations"), env: g("special_populations_en") },
-        { bnT: "মাত্রাধিক্য", enT: "Overdose Effects", bnv: g("overdose"), env: g("overdose_en") },
-        { bnT: "থেরাপিউটিক ক্লাস", enT: "Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
-        { bnT: "সংরক্ষণ", enT: "Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
-      ]
-        .map((s) => ({ t: isEn ? s.enT : s.bnT, body: cleanMedText(pick(lang, s.bnv, s.env)) }))
-        .filter((s) => s.body)
-        .map((s) => (
-          <section key={s.t} className="pt-6">
-            <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
-            <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
-              <p className="whitespace-pre-line">{s.body}</p>
-            </div>
-          </section>
-        ))}
 
 
 
