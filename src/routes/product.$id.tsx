@@ -8,6 +8,8 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 
 import { useStore, toLine } from "@/lib/store";
+import { useLang, pick } from "@/lib/lang";
+
 
 export const Route = createFileRoute("/product/$id")({
   loader: async ({ params }) => {
