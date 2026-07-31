@@ -80,6 +80,7 @@ function ProductPage() {
   };
   const { lang } = useLang();
   const isEn = lang === "en";
+  const num = (v: number | string) => (isEn ? String(v) : bn(v as never));
   const g = (k: string) => ((generic?.[k] as string) ?? "").trim();
 
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
@@ -104,7 +105,7 @@ function ProductPage() {
           />
           {off > 0 && (
             <span className="absolute left-3 top-3 rounded bg-sale px-2 py-0.5 text-[11px] font-bold text-sale-foreground">
-              {bn(off)}% OFF
+              {num(off)}% OFF
             </span>
           )}
           {shots.length > 1 && (
@@ -133,14 +134,14 @@ function ProductPage() {
               <Star key={i} className={`h-3.5 w-3.5 ${i < Math.round(p.rating) ? "fill-current text-sale" : "text-muted-foreground"}`} />
             ))}
             <span className="ml-1 text-xs text-muted-foreground">
-              {isEn ? `${p.rating} (${p.reviews} reviews)` : `${bn(p.rating)} (${bn(p.reviews)} রিভিউ)`}
+              {isEn ? `${p.rating} (${p.reviews} reviews)` : `${num(p.rating)} (${num(p.reviews)} রিভিউ)`}
             </span>
           </div>
 
 
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-primary-dark">৳{bn(p.price)}</span>
-            {p.mrp > p.price && <span className="text-sm text-muted-foreground line-through">৳{bn(p.mrp)}</span>}
+            <span className="text-2xl font-bold text-primary-dark">৳{num(p.price)}</span>
+            {p.mrp > p.price && <span className="text-sm text-muted-foreground line-through">৳{num(p.mrp)}</span>}
           </div>
 
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -179,7 +180,7 @@ function ProductPage() {
                     >
                       <span>{v.strength || v.en || v.name}</span>
                       <span className="ml-1 text-muted-foreground">· {v.form}</span>
-                      <span className="ml-1 text-muted-foreground">৳{bn(Number(v.price))}</span>
+                      <span className="ml-1 text-muted-foreground">৳{num(Number(v.price))}</span>
                     </Link>
                   );
                 })}
@@ -199,14 +200,14 @@ function ProductPage() {
             <p className="mt-3 rounded-lg bg-secondary p-2 text-[11px] font-bold text-sale">এই পণ্যটির স্টক শেষ।</p>
           ) : p.stock <= p.lowStock ? (
             <p className="mt-3 rounded-lg bg-secondary p-2 text-[11px] font-bold text-sale">
-              কম স্টক — মাত্র {bn(p.stock)} টি বাকি।
+              কম স্টক — মাত্র {num(p.stock)} টি বাকি।
             </p>
           ) : null}
 
           <div className="mt-4 flex items-center gap-3">
             <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
               <button onClick={() => setLocalQty((q) => Math.max(1, q - 1))} aria-label="কমান"><Minus className="h-4 w-4" /></button>
-              <span className="text-sm font-bold">{bn(qty)}</span>
+              <span className="text-sm font-bold">{num(qty)}</span>
               <button
                 disabled={qty >= p.stock}
                 onClick={() => setLocalQty((q) => Math.min(p.stock, q + 1))}
@@ -218,7 +219,7 @@ function ProductPage() {
             </div>
             {line ? (
               <div className="flex flex-1 items-center gap-2">
-                <span className="text-xs font-semibold text-primary">কার্টে {bn(line.qty)} টি আছে</span>
+                <span className="text-xs font-semibold text-primary">কার্টে {num(line.qty)} টি আছে</span>
                 <Link to="/cart" className="ml-auto rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground">
                   কার্ট দেখুন
                 </Link>
