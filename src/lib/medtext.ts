@@ -144,14 +144,42 @@ export function isContainedText(short: string, long: string) {
   return b.includes(a);
 }
 
-/** একাধিক সেকশনের মধ্যে হুবহু বা কাটা-পুনরাবৃত্ত লেখা বাদ দেয় */
+/**
+ * সেকশনগুলোর মধ্যে একই (বা কাটা) প্যারাগ্রাফ একাধিকবার থাকলে শুধু প্রথম
+ * সেকশনে সবচেয়ে পূর্ণ রূপটি রাখে; বাকিগুলো বাদ যায়। খালি হয়ে যাওয়া
+ * সেকশনও সরিয়ে দেয়।
+ */
 export function dedupeSections<T extends { body: string }>(sections: T[]): T[] {
-  return sections.filter((s, i) =>
-    !sections.some(
-      (o, j) =>
-        j !== i &&
-        (isContainedText(s.body, o.body) ||
-          (normText(s.body) === normText(o.body) && j < i)),
-    ),
-  );
+  const all = sections.map((s) => s.body.split("\n").filter((l) => l.trim() !== ""));
+  const flat = all.flat();
+  const canonical = (line: string) => {
+    const a = normText(line);
+    if (a.length < 40) return line;
+    let best = line;
+    for (const other of flat) {
+      const b = normText(other);
+      if (b.length > normText(best).length && b.startsWith(a)) best = other;
+    }
+    return best;
+  };
+
+  const used = new Set<string>();
+  const result: T[] = [];
+
+  sections.forEach((s, i) => {
+    const kept: string[] = [];
+    for (const line of all[i] ?? []) {
+      const rep = canonical(line);
+      const key = normText(rep);
+      if (key.length >= 40) {
+        if (used.has(key)) continue;
+        used.add(key);
+      }
+      kept.push(rep);
+    }
+    if (kept.length) result.push({ ...s, body: kept.join("\n") });
+  });
+
+  return result;
 }
+
