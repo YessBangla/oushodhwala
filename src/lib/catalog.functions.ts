@@ -20,14 +20,20 @@ function publicClient() {
 
 export const getCatalog = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
-  const [p, c, o] = await Promise.all([
+  const [p, c, o, l, d, s] = await Promise.all([
     supabase.from("products").select("*").eq("active", true).order("name"),
     supabase.from("categories").select("*").eq("active", true).order("sort_order"),
     supabase.from("offers").select("*").eq("active", true).order("created_at"),
+    supabase.from("lab_tests").select("*").eq("active", true).order("sort_order"),
+    supabase.from("doctors").select("*").eq("active", true).order("sort_order"),
+    supabase.from("app_settings").select("key, value"),
   ]);
   return {
     products: p.data ?? [],
     categories: c.data ?? [],
     offers: o.data ?? [],
+    labTests: l.data ?? [],
+    doctors: d.data ?? [],
+    settings: s.data ?? [],
   };
 });

@@ -3,7 +3,7 @@ import { Heart, Plus, Minus } from "lucide-react";
 import { bn, type Product } from "@/data/catalog";
 import { useStore, toLine } from "@/lib/store";
 
-export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: number } }) {
+export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: number; image?: string } }) {
   const { cart, add, setQty, wishlist, toggleWish } = useStore();
   const line = cart.find((l) => l.id === p.id);
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
@@ -14,7 +14,12 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
       <Link to="/product/$id" params={{ id: p.id }} className="relative grid h-24 place-items-center bg-secondary text-3xl">
-        {p.emoji}
+        {p.image ? (
+          <img src={p.image} alt={p.name} loading="lazy" className="h-full w-full object-contain p-1" />
+        ) : (
+          p.emoji
+        )}
+
         {off > 0 && (
           <span className="absolute left-2 top-2 rounded bg-sale px-1.5 py-0.5 text-[10px] font-bold text-sale-foreground">
             {bn(off)}% OFF

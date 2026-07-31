@@ -28,6 +28,10 @@ const TABS = [
   { id: "products", t: "প্রোডাক্ট" },
   { id: "categories", t: "ক্যাটাগরি" },
   { id: "offers", t: "অফার" },
+  { id: "lab", t: "ল্যাব টেস্ট" },
+  { id: "doctors", t: "ডাক্তার" },
+  { id: "rx", t: "প্রেসক্রিপশন" },
+  { id: "settings", t: "সেটিংস" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -127,6 +131,10 @@ function Admin() {
         {tab === "products" && <Products />}
         {tab === "categories" && <Categories />}
         {tab === "offers" && <Offers />}
+        {tab === "lab" && <LabTests />}
+        {tab === "doctors" && <Doctors />}
+        {tab === "rx" && <Prescriptions />}
+        {tab === "settings" && <Settings />}
       </div>
     </div>
   );
@@ -380,6 +388,15 @@ const emptyProduct = {
   rx: false,
   emoji: "💊",
   description: "",
+  description_en: "",
+  image_url: "",
+  manufacturer: "",
+  indications: "",
+  indications_en: "",
+  dosage: "",
+  dosage_en: "",
+  side_effects: "",
+  side_effects_en: "",
   stock: 0,
   low_stock_threshold: 10,
   active: true,
@@ -440,6 +457,8 @@ function Products() {
               ["pack", "প্যাক"],
               ["emoji", "ইমোজি"],
               ["category", "ক্যাটাগরি স্লাগ"],
+              ["image_url", "ছবির লিংক (URL)"],
+              ["manufacturer", "প্রস্তুতকারক"],
             ] as const
           ).map(([k, label]) => (
             <input
@@ -469,13 +488,30 @@ function Products() {
             />
           ))}
         </div>
-        <textarea
-          value={edit.description}
-          onChange={(e) => setEdit({ ...edit, description: e.target.value })}
-          rows={3}
-          placeholder="বিবরণ"
-          className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs outline-none"
-        />
+        {edit.image_url && (
+          <img src={edit.image_url} alt="প্রিভিউ" className="mt-2 h-20 w-20 rounded-lg border border-border object-contain" />
+        )}
+        {(
+          [
+            ["description", "বিবরণ (বাংলা)"],
+            ["description_en", "Description (English)"],
+            ["indications", "নির্দেশনা (বাংলা)"],
+            ["indications_en", "Indications (English)"],
+            ["dosage", "মাত্রা ও সেবনবিধি (বাংলা)"],
+            ["dosage_en", "Dosage (English)"],
+            ["side_effects", "পার্শ্বপ্রতিক্রিয়া (বাংলা)"],
+            ["side_effects_en", "Side effects (English)"],
+          ] as const
+        ).map(([k, label]) => (
+          <textarea
+            key={k}
+            value={String(edit[k])}
+            onChange={(e) => setEdit({ ...edit, [k]: e.target.value })}
+            rows={2}
+            placeholder={label}
+            className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs outline-none"
+          />
+        ))}
         <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={edit.rx} onChange={(e) => setEdit({ ...edit, rx: e.target.checked })} /> প্রেসক্রিপশন লাগবে
@@ -519,7 +555,11 @@ function Products() {
       <div className="space-y-2">
         {list.map((p) => (
           <div key={p.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
-            <span className="text-lg">{p.emoji}</span>
+            {p.image_url ? (
+              <img src={p.image_url} alt="" className="h-9 w-9 rounded object-contain" />
+            ) : (
+              <span className="text-lg">{p.emoji}</span>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold">{p.name} {!p.active && <span className="text-muted-foreground">(নিষ্ক্রিয়)</span>}</p>
               <p className="text-[10px] text-muted-foreground">
@@ -542,6 +582,15 @@ function Products() {
                   rx: p.rx,
                   emoji: p.emoji,
                   description: p.description,
+                  description_en: p.description_en,
+                  image_url: p.image_url,
+                  manufacturer: p.manufacturer,
+                  indications: p.indications,
+                  indications_en: p.indications_en,
+                  dosage: p.dosage,
+                  dosage_en: p.dosage_en,
+                  side_effects: p.side_effects,
+                  side_effects_en: p.side_effects_en,
                   stock: p.stock,
                   low_stock_threshold: p.low_stock_threshold,
                   active: p.active,
@@ -743,6 +792,388 @@ function Offers() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ---------------- lab tests ---------------- */
+
+const emptyLab = { id: "", bn: "", en: "", price: 0, mrp: 0, grp: "vital", prep: "", active: true, sort_order: 0 };
+
+function LabTests() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-lab"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lab_tests").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [form, setForm] = useState({ ...emptyLab });
+
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["admin-lab"] });
+    void qc.invalidateQueries({ queryKey: catalogQueryKey });
+  };
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("lab_tests").upsert(form);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("ল্যাব টেস্ট সংরক্ষিত");
+      setForm({ ...emptyLab });
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("lab_tests").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>;
+
+  return (
+    <div>
+      <div className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-3">
+        {(["id", "bn", "en", "prep"] as const).map((k) => (
+          <input
+            key={k}
+            value={form[k]}
+            onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+            placeholder={{ id: "আইডি (ইউনিক)", bn: "বাংলা নাম", en: "English name", prep: "প্রস্তুতি" }[k]}
+            className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+          />
+        ))}
+        <select
+          value={form.grp}
+          onChange={(e) => setForm({ ...form, grp: e.target.value })}
+          className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+        >
+          <option value="vital">ভাইটাল অর্গান</option>
+          <option value="life_style">লাইফস্টাইল</option>
+          <option value="checkup_women">নারীদের চেকআপ</option>
+          <option value="checkup_men">পুরুষদের চেকআপ</option>
+        </select>
+        {(["price", "mrp", "sort_order"] as const).map((k) => (
+          <input
+            key={k}
+            value={String(form[k])}
+            inputMode="numeric"
+            onChange={(e) => setForm({ ...form, [k]: Number(e.target.value) || 0 })}
+            placeholder={{ price: "দাম", mrp: "MRP", sort_order: "ক্রম" }[k]}
+            className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+          />
+        ))}
+        <button
+          disabled={!form.id || !form.bn || save.isPending}
+          onClick={() => save.mutate()}
+          className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50 sm:col-span-3"
+        >
+          টেস্ট যোগ / আপডেট
+        </button>
+      </div>
+      <div className="mt-3 space-y-2">
+        {(data ?? []).map((t) => (
+          <div key={t.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">{t.bn} <span className="text-muted-foreground">· {t.en}</span></p>
+              <p className="text-[10px] text-muted-foreground">৳{bn(Number(t.price))} · {t.grp} {!t.active && "· নিষ্ক্রিয়"}</p>
+            </div>
+            <button
+              onClick={() =>
+                setForm({
+                  id: t.id, bn: t.bn, en: t.en, price: Number(t.price), mrp: Number(t.mrp),
+                  grp: t.grp, prep: t.prep, active: t.active, sort_order: t.sort_order,
+                })
+              }
+              className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
+            >
+              সম্পাদনা
+            </button>
+            <button
+              onClick={() => toggle.mutate({ id: t.id, active: !t.active })}
+              className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
+            >
+              {t.active ? "বন্ধ" : "চালু"}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- doctors ---------------- */
+
+const emptyDoctor = { name: "", spec: "", degree: "", exp: "", fee: 0, emoji: "👨‍⚕️", photo_url: "", sort_order: 0 };
+
+function Doctors() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-doctors"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("doctors").select("*").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [form, setForm] = useState<typeof emptyDoctor & { id?: string }>({ ...emptyDoctor });
+
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["admin-doctors"] });
+    void qc.invalidateQueries({ queryKey: catalogQueryKey });
+  };
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = form.id
+        ? await supabase.from("doctors").update(form).eq("id", form.id)
+        : await supabase.from("doctors").insert(form);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("ডাক্তার সংরক্ষিত");
+      setForm({ ...emptyDoctor });
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("doctors").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>;
+
+  return (
+    <div>
+      <div className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-3">
+        {(["name", "spec", "degree", "exp", "emoji", "photo_url"] as const).map((k) => (
+          <input
+            key={k}
+            value={form[k]}
+            onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+            placeholder={{ name: "নাম", spec: "বিশেষত্ব", degree: "ডিগ্রি", exp: "অভিজ্ঞতা", emoji: "ইমোজি", photo_url: "ছবির লিংক" }[k]}
+            className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+          />
+        ))}
+        {(["fee", "sort_order"] as const).map((k) => (
+          <input
+            key={k}
+            value={String(form[k])}
+            inputMode="numeric"
+            onChange={(e) => setForm({ ...form, [k]: Number(e.target.value) || 0 })}
+            placeholder={{ fee: "ফি", sort_order: "ক্রম" }[k]}
+            className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+          />
+        ))}
+        <button
+          disabled={!form.name || save.isPending}
+          onClick={() => save.mutate()}
+          className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50 sm:col-span-3"
+        >
+          {form.id ? "ডাক্তার আপডেট" : "ডাক্তার যোগ"}
+        </button>
+      </div>
+      <div className="mt-3 space-y-2">
+        {(data ?? []).map((d) => (
+          <div key={d.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+            <span className="text-lg">{d.emoji}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">{d.name}</p>
+              <p className="text-[10px] text-muted-foreground">{d.spec} · ৳{bn(Number(d.fee))} {!d.active && "· নিষ্ক্রিয়"}</p>
+            </div>
+            <button
+              onClick={() =>
+                setForm({
+                  id: d.id, name: d.name, spec: d.spec, degree: d.degree, exp: d.exp,
+                  fee: Number(d.fee), emoji: d.emoji, photo_url: d.photo_url, sort_order: d.sort_order,
+                })
+              }
+              className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
+            >
+              সম্পাদনা
+            </button>
+            <button
+              onClick={() => toggle.mutate({ id: d.id, active: !d.active })}
+              className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
+            >
+              {d.active ? "বন্ধ" : "চালু"}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- prescriptions ---------------- */
+
+const RX_STATUS: Record<string, string> = {
+  pending: "যাচাই চলছে",
+  approved: "অনুমোদিত",
+  rejected: "বাতিল",
+  fulfilled: "অর্ডার তৈরি হয়েছে",
+};
+
+function Prescriptions() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-prescriptions"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("prescriptions").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [notes, setNotes] = useState<Record<string, string>>({});
+
+  const update = useMutation({
+    mutationFn: async ({ id, status, admin_note }: { id: string; status: string; admin_note: string }) => {
+      const { error } = await supabase.from("prescriptions").update({ status, admin_note }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("প্রেসক্রিপশন আপডেট হয়েছে");
+      void qc.invalidateQueries({ queryKey: ["admin-prescriptions"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const openFile = async (path: string) => {
+    const { data, error } = await supabase.storage.from("prescriptions").createSignedUrl(path, 300);
+    if (error || !data) {
+      toast.error("ফাইল খোলা যায়নি");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener");
+  };
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>;
+  if ((data ?? []).length === 0) return <p className="text-xs text-muted-foreground">কোনো প্রেসক্রিপশন জমা পড়েনি।</p>;
+
+  return (
+    <div className="space-y-2">
+      {(data ?? []).map((r) => (
+        <article key={r.id} className="rounded-xl border border-border bg-card p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{RX_STATUS[r.status] ?? r.status}</span>
+            <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString("bn-BD")}</p>
+            {r.phone && <p className="text-[11px] font-semibold">{r.phone}</p>}
+          </div>
+          {r.note && <p className="mt-1 text-[11px] text-muted-foreground">নোট: {r.note}</p>}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {r.file_urls.map((f) => (
+              <button
+                key={f}
+                onClick={() => void openFile(f)}
+                className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
+              >
+                📄 ফাইল দেখুন
+              </button>
+            ))}
+          </div>
+          <input
+            value={notes[r.id] ?? r.admin_note}
+            onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
+            placeholder="ফার্মাসিস্টের মন্তব্য"
+            className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+          />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {Object.entries(RX_STATUS).map(([k, label]) => (
+              <button
+                key={k}
+                disabled={update.isPending}
+                onClick={() => update.mutate({ id: r.id, status: k, admin_note: notes[r.id] ?? r.admin_note })}
+                className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold disabled:opacity-40"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- settings ---------------- */
+
+function Settings() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("app_settings").select("*").order("key");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  const save = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+      const { error } = await supabase.from("app_settings").update({ value }).eq("key", key);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("সেটিংস সংরক্ষিত");
+      void qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      void qc.invalidateQueries({ queryKey: catalogQueryKey });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>;
+
+  return (
+    <div className="space-y-2">
+      {(data ?? []).map((s) => (
+        <div key={s.key} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
+          <p className="min-w-0 flex-1 text-xs font-semibold">
+            {s.label || s.key}
+            <span className="block text-[10px] font-normal text-muted-foreground">{s.key}</span>
+          </p>
+          {s.value === "true" || s.value === "false" ? (
+            <button
+              onClick={() => save.mutate({ key: s.key, value: s.value === "true" ? "false" : "true" })}
+              className={`rounded-lg border px-3 py-1.5 text-[10px] font-semibold ${
+                s.value === "true" ? "border-primary text-primary" : "border-border text-muted-foreground"
+              }`}
+            >
+              {s.value === "true" ? "চালু" : "বন্ধ"}
+            </button>
+          ) : (
+            <>
+              <input
+                value={draft[s.key] ?? s.value}
+                onChange={(e) => setDraft({ ...draft, [s.key]: e.target.value })}
+                className="w-44 rounded-lg border border-border bg-background px-2 py-1.5 text-xs outline-none"
+              />
+              <button
+                onClick={() => save.mutate({ key: s.key, value: draft[s.key] ?? s.value })}
+                className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground"
+              >
+                সেভ
+              </button>
+            </>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

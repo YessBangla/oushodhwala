@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { labTests, labGroups, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/lab-test")({
@@ -15,8 +16,17 @@ export const Route = createFileRoute("/lab-test")({
   component: LabTest,
 });
 
+const GROUPS = [
+  { id: "all", bn: "সব টেস্ট" },
+  { id: "vital", bn: "ভাইটাল অর্গান" },
+  { id: "life_style", bn: "লাইফস্টাইল" },
+  { id: "checkup_women", bn: "নারীদের চেকআপ" },
+  { id: "checkup_men", bn: "পুরুষদের চেকআপ" },
+];
+
 function LabTest() {
   const { add, cart } = useStore();
+  const { labTests } = useCatalog();
   const [group, setGroup] = useState("all");
   const [q, setQ] = useState("");
   const [booking, setBooking] = useState({ name: "", phone: "", date: "", address: "" });
@@ -39,7 +49,7 @@ function LabTest() {
       />
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-        {labGroups.map((g) => (
+        {GROUPS.map((g) => (
           <button
             key={g.id}
             onClick={() => setGroup(g.id)}
@@ -52,6 +62,8 @@ function LabTest() {
         ))}
       </div>
 
+      {list.length === 0 && <p className="mt-4 text-xs text-muted-foreground">কোনো টেস্ট পাওয়া যায়নি।</p>}
+
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((t) => {
           const inCart = cart.some((l) => l.id === t.id);
@@ -61,7 +73,7 @@ function LabTest() {
               <p className="text-[10px] text-muted-foreground">{t.en} · {t.prep}</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm font-bold text-primary-dark">৳{bn(t.price)}</span>
-                <span className="text-[10px] text-muted-foreground line-through">৳{bn(t.mrp)}</span>
+                {t.mrp > t.price && <span className="text-[10px] text-muted-foreground line-through">৳{bn(t.mrp)}</span>}
                 <button
                   disabled={inCart}
                   onClick={() => add({ id: t.id, kind: "lab", name: t.bn, price: t.price })}

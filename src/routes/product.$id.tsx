@@ -49,7 +49,20 @@ export const Route = createFileRoute("/product/$id")({
 function ProductPage() {
   const { products } = useCatalog();
   const { product: base } = Route.useLoaderData();
-  const p = products.find((x) => x.id === base.id) ?? { ...base, stock: 50, lowStock: 10 };
+  const p = products.find((x) => x.id === base.id) ?? {
+    ...base,
+    stock: 50,
+    lowStock: 10,
+    image: "",
+    descEn: "",
+    indications: "",
+    indicationsEn: "",
+    dosage: "",
+    dosageEn: "",
+    sideEffects: "",
+    sideEffectsEn: "",
+    manufacturer: "",
+  };
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
   const line = cart.find((l) => l.id === p.id);
@@ -59,14 +72,19 @@ function ProductPage() {
   return (
     <div className="pt-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="relative grid h-56 place-items-center rounded-xl bg-secondary text-7xl">
-          {p.emoji}
+        <div className="relative grid h-56 place-items-center overflow-hidden rounded-xl bg-secondary text-7xl">
+          {p.image ? (
+            <img src={p.image} alt={p.name} className="h-full w-full object-contain p-3" />
+          ) : (
+            p.emoji
+          )}
           {off > 0 && (
             <span className="absolute left-3 top-3 rounded bg-sale px-2 py-0.5 text-[11px] font-bold text-sale-foreground">
               {bn(off)}% OFF
             </span>
           )}
         </div>
+
 
         <div>
           <h1 className="text-lg font-bold leading-snug">{p.name}</h1>
@@ -161,8 +179,31 @@ function ProductPage() {
 
       <section className="pt-6">
         <h2 className="mb-2 text-sm font-bold">পণ্যের বিবরণ</h2>
-        <p className="rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">{p.desc}</p>
+        <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed">
+          <p className="text-muted-foreground">{p.desc}</p>
+          {p.descEn && <p className="text-muted-foreground">{p.descEn}</p>}
+          {p.manufacturer && (
+            <p><span className="font-semibold">প্রস্তুতকারক / Manufacturer:</span> <span className="text-muted-foreground">{p.manufacturer}</span></p>
+          )}
+        </div>
       </section>
+
+      {[
+        { t: "নির্দেশনা / Indications", bnv: p.indications, env: p.indicationsEn },
+        { t: "মাত্রা ও সেবনবিধি / Dosage", bnv: p.dosage, env: p.dosageEn },
+        { t: "পার্শ্বপ্রতিক্রিয়া / Side Effects", bnv: p.sideEffects, env: p.sideEffectsEn },
+      ]
+        .filter((s) => s.bnv || s.env)
+        .map((s) => (
+          <section key={s.t} className="pt-6">
+            <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
+            <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+              {s.bnv && <p>{s.bnv}</p>}
+              {s.env && <p>{s.env}</p>}
+            </div>
+          </section>
+        ))}
+
 
       <section className="pt-6">
         <h2 className="mb-2 text-sm font-bold">সম্পর্কিত পণ্য</h2>

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { useCatalog } from "@/lib/catalog-db";
+import { useCatalog, deliveryChargeFor } from "@/lib/catalog-db";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/cart")({
 
 function CartPage() {
   const { cart, setQty, remove, subtotal, discount, clear, couponCode, setCouponCode } = useStore();
-  const { offers, products } = useCatalog();
+  const { offers, products, settings } = useCatalog();
   const stockOf = (id: string, kind: string) =>
     kind === "lab" ? null : (products.find((p) => p.id === id)?.stock ?? null);
 
@@ -31,8 +31,9 @@ function CartPage() {
   const couponCut = applied
     ? Math.min(Math.round((subtotal * applied.discountPct) / 100), applied.maxDiscount || Infinity)
     : 0;
-  const delivery = subtotal - couponCut >= 500 || subtotal === 0 ? 0 : 60;
+  const delivery = deliveryChargeFor(subtotal - couponCut, settings);
   const total = Math.max(0, subtotal - couponCut + delivery);
+
 
   if (cart.length === 0) {
     return (
@@ -133,7 +134,7 @@ function CartPage() {
           >
             চেকআউট করুন
           </Link>
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">৳৫০০+ অর্ডারে ফ্রি ডেলিভারি</p>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">৳{bn(settings.freeDeliveryMin)}+ অর্ডারে ফ্রি ডেলিভারি</p>
         </aside>
       </div>
     </div>
