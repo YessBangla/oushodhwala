@@ -1,14 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart, Star, Truck, ShieldCheck, Minus, Plus, RotateCcw } from "lucide-react";
-import { bn } from "@/data/catalog";
+import { products as staticProducts, bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore, toLine } from "@/lib/store";
 
 export const Route = createFileRoute("/product/$id")({
   loader: ({ params }) => {
-    const product = products.find((p) => p.id === params.id);
+    const product = staticProducts.find((p) => p.id === params.id);
     if (!product) throw notFound();
     return { product };
   },
@@ -48,7 +48,8 @@ export const Route = createFileRoute("/product/$id")({
 
 function ProductPage() {
   const { products } = useCatalog();
-  const { product: p } = Route.useLoaderData();
+  const { product: base } = Route.useLoaderData();
+  const p = products.find((x) => x.id === base.id) ?? { ...base, stock: 50, lowStock: 10 };
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
   const line = cart.find((l) => l.id === p.id);
