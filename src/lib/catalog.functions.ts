@@ -64,7 +64,18 @@ export const getProductById = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row } = await supabase.from("products").select("*").eq("id", data.id).maybeSingle();
     if (!row) return null;
-    const { data: related } = await supabase
-      .from("products").select("*").eq("active", true).eq("category", row.category).neq("id", row.id).limit(4);
-    return { row, related: related ?? [] };
+    const [{ data: related }, { data: variants }] = await Promise.all([
+      supabase.from("products").select("*").eq("active", true).eq("category", row.category).neq("id", row.id).limit(4),
+      row.base_name
+        ? supabase
+            .from("products")
+            .select("id, name, en, strength, form, pack, price, mrp, stock, emoji, image_url")
+            .eq("active", true)
+            .eq("base_name", row.base_name)
+            .eq("brand", row.brand)
+            .order("form")
+            .limit(30)
+        : Promise.resolve({ data: [] as never[] }),
+    ]);
+    return { row, related: related ?? [], variants: variants ?? [] };
   });

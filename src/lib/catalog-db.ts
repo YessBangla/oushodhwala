@@ -20,6 +20,18 @@ export type ShopProduct = Product & {
   sideEffects: string;
   sideEffectsEn: string;
   manufacturer: string;
+  strength: string;
+  baseName: string;
+  contraindications: string;
+  contraindicationsEn: string;
+  pregnancy: string;
+  pregnancyEn: string;
+  precautions: string;
+  precautionsEn: string;
+  therapeuticClass: string;
+  therapeuticClassEn: string;
+  storage: string;
+  storageEn: string;
 };
 
 export type ShopOffer = {
@@ -99,6 +111,18 @@ const fallback: Catalog = {
     sideEffects: "",
     sideEffectsEn: "",
     manufacturer: "",
+    strength: "",
+    baseName: "",
+    contraindications: "",
+    contraindicationsEn: "",
+    pregnancy: "",
+    pregnancyEn: "",
+    precautions: "",
+    precautionsEn: "",
+    therapeuticClass: "",
+    therapeuticClassEn: "",
+    storage: "",
+    storageEn: "",
   })),
   categories: staticCategories,
   offers: [],
@@ -138,6 +162,18 @@ export function mapProduct(r: ProductRow): ShopProduct {
     sideEffects: r.side_effects ?? "",
     sideEffectsEn: r.side_effects_en ?? "",
     manufacturer: r.manufacturer ?? "",
+    strength: (r as { strength?: string }).strength ?? "",
+    baseName: (r as { base_name?: string }).base_name ?? "",
+    contraindications: (r as { contraindications?: string }).contraindications ?? "",
+    contraindicationsEn: (r as { contraindications_en?: string }).contraindications_en ?? "",
+    pregnancy: (r as { pregnancy?: string }).pregnancy ?? "",
+    pregnancyEn: (r as { pregnancy_en?: string }).pregnancy_en ?? "",
+    precautions: (r as { precautions?: string }).precautions ?? "",
+    precautionsEn: (r as { precautions_en?: string }).precautions_en ?? "",
+    therapeuticClass: (r as { therapeutic_class?: string }).therapeutic_class ?? "",
+    therapeuticClassEn: (r as { therapeutic_class_en?: string }).therapeutic_class_en ?? "",
+    storage: (r as { storage?: string }).storage ?? "",
+    storageEn: (r as { storage_en?: string }).storage_en ?? "",
   };
 }
 
