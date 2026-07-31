@@ -17,8 +17,10 @@ export const Route = createFileRoute("/product/$id")({
       product: mapProduct(res.row),
       related: res.related.map(mapProduct),
       variants: res.variants ?? [],
+      generic: res.generic ?? null,
     };
   },
+
   head: ({ loaderData }) => {
     if (!loaderData) {
       return { meta: [{ title: "পণ্য পাওয়া যায়নি — ঔষধওয়ালা" }, { name: "robots", content: "noindex" }] };
