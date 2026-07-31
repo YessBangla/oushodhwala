@@ -110,6 +110,105 @@ export type Database = {
         }
         Relationships: []
       }
+      generic_info: {
+        Row: {
+          contraindications: string
+          contraindications_en: string
+          created_at: string
+          dosage: string
+          dosage_en: string
+          id: string
+          indications: string
+          indications_en: string
+          interaction: string
+          interaction_en: string
+          key: string
+          name: string
+          overdose: string
+          overdose_en: string
+          pharmacology: string
+          pharmacology_en: string
+          precautions: string
+          precautions_en: string
+          pregnancy: string
+          pregnancy_en: string
+          side_effects: string
+          side_effects_en: string
+          slug: string
+          special_populations: string
+          special_populations_en: string
+          storage: string
+          storage_en: string
+          therapeutic_class: string
+          therapeutic_class_en: string
+          updated_at: string
+        }
+        Insert: {
+          contraindications?: string
+          contraindications_en?: string
+          created_at?: string
+          dosage?: string
+          dosage_en?: string
+          id?: string
+          indications?: string
+          indications_en?: string
+          interaction?: string
+          interaction_en?: string
+          key: string
+          name?: string
+          overdose?: string
+          overdose_en?: string
+          pharmacology?: string
+          pharmacology_en?: string
+          precautions?: string
+          precautions_en?: string
+          pregnancy?: string
+          pregnancy_en?: string
+          side_effects?: string
+          side_effects_en?: string
+          slug?: string
+          special_populations?: string
+          special_populations_en?: string
+          storage?: string
+          storage_en?: string
+          therapeutic_class?: string
+          therapeutic_class_en?: string
+          updated_at?: string
+        }
+        Update: {
+          contraindications?: string
+          contraindications_en?: string
+          created_at?: string
+          dosage?: string
+          dosage_en?: string
+          id?: string
+          indications?: string
+          indications_en?: string
+          interaction?: string
+          interaction_en?: string
+          key?: string
+          name?: string
+          overdose?: string
+          overdose_en?: string
+          pharmacology?: string
+          pharmacology_en?: string
+          precautions?: string
+          precautions_en?: string
+          pregnancy?: string
+          pregnancy_en?: string
+          side_effects?: string
+          side_effects_en?: string
+          slug?: string
+          special_populations?: string
+          special_populations_en?: string
+          storage?: string
+          storage_en?: string
+          therapeutic_class?: string
+          therapeutic_class_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       image_import_failures: {
         Row: {
           attempts: number
