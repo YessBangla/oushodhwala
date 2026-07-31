@@ -251,8 +251,13 @@ function ProductPage() {
 
       {[
         { t: "নির্দেশনা / Indications", bnv: p.indications, env: p.indicationsEn },
-        { t: "মাত্রা ও সেবনবিধি / Dosage", bnv: p.dosage, env: p.dosageEn },
+        { t: "মাত্রা ও সেবনবিধি / Dosage & Administration", bnv: p.dosage, env: p.dosageEn },
+        { t: "প্রতিনির্দেশনা / Contraindications", bnv: p.contraindications, env: p.contraindicationsEn },
         { t: "পার্শ্বপ্রতিক্রিয়া / Side Effects", bnv: p.sideEffects, env: p.sideEffectsEn },
+        { t: "গর্ভাবস্থায় ও স্তন্যদানকালে / Pregnancy & Lactation", bnv: p.pregnancy, env: p.pregnancyEn },
+        { t: "সতর্কতা / Precautions & Warnings", bnv: p.precautions, env: p.precautionsEn },
+        { t: "থেরাপিউটিক ক্লাস / Therapeutic Class", bnv: p.therapeuticClass, env: p.therapeuticClassEn },
+        { t: "সংরক্ষণ / Storage Conditions", bnv: p.storage, env: p.storageEn },
       ]
         .filter((s) => s.bnv || s.env)
         .map((s) => (
