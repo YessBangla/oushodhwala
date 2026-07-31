@@ -132,9 +132,44 @@ function ProductPage() {
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div><dt className="text-muted-foreground">ব্র্যান্ড</dt><dd className="font-semibold">{p.brand}</dd></div>
             <div><dt className="text-muted-foreground">জেনেরিক</dt><dd className="font-semibold">{p.generic}</dd></div>
-            <div><dt className="text-muted-foreground">ধরন</dt><dd className="font-semibold">{p.form}</dd></div>
+            <div><dt className="text-muted-foreground">ধরন / Dosage form</dt><dd className="font-semibold">{p.form}</dd></div>
             <div><dt className="text-muted-foreground">প্যাক সাইজ</dt><dd className="font-semibold">{p.pack}</dd></div>
+            {p.strength && (
+              <div><dt className="text-muted-foreground">মাত্রা / Strength</dt><dd className="font-semibold">{p.strength}</dd></div>
+            )}
+            {(p.therapeuticClass || p.therapeuticClassEn) && (
+              <div>
+                <dt className="text-muted-foreground">থেরাপিউটিক ক্লাস</dt>
+                <dd className="font-semibold">{p.therapeuticClass || p.therapeuticClassEn}</dd>
+              </div>
+            )}
           </dl>
+
+          {variants.length > 1 && (
+            <div className="mt-3">
+              <p className="text-xs font-bold">উপলব্ধ মাত্রা ও ধরন / Available strengths</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {variants.map((v) => {
+                  const active = v.id === p.id;
+                  return (
+                    <Link
+                      key={v.id}
+                      to="/product/$id"
+                      params={{ id: v.id }}
+                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                        active ? "border-primary bg-primary/10 text-primary-dark" : "border-border bg-card"
+                      } ${v.stock <= 0 ? "opacity-60" : ""}`}
+                    >
+                      <span>{v.strength || v.en || v.name}</span>
+                      <span className="ml-1 text-muted-foreground">· {v.form}</span>
+                      <span className="ml-1 text-muted-foreground">৳{bn(Number(v.price))}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
 
           {p.rx && (
             <p className="mt-3 rounded-lg border border-sale/40 bg-sale/10 p-2 text-[11px] font-semibold text-sale">
