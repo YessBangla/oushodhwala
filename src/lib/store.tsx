@@ -39,6 +39,8 @@ type Store = {
   user: { name: string; phone: string } | null;
   login: (name: string, phone: string) => void;
   logout: () => void;
+  couponCode: string | null;
+  setCouponCode: (c: string | null) => void;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -53,6 +55,7 @@ type Persisted = {
   activeAddress: string;
   prescriptions: { id: string; name: string; date: string; status: string }[];
   user: { name: string; phone: string } | null;
+  couponCode: string | null;
 };
 
 const empty: Persisted = {
@@ -65,6 +68,7 @@ const empty: Persisted = {
   activeAddress: "a1",
   prescriptions: [],
   user: null,
+  couponCode: null,
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -152,6 +156,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       user: state.user,
       login: (name, phone) => patch({ user: { name, phone } }),
       logout: () => patch({ user: null }),
+      couponCode: state.couponCode,
+      setCouponCode: (c) => patch({ couponCode: c }),
     };
   }, [state]);
 
