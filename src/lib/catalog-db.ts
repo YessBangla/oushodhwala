@@ -10,6 +10,15 @@ import {
 export type ShopProduct = Product & {
   stock: number;
   lowStock: number;
+  image: string;
+  descEn: string;
+  indications: string;
+  indicationsEn: string;
+  dosage: string;
+  dosageEn: string;
+  sideEffects: string;
+  sideEffectsEn: string;
+  manufacturer: string;
 };
 
 export type ShopOffer = {
@@ -23,16 +32,78 @@ export type ShopOffer = {
   maxDiscount: number;
 };
 
+export type ShopLabTest = {
+  id: string;
+  bn: string;
+  en: string;
+  price: number;
+  mrp: number;
+  group: string;
+  prep: string;
+};
+
+export type ShopDoctor = {
+  id: string;
+  name: string;
+  spec: string;
+  degree: string;
+  exp: string;
+  fee: number;
+  emoji: string;
+  photo: string;
+};
+
+export type ShopSettings = {
+  deliveryFee: number;
+  freeDeliveryMin: number;
+  supportPhone: string;
+  announcement: string;
+  cod: boolean;
+  bkash: boolean;
+  nagad: boolean;
+  card: boolean;
+};
+
 export type Catalog = {
   products: ShopProduct[];
   categories: Category[];
   offers: ShopOffer[];
+  labTests: ShopLabTest[];
+  doctors: ShopDoctor[];
+  settings: ShopSettings;
+};
+
+export const defaultSettings: ShopSettings = {
+  deliveryFee: 60,
+  freeDeliveryMin: 500,
+  supportPhone: "09610-000000",
+  announcement: "",
+  cod: true,
+  bkash: true,
+  nagad: true,
+  card: true,
 };
 
 const fallback: Catalog = {
-  products: staticProducts.map((p) => ({ ...p, stock: 50, lowStock: 10 })),
+  products: staticProducts.map((p) => ({
+    ...p,
+    stock: 50,
+    lowStock: 10,
+    image: "",
+    descEn: "",
+    indications: "",
+    indicationsEn: "",
+    dosage: "",
+    dosageEn: "",
+    sideEffects: "",
+    sideEffectsEn: "",
+    manufacturer: "",
+  })),
   categories: staticCategories,
   offers: [],
+  labTests: [],
+  doctors: [],
+  settings: defaultSettings,
 };
 
 export const catalogQueryKey = ["catalog"] as const;
@@ -42,40 +113,92 @@ export function useCatalog(): Catalog {
     queryKey: catalogQueryKey,
     queryFn: () => getCatalog(),
     staleTime: 30_000,
-    select: (raw): Catalog => ({
-      products: raw.products.map((r) => ({
-        id: r.id,
-        name: r.name,
-        en: r.en,
-        brand: r.brand,
-        generic: r.generic,
-        form: r.form,
-        pack: r.pack,
-        price: Number(r.price),
-        mrp: Number(r.mrp),
-        category: r.category,
-        rx: r.rx,
-        rating: Number(r.rating),
-        reviews: r.reviews,
-        emoji: r.emoji,
-        desc: r.description,
-        stock: r.stock,
-        lowStock: r.low_stock_threshold,
-      })),
-      categories: raw.categories.map((c) => ({ slug: c.slug, bn: c.bn, en: c.en, emoji: c.emoji })),
-      offers: raw.offers.map((o) => ({
-        id: o.id,
-        code: o.code,
-        title: o.title,
-        subtitle: o.subtitle,
-        emoji: o.emoji,
-        discountPct: Number(o.discount_pct),
-        minOrder: Number(o.min_order),
-        maxDiscount: Number(o.max_discount),
-      })),
-    }),
+    select: (raw): Catalog => {
+      const map = new Map((raw.settings ?? []).map((s) => [s.key, s.value]));
+      const num = (k: string, d: number) => {
+        const v = Number(map.get(k));
+        return Number.isFinite(v) ? v : d;
+      };
+      const bool = (k: string) => map.get(k) !== "false";
+      return {
+        products: raw.products.map((r) => ({
+          id: r.id,
+          name: r.name,
+          en: r.en,
+          brand: r.brand,
+          generic: r.generic,
+          form: r.form,
+          pack: r.pack,
+          price: Number(r.price),
+          mrp: Number(r.mrp),
+          category: r.category,
+          rx: r.rx,
+          rating: Number(r.rating),
+          reviews: r.reviews,
+          emoji: r.emoji,
+          desc: r.description,
+          stock: r.stock,
+          lowStock: r.low_stock_threshold,
+          image: r.image_url ?? "",
+          descEn: r.description_en ?? "",
+          indications: r.indications ?? "",
+          indicationsEn: r.indications_en ?? "",
+          dosage: r.dosage ?? "",
+          dosageEn: r.dosage_en ?? "",
+          sideEffects: r.side_effects ?? "",
+          sideEffectsEn: r.side_effects_en ?? "",
+          manufacturer: r.manufacturer ?? "",
+        })),
+        categories: raw.categories.map((c) => ({ slug: c.slug, bn: c.bn, en: c.en, emoji: c.emoji })),
+        offers: raw.offers.map((o) => ({
+          id: o.id,
+          code: o.code,
+          title: o.title,
+          subtitle: o.subtitle,
+          emoji: o.emoji,
+          discountPct: Number(o.discount_pct),
+          minOrder: Number(o.min_order),
+          maxDiscount: Number(o.max_discount),
+        })),
+        labTests: (raw.labTests ?? []).map((t) => ({
+          id: t.id,
+          bn: t.bn,
+          en: t.en,
+          price: Number(t.price),
+          mrp: Number(t.mrp),
+          group: t.grp,
+          prep: t.prep,
+        })),
+        doctors: (raw.doctors ?? []).map((d) => ({
+          id: d.id,
+          name: d.name,
+          spec: d.spec,
+          degree: d.degree,
+          exp: d.exp,
+          fee: Number(d.fee),
+          emoji: d.emoji,
+          photo: d.photo_url ?? "",
+        })),
+        settings: {
+          deliveryFee: num("delivery_fee", 60),
+          freeDeliveryMin: num("free_delivery_min", 500),
+          supportPhone: map.get("support_phone") ?? defaultSettings.supportPhone,
+          announcement: map.get("announcement") ?? "",
+          cod: bool("cod_enabled"),
+          bkash: bool("bkash_enabled"),
+          nagad: bool("nagad_enabled"),
+          card: bool("card_enabled"),
+        },
+      };
+    },
   });
 
   if (!data || data.products.length === 0) return fallback;
   return data;
+}
+
+/** ডেলিভারি চার্জ হিসাব — ব্যাকএন্ড সেটিংস অনুযায়ী */
+export function deliveryChargeFor(payable: number, settings: ShopSettings) {
+  if (payable <= 0) return 0;
+  return payable >= settings.freeDeliveryMin ? 0 : settings.deliveryFee;
 }
