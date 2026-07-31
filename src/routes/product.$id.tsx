@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Heart, Star, Truck, ShieldCheck, Minus, Plus, RotateCcw, BookOpen } from "lucide-react";
 import { MedSections, type MedSection } from "@/components/MedSections";
 import { bn } from "@/data/catalog";
@@ -73,12 +74,20 @@ type Variant = {
 type GenericInfo = Record<string, string | null> | null;
 
 function ProductPage() {
-  const { product: p, related, variants, generic } = Route.useLoaderData() as {
+  const loaded = Route.useLoaderData() as {
     product: ShopProduct;
     related: ShopProduct[];
     variants: Variant[];
     generic: GenericInfo;
   };
+  const fetchProduct = useServerFn(getProductById);
+  const [data, setData] = useState(loaded);
+  const [switching, setSwitching] = useState<string | null>(null);
+  useEffect(() => {
+    setData(loaded);
+  }, [loaded]);
+
+  const { product: p, related, variants, generic } = data;
   const { lang } = useLang();
   const isEn = lang === "en";
   const num = (v: number | string) => (isEn ? String(v) : bn(v as never));
@@ -92,6 +101,28 @@ function ProductPage() {
   const shots = [p.image, p.medicineImage].filter(Boolean) as string[];
   const line = cart.find((l) => l.id === p.id);
   const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+
+  async function selectVariant(id: string) {
+    if (id === p.id || switching) return;
+    setSwitching(id);
+    try {
+      const res = await fetchProduct({ data: { id } });
+      if (res) {
+        setData({
+          product: mapProduct(res.row),
+          related: res.related.map(mapProduct),
+          variants: (res.variants?.length ? res.variants : variants) as Variant[],
+          generic: res.generic ?? null,
+        });
+        setShot(0);
+        setLocalQty(1);
+        if (typeof window !== "undefined") window.history.replaceState(null, "", `/product/${id}`);
+      }
+    } finally {
+      setSwitching(null);
+    }
+  }
+
 
   return (
     <div className={reading ? "mx-auto max-w-2xl pt-4" : "pt-4"}>
