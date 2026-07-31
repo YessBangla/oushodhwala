@@ -133,3 +133,25 @@ export function cleanMedText(input?: string | null): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
+
+const normText = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/** একটি লেখা অন্যটির (কাটা) অংশ কি না — সেকশনগুলোর মধ্যে পুনরাবৃত্তি ধরার জন্য */
+export function isContainedText(short: string, long: string) {
+  const a = normText(short);
+  const b = normText(long);
+  if (a.length < 40 || a.length >= b.length) return false;
+  return b.includes(a);
+}
+
+/** একাধিক সেকশনের মধ্যে হুবহু বা কাটা-পুনরাবৃত্ত লেখা বাদ দেয় */
+export function dedupeSections<T extends { body: string }>(sections: T[]): T[] {
+  return sections.filter((s, i) =>
+    !sections.some(
+      (o, j) =>
+        j !== i &&
+        (isContainedText(s.body, o.body) ||
+          (normText(s.body) === normText(o.body) && j < i)),
+    ),
+  );
+}
