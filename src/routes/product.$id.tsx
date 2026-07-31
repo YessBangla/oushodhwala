@@ -17,8 +17,10 @@ export const Route = createFileRoute("/product/$id")({
       product: mapProduct(res.row),
       related: res.related.map(mapProduct),
       variants: res.variants ?? [],
+      generic: res.generic ?? null,
     };
   },
+
   head: ({ loaderData }) => {
     if (!loaderData) {
       return { meta: [{ title: "পণ্য পাওয়া যায়নি — ঔষধওয়ালা" }, { name: "robots", content: "noindex" }] };
@@ -64,14 +66,19 @@ type Variant = {
   stock: number;
 };
 
+type GenericInfo = Record<string, string | null> | null;
+
 function ProductPage() {
-  const { product: p, related, variants } = Route.useLoaderData() as {
+  const { product: p, related, variants, generic } = Route.useLoaderData() as {
     product: ShopProduct;
     related: ShopProduct[];
     variants: Variant[];
+    generic: GenericInfo;
   };
+  const g = (k: string) => ((generic?.[k] as string) ?? "").trim();
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
+
   const [shot, setShot] = useState(0);
   const shots = [p.image, p.medicineImage].filter(Boolean) as string[];
   const line = cart.find((l) => l.id === p.id);
@@ -250,25 +257,30 @@ function ProductPage() {
       </section>
 
       {[
-        { t: "নির্দেশনা / Indications", bnv: p.indications, env: p.indicationsEn },
-        { t: "মাত্রা ও সেবনবিধি / Dosage & Administration", bnv: p.dosage, env: p.dosageEn },
-        { t: "প্রতিনির্দেশনা / Contraindications", bnv: p.contraindications, env: p.contraindicationsEn },
-        { t: "পার্শ্বপ্রতিক্রিয়া / Side Effects", bnv: p.sideEffects, env: p.sideEffectsEn },
-        { t: "গর্ভাবস্থায় ও স্তন্যদানকালে / Pregnancy & Lactation", bnv: p.pregnancy, env: p.pregnancyEn },
-        { t: "সতর্কতা / Precautions & Warnings", bnv: p.precautions, env: p.precautionsEn },
-        { t: "থেরাপিউটিক ক্লাস / Therapeutic Class", bnv: p.therapeuticClass, env: p.therapeuticClassEn },
-        { t: "সংরক্ষণ / Storage Conditions", bnv: p.storage, env: p.storageEn },
+        { t: "নির্দেশনা / Indications", bnv: p.indications || g("indications"), env: p.indicationsEn || g("indications_en") },
+        { t: "ফার্মাকোলজি / Pharmacology", bnv: g("pharmacology"), env: g("pharmacology_en") },
+        { t: "মাত্রা ও সেবনবিধি / Dosage & Administration", bnv: p.dosage || g("dosage"), env: p.dosageEn || g("dosage_en") },
+        { t: "ঔষধের মিথস্ক্রিয়া / Interaction", bnv: g("interaction"), env: g("interaction_en") },
+        { t: "প্রতিনির্দেশনা / Contraindications", bnv: p.contraindications || g("contraindications"), env: p.contraindicationsEn || g("contraindications_en") },
+        { t: "পার্শ্বপ্রতিক্রিয়া / Side Effects", bnv: p.sideEffects || g("side_effects"), env: p.sideEffectsEn || g("side_effects_en") },
+        { t: "গর্ভাবস্থায় ও স্তন্যদানকালে / Pregnancy & Lactation", bnv: p.pregnancy || g("pregnancy"), env: p.pregnancyEn || g("pregnancy_en") },
+        { t: "সতর্কতা / Precautions & Warnings", bnv: p.precautions || g("precautions"), env: p.precautionsEn || g("precautions_en") },
+        { t: "বিশেষ ক্ষেত্রে ব্যবহার / Use in Special Populations", bnv: g("special_populations"), env: g("special_populations_en") },
+        { t: "মাত্রাধিক্য / Overdose Effects", bnv: g("overdose"), env: g("overdose_en") },
+        { t: "থেরাপিউটিক ক্লাস / Therapeutic Class", bnv: p.therapeuticClass || g("therapeutic_class"), env: p.therapeuticClassEn || g("therapeutic_class_en") },
+        { t: "সংরক্ষণ / Storage Conditions", bnv: p.storage || g("storage"), env: p.storageEn || g("storage_en") },
       ]
         .filter((s) => s.bnv || s.env)
         .map((s) => (
           <section key={s.t} className="pt-6">
             <h2 className="mb-2 text-sm font-bold">{s.t}</h2>
             <div className="space-y-2 rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
-              {s.bnv && <p>{s.bnv}</p>}
-              {s.env && <p>{s.env}</p>}
+              {s.bnv && <p className="whitespace-pre-line">{s.bnv}</p>}
+              {s.env && <p className="whitespace-pre-line">{s.env}</p>}
             </div>
           </section>
         ))}
+
 
 
       <section className="pt-6">
