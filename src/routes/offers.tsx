@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { products, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/offers")({
@@ -20,6 +21,7 @@ const coupons = [
 ];
 
 function Offers() {
+  const { products, offers } = useCatalog();
   const deals = [...products]
     .map((p) => ({ p, off: (p.mrp - p.price) / p.mrp }))
     .sort((a, b) => b.off - a.off)

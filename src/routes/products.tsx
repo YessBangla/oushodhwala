@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { categories, products, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 
 type Search = { q: string; category: string; sort: string };
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
+  const { products, categories } = useCatalog();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [maxPrice, setMaxPrice] = useState(6000);

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { categories, products, bn } from "@/data/catalog";
+import { bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/category/$slug")({
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 function CategoryPage() {
+  const { products } = useCatalog();
   const { cat } = Route.useLoaderData();
   const list = products.filter((p) => p.category === cat.slug);
 

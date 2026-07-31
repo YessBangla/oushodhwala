@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Upload, Truck, BadgePercent, ShieldCheck, Star, Phone, FlaskConical, Stethoscope } from "lucide-react";
 import bannerMedicine from "@/assets/banner-medicine.jpg";
 import bannerPharmacist from "@/assets/banner-pharmacist.jpg";
-import { categories, products, labTests, bn } from "@/data/catalog";
+import { labTests, bn } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionTitle } from "@/components/Layout";
 
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { products, categories } = useCatalog();
   const popular = products.filter((p) => p.category === "medicine").slice(0, 6);
   const deals = [...products].sort((a, b) => (b.mrp - b.price) / b.mrp - (a.mrp - a.price) / a.mrp).slice(0, 6);
 
