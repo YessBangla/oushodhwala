@@ -143,20 +143,23 @@ function ProductPage() {
           </div>
 
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div><dt className="text-muted-foreground">ব্র্যান্ড</dt><dd className="font-semibold">{p.brand}</dd></div>
-            <div><dt className="text-muted-foreground">জেনেরিক</dt><dd className="font-semibold">{p.generic}</dd></div>
-            <div><dt className="text-muted-foreground">ধরন / Dosage form</dt><dd className="font-semibold">{p.form}</dd></div>
-            <div><dt className="text-muted-foreground">প্যাক সাইজ</dt><dd className="font-semibold">{p.pack}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Brand" : "ব্র্যান্ড"}</dt><dd className="font-semibold">{p.brand}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Generic" : "জেনেরিক"}</dt><dd className="font-semibold">{p.generic}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Dosage form" : "ধরন"}</dt><dd className="font-semibold">{p.form}</dd></div>
+            <div><dt className="text-muted-foreground">{isEn ? "Pack size" : "প্যাক সাইজ"}</dt><dd className="font-semibold">{p.pack}</dd></div>
             {p.strength && (
-              <div><dt className="text-muted-foreground">মাত্রা / Strength</dt><dd className="font-semibold">{p.strength}</dd></div>
+              <div><dt className="text-muted-foreground">{isEn ? "Strength" : "মাত্রা"}</dt><dd className="font-semibold">{p.strength}</dd></div>
             )}
-            {(p.therapeuticClass || p.therapeuticClassEn) && (
+            {pick(lang, p.therapeuticClass || g("therapeutic_class"), p.therapeuticClassEn || g("therapeutic_class_en")) && (
               <div>
-                <dt className="text-muted-foreground">থেরাপিউটিক ক্লাস</dt>
-                <dd className="font-semibold">{p.therapeuticClass || p.therapeuticClassEn}</dd>
+                <dt className="text-muted-foreground">{isEn ? "Therapeutic class" : "থেরাপিউটিক ক্লাস"}</dt>
+                <dd className="font-semibold">
+                  {pick(lang, p.therapeuticClass || g("therapeutic_class"), p.therapeuticClassEn || g("therapeutic_class_en"))}
+                </dd>
               </div>
             )}
           </dl>
+
 
           {variants.length > 1 && (
             <div className="mt-3">
