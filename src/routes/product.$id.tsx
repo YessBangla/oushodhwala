@@ -5,6 +5,8 @@ import { bn } from "@/data/catalog";
 import { mapProduct, type ShopProduct } from "@/lib/catalog-db";
 import { getProductById } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductImage } from "@/components/ProductImage";
+
 import { useStore, toLine } from "@/lib/store";
 
 export const Route = createFileRoute("/product/$id")({
@@ -59,12 +61,15 @@ function ProductPage() {
   return (
     <div className="pt-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="relative grid h-56 place-items-center overflow-hidden rounded-xl bg-secondary text-7xl">
-          {shots.length > 0 ? (
-            <img src={shots[Math.min(shot, shots.length - 1)]} alt={p.name} className="h-full w-full object-contain p-3" />
-          ) : (
-            p.emoji
-          )}
+        <div className="relative overflow-hidden rounded-xl border border-border bg-secondary">
+          <ProductImage
+            src={shots[Math.min(shot, Math.max(shots.length - 1, 0))]}
+            alt={`${p.name} — ${shot === 1 ? "ঔষধের ছবি" : "বক্সের ছবি"}`}
+            emoji={p.emoji}
+            ratio="square"
+            eager
+            className="max-h-[22rem]"
+          />
           {off > 0 && (
             <span className="absolute left-3 top-3 rounded bg-sale px-2 py-0.5 text-[11px] font-bold text-sale-foreground">
               {bn(off)}% OFF
@@ -77,14 +82,15 @@ function ProductPage() {
                   key={src}
                   onClick={() => setShot(i)}
                   aria-label={i === 0 ? "বক্সের ছবি" : "ঔষধের ছবি"}
-                  className={`h-11 w-11 overflow-hidden rounded-lg border bg-background ${i === shot ? "border-primary" : "border-border"}`}
+                  className={`h-12 w-12 overflow-hidden rounded-lg border bg-background ${i === shot ? "border-primary" : "border-border"}`}
                 >
-                  <img src={src} alt="" className="h-full w-full object-contain" />
+                  <img src={src} alt="" width={48} height={48} loading="lazy" className="h-full w-full object-contain p-0.5" />
                 </button>
               ))}
             </div>
           )}
         </div>
+
 
 
         <div>

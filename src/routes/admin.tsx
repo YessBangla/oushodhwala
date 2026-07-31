@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { bn } from "@/data/catalog";
 import { catalogQueryKey } from "@/lib/catalog-db";
 import { MediaGallery, MediaPickerModal } from "@/components/MediaGallery";
+import { ImageAudit } from "@/components/ImageAudit";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -33,6 +35,8 @@ const TABS = [
   { id: "doctors", t: "ডাক্তার" },
   { id: "rx", t: "প্রেসক্রিপশন" },
   { id: "gallery", t: "ছবি গ্যালারি" },
+  { id: "imgaudit", t: "ছবি যাচাই" },
+
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
@@ -137,6 +141,8 @@ function Admin() {
         {tab === "doctors" && <Doctors />}
         {tab === "rx" && <Prescriptions />}
         {tab === "gallery" && <MediaGallery />}
+        {tab === "imgaudit" && <ImageAudit />}
+
         {tab === "settings" && <Settings />}
       </div>
     </div>

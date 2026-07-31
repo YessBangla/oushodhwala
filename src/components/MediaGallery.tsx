@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { MEDIA_KINDS, type MediaAsset, type MediaKind, addMediaByUrl, deleteMedia, listMedia, mediaQueryKey, uploadMedia } from "@/lib/media";
+import { ProductImage } from "@/components/ProductImage";
+
 
 type Props = {
   /** when set, clicking an image calls this instead of showing manage actions */
@@ -128,8 +130,10 @@ export function MediaGallery({ onPick, defaultKind = "all", compact }: Props) {
                 className="block w-full bg-muted/40 p-1"
                 title={a.name}
               >
-                <img src={a.url} alt={a.name} loading="lazy" className="h-20 w-full object-contain" />
+                <ProductImage src={a.url} alt={a.name} emoji="🖼️" ratio="square" />
               </button>
+
+
               <div className="px-2 pb-2">
                 <p className="truncate text-[10px] text-muted-foreground">{a.name}</p>
                 <div className="mt-1 flex gap-1">
