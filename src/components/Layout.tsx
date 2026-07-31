@@ -24,6 +24,7 @@ import { bn } from "@/data/catalog";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count, addresses, activeAddress, wishlist } = useStore();
+  const { lang, setLang } = useLang();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
