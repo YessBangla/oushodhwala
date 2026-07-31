@@ -58,14 +58,27 @@ function CartPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold">{l.name}</p>
                 <p className="text-[11px] text-primary-dark font-bold">৳{bn(l.price * l.qty)}</p>
+                {stockOf(l.id, l.kind) !== null && l.qty >= (stockOf(l.id, l.kind) as number) && (
+                  <p className="text-[10px] font-semibold text-sale">
+                    স্টকে আছে মাত্র {bn(stockOf(l.id, l.kind) as number)} টি
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 rounded-lg border border-border px-2 py-1">
                 <button onClick={() => setQty(l.id, l.qty - 1)} aria-label="কমান"><Minus className="h-3.5 w-3.5" /></button>
                 <span className="text-xs font-bold">{bn(l.qty)}</span>
-                <button onClick={() => setQty(l.id, l.qty + 1)} aria-label="বাড়ান"><Plus className="h-3.5 w-3.5" /></button>
+                <button
+                  disabled={stockOf(l.id, l.kind) !== null && l.qty >= (stockOf(l.id, l.kind) as number)}
+                  onClick={() => setQty(l.id, l.qty + 1)}
+                  aria-label="বাড়ান"
+                  className="disabled:opacity-40"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
               <button onClick={() => remove(l.id)} aria-label="মুছুন"><Trash2 className="h-4 w-4 text-muted-foreground" /></button>
             </div>
+
           ))}
           <button onClick={clear} className="text-xs font-semibold text-muted-foreground underline">
             কার্ট খালি করুন
