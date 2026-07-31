@@ -27,18 +27,38 @@ function unbalancedParen(s: string) {
   return n > 0;
 }
 
-/** একই প্যারাগ্রাফ একাধিকবার থাকলে (স্ক্র্যাপ ডুপ্লিকেট) শুধু প্রথমটি রাখে */
+/**
+ * একই প্যারাগ্রাফ একাধিকবার থাকলে (স্ক্র্যাপ ডুপ্লিকেট) শুধু একটি রাখে।
+ * "… Read more" দিয়ে কাটা সংক্ষিপ্ত অংশ পরে পূর্ণরূপে থাকলে সেটিও বাদ যায়।
+ */
 function dedupeParagraphs(paragraphs: string[]) {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const p of paragraphs) {
-    const key = p.toLowerCase().replace(/\s+/g, " ").trim();
-    if (key.length > 40 && seen.has(key)) continue;
-    seen.add(key);
-    out.push(p);
-  }
-  return out;
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+  const keys = paragraphs.map(norm);
+  const kept: string[] = [];
+  const keptKeys: string[] = [];
+
+  paragraphs.forEach((p, i) => {
+    const key = keys[i] ?? "";
+    if (key.length > 40) {
+      // পরে বা আগে কোনো লম্বা প্যারাগ্রাফ এটিকে ধারণ করলে বাদ
+      const swallowed = keys.some((k, j) => j !== i && (k?.length ?? 0) > key.length && k!.startsWith(key));
+      if (swallowed) return;
+      if (keptKeys.some((k) => k === key || k.startsWith(key))) return;
+      // আগে রাখা ছোট (কাটা) অংশ এখনকার বড়টির শুরু হলে সেটিকে সরিয়ে দাও
+      for (let j = keptKeys.length - 1; j >= 0; j--) {
+        if (key.startsWith(keptKeys[j]!) && keptKeys[j]!.length > 40) {
+          kept.splice(j, 1);
+          keptKeys.splice(j, 1);
+        }
+      }
+    }
+    kept.push(p);
+    keptKeys.push(key);
+  });
+
+  return kept;
 }
+
 
 export function cleanMedText(input?: string | null): string {
   if (!input) return "";
