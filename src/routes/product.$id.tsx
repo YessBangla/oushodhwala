@@ -277,7 +277,7 @@ function ProductPage() {
                 ? { t: s.t as string, body: s.body as string }
                 : { t: isEn ? (s as any).enT : (s as any).bnT, body: cleanMedText(pick(lang, (s as any).bnv, (s as any).env)) },
             )
-            .filter((s) => s.body),
+            .filter((s): s is { t: string; body: string } => Boolean(s.body)),
         );
 
         return (
