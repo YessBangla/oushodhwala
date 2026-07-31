@@ -550,7 +550,15 @@ function Products() {
             ["dosage", "মাত্রা ও সেবনবিধি (বাংলা)"],
             ["dosage_en", "Dosage (English)"],
             ["side_effects", "পার্শ্বপ্রতিক্রিয়া (বাংলা)"],
-            ["side_effects_en", "Side effects (English)"],
+              ["side_effects_en", "Side effects (English)"],
+              ["contraindications", "প্রতিনির্দেশনা (বাংলা)"],
+              ["contraindications_en", "Contraindications (English)"],
+              ["pregnancy", "গর্ভাবস্থায় ও স্তন্যদানকালে (বাংলা)"],
+              ["pregnancy_en", "Pregnancy & Lactation (English)"],
+              ["precautions", "সতর্কতা (বাংলা)"],
+              ["precautions_en", "Precautions & Warnings (English)"],
+              ["storage", "সংরক্ষণ (বাংলা)"],
+              ["storage_en", "Storage conditions (English)"],
           ] as const
         ).map(([k, label]) => (
           <textarea
