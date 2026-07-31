@@ -66,14 +66,19 @@ type Variant = {
   stock: number;
 };
 
+type GenericInfo = Record<string, string | null> | null;
+
 function ProductPage() {
-  const { product: p, related, variants } = Route.useLoaderData() as {
+  const { product: p, related, variants, generic } = Route.useLoaderData() as {
     product: ShopProduct;
     related: ShopProduct[];
     variants: Variant[];
+    generic: GenericInfo;
   };
+  const g = (k: string) => ((generic?.[k] as string) ?? "").trim();
   const { add, cart, setQty, wishlist, toggleWish } = useStore();
   const [qty, setLocalQty] = useState(1);
+
   const [shot, setShot] = useState(0);
   const shots = [p.image, p.medicineImage].filter(Boolean) as string[];
   const line = cart.find((l) => l.id === p.id);
