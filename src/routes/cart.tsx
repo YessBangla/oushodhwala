@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { useCatalog } from "@/lib/catalog-db";
+import { useCatalog, deliveryChargeFor } from "@/lib/catalog-db";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -134,7 +134,7 @@ function CartPage() {
           >
             চেকআউট করুন
           </Link>
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">৳৫০০+ অর্ডারে ফ্রি ডেলিভারি</p>
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">৳{bn(settings.freeDeliveryMin)}+ অর্ডারে ফ্রি ডেলিভারি</p>
         </aside>
       </div>
     </div>

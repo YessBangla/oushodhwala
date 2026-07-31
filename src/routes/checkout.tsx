@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
-import { useCatalog, catalogQueryKey } from "@/lib/catalog-db";
+import { useCatalog, catalogQueryKey, deliveryChargeFor } from "@/lib/catalog-db";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,16 +21,17 @@ export const Route = createFileRoute("/checkout")({
   component: Checkout,
 });
 
-const payments = [
-  { id: "cod", t: "ক্যাশ অন ডেলিভারি", d: "পণ্য হাতে পেয়ে টাকা দিন", e: "💵" },
-  { id: "bkash", t: "bKash", d: "মোবাইল ব্যাংকিং", e: "📱" },
-  { id: "nagad", t: "Nagad", d: "মোবাইল ব্যাংকিং", e: "📲" },
-  { id: "card", t: "কার্ড", d: "ক্রেডিট / ডেবিট কার্ড", e: "💳" },
-];
+const ALL_PAYMENTS = [
+  { id: "cod", t: "ক্যাশ অন ডেলিভারি", d: "পণ্য হাতে পেয়ে টাকা দিন", e: "💵", key: "cod" },
+  { id: "bkash", t: "bKash", d: "মোবাইল ব্যাংকিং", e: "📱", key: "bkash" },
+  { id: "nagad", t: "Nagad", d: "মোবাইল ব্যাংকিং", e: "📲", key: "nagad" },
+  { id: "card", t: "কার্ড", d: "ক্রেডিট / ডেবিট কার্ড", e: "💳", key: "card" },
+] as const;
 
 function Checkout() {
   const { cart, subtotal, addresses, activeAddress, setActiveAddress, addAddress, clear, couponCode, setCouponCode } = useStore();
-  const { offers, products } = useCatalog();
+  const { offers, products, settings } = useCatalog();
+
   const { user, profile } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
