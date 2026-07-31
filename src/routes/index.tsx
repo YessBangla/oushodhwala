@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "ঔষধওয়ালা — অনলাইন ফার্মেসি | Oushodhwala" },
       {
         property: "og:description",
-        content: "অরিজিনাল ঔষধ, ছাড়ে হোম ডেলিভারি। প্রেসক্রিপশন আপলোড করে অর্ডার করুন।",
+        content: "ঔষধওয়ালা থেকে অরিজিনাল ঔষধ, স্বাস্থ্য পণ্য ও ল্যাব টেস্ট অর্ডার করুন। ঢাকায় ২ ঘণ্টায় ডেলিভারি, সারাদেশে ২৪-৭২ ঘণ্টায়।",
       },
       { property: "og:url", content: "/" },
     ],

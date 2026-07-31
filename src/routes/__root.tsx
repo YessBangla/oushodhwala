@@ -77,11 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ঔষধওয়ালা | Oushodhwala" },
-      { name: "description", content: "অনলাইনে ঔষধ অর্ডার করুন — দ্রুত ডেলিভারি।" },
+      { title: "ঔষধওয়ালা — অনলাইন ফার্মেসি | Oushodhwala" },
+      { name: "description", content: "ঔষধওয়ালা থেকে অরিজিনাল ঔষধ, স্বাস্থ্য পণ্য ও ল্যাব টেস্ট অর্ডার করুন। ঢাকায় ২ ঘণ্টায় ডেলিভারি, সারাদেশে ২৪-৭২ ঘণ্টায়।" },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Oushodhwala" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "ঔষধওয়ালা — অনলাইন ফার্মেসি | Oushodhwala" },
+      { name: "twitter:title", content: "ঔষধওয়ালা — অনলাইন ফার্মেসি | Oushodhwala" },
+      { property: "og:description", content: "ঔষধওয়ালা থেকে অরিজিনাল ঔষধ, স্বাস্থ্য পণ্য ও ল্যাব টেস্ট অর্ডার করুন। ঢাকায় ২ ঘণ্টায় ডেলিভারি, সারাদেশে ২৪-৭২ ঘণ্টায়।" },
+      { name: "twitter:description", content: "ঔষধওয়ালা থেকে অরিজিনাল ঔষধ, স্বাস্থ্য পণ্য ও ল্যাব টেস্ট অর্ডার করুন। ঢাকায় ২ ঘণ্টায় ডেলিভারি, সারাদেশে ২৪-৭২ ঘণ্টায়।" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6106a559-2ec5-4a76-8d12-e16063754a2d/id-preview-20eaf5a5--4c282ff2-061d-4bef-824e-7eb6c51ba36f.lovable.app-1785485832818.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6106a559-2ec5-4a76-8d12-e16063754a2d/id-preview-20eaf5a5--4c282ff2-061d-4bef-824e-7eb6c51ba36f.lovable.app-1785485832818.png" },
     ],
     links: [
       {
