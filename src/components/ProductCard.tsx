@@ -1,0 +1,67 @@
+import { Link } from "@tanstack/react-router";
+import { Heart, Plus, Minus } from "lucide-react";
+import { bn, type Product } from "@/data/catalog";
+import { useStore, toLine } from "@/lib/store";
+
+export function ProductCard({ p }: { p: Product }) {
+  const { cart, add, setQty, wishlist, toggleWish } = useStore();
+  const line = cart.find((l) => l.id === p.id);
+  const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+
+  return (
+    <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
+      <Link to="/product/$id" params={{ id: p.id }} className="relative grid h-24 place-items-center bg-secondary text-3xl">
+        {p.emoji}
+        {off > 0 && (
+          <span className="absolute left-2 top-2 rounded bg-sale px-1.5 py-0.5 text-[10px] font-bold text-sale-foreground">
+            {bn(off)}% OFF
+          </span>
+        )}
+        {p.rx && (
+          <span className="absolute right-2 top-2 rounded bg-primary-dark px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+            Rx
+          </span>
+        )}
+      </Link>
+      <div className="flex flex-1 flex-col p-2.5">
+        <div className="flex items-start gap-1">
+          <Link to="/product/$id" params={{ id: p.id }} className="line-clamp-2 text-xs font-semibold leading-snug">
+            {p.name}
+          </Link>
+          <button onClick={() => toggleWish(p.id)} aria-label="উইশলিস্ট" className="ml-auto shrink-0">
+            <Heart
+              className={`h-3.5 w-3.5 ${wishlist.includes(p.id) ? "fill-current text-sale" : "text-muted-foreground"}`}
+            />
+          </button>
+        </div>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">
+          {p.form} · {p.pack}
+        </p>
+        <div className="mt-1.5 flex items-baseline gap-1.5">
+          <span className="text-sm font-bold text-primary-dark">৳{bn(p.price)}</span>
+          {p.mrp > p.price && (
+            <span className="text-[10px] text-muted-foreground line-through">৳{bn(p.mrp)}</span>
+          )}
+        </div>
+        {line ? (
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+            <button onClick={() => setQty(p.id, line.qty - 1)} aria-label="কমান">
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <span className="text-[11px] font-bold">{bn(line.qty)}</span>
+            <button onClick={() => setQty(p.id, line.qty + 1)} aria-label="বাড়ান">
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => add(toLine(p))}
+            className="mt-2 rounded-lg bg-primary py-1.5 text-[11px] font-semibold text-primary-foreground"
+          >
+            কার্টে যোগ করুন
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
