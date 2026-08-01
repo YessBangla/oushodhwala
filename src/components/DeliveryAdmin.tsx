@@ -416,3 +416,16 @@ function Riders({ riders }: { riders: Rider[] }) {
     </div>
   );
 }
+
+/** শুধু ডেলিভারিম্যান ম্যানেজমেন্ট (অ্যাডমিন সাইডবারে আলাদা ট্যাব) */
+export function RidersAdmin() {
+  const { data: riders = [] } = useQuery({
+    queryKey: ["admin-riders"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("riders").select("*").order("created_at");
+      if (error) throw error;
+      return data as Rider[];
+    },
+  });
+  return <Riders riders={riders} />;
+}
