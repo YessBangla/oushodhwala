@@ -1769,6 +1769,109 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          batch_no: string
+          cost: number
+          expiry: string | null
+          id: string
+          po_id: string
+          product_id: string
+          product_name: string
+          qty: number
+          received_qty: number
+        }
+        Insert: {
+          batch_no?: string
+          cost?: number
+          expiry?: string | null
+          id?: string
+          po_id: string
+          product_id: string
+          product_name?: string
+          qty?: number
+          received_qty?: number
+        }
+        Update: {
+          batch_no?: string
+          cost?: number
+          expiry?: string | null
+          id?: string
+          po_id?: string
+          product_id?: string
+          product_name?: string
+          qty?: number
+          received_qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          discount: number
+          expected_at: string | null
+          id: string
+          note: string
+          po_no: string
+          received_at: string | null
+          status: string
+          subtotal: number
+          supplier_id: string
+          supplier_name: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          expected_at?: string | null
+          id?: string
+          note?: string
+          po_no: string
+          received_at?: string | null
+          status?: string
+          subtotal?: number
+          supplier_id: string
+          supplier_name?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          expected_at?: string | null
+          id?: string
+          note?: string
+          po_no?: string
+          received_at?: string | null
+          status?: string
+          subtotal?: number
+          supplier_id?: string
+          supplier_name?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refill_reminders: {
         Row: {
           active: boolean
@@ -1934,6 +2037,141 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_batches: {
+        Row: {
+          batch_no: string
+          cost: number
+          created_at: string
+          expiry: string | null
+          id: string
+          po_id: string | null
+          product_id: string
+          product_name: string
+          qty: number
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_no?: string
+          cost?: number
+          created_at?: string
+          expiry?: string | null
+          id?: string
+          po_id?: string | null
+          product_id: string
+          product_name?: string
+          qty?: number
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_no?: string
+          cost?: number
+          created_at?: string
+          expiry?: string | null
+          id?: string
+          po_id?: string | null
+          product_id?: string
+          product_name?: string
+          qty?: number
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_batches_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_batches_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          actor: string | null
+          balance: number
+          change: number
+          created_at: string
+          id: string
+          kind: string
+          note: string
+          product_id: string
+          product_name: string
+          ref: string
+        }
+        Insert: {
+          actor?: string | null
+          balance?: number
+          change: number
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          product_id: string
+          product_name?: string
+          ref?: string
+        }
+        Update: {
+          actor?: string | null
+          balance?: number
+          change?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          product_id?: string
+          product_name?: string
+          ref?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          active: boolean
+          address: string
+          contact_person: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          payment_terms: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string
+          contact_person?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name: string
+          payment_terms?: string
+          phone?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string
+          contact_person?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          payment_terms?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1975,6 +2213,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_adjust_stock: {
+        Args: { _change: number; _product_id: string; _reason: string }
+        Returns: number
+      }
       admin_assign_delivery: {
         Args: { _eta?: number; _order_id: string; _rider_id: string }
         Returns: {
@@ -2007,7 +2249,50 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_create_purchase_order: {
+        Args: {
+          _discount: number
+          _expected: string
+          _items: Json
+          _note: string
+          _supplier_id: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          discount: number
+          expected_at: string | null
+          id: string
+          note: string
+          po_no: string
+          received_at: string | null
+          status: string
+          subtotal: number
+          supplier_id: string
+          supplier_name: string
+          total: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_exists: { Args: never; Returns: boolean }
+      admin_expiring_batches: {
+        Args: { _days: number }
+        Returns: {
+          batch_no: string
+          days_left: number
+          expiry: string
+          id: string
+          product_id: string
+          product_name: string
+          qty: number
+        }[]
+      }
       admin_list_customers: {
         Args: { _limit?: number; _q?: string }
         Returns: {
@@ -2032,6 +2317,31 @@ export type Database = {
           tier: string
           user_id: string
         }[]
+      }
+      admin_receive_purchase_order: {
+        Args: { _po_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          discount: number
+          expected_at: string | null
+          id: string
+          note: string
+          po_no: string
+          received_at: string | null
+          status: string
+          subtotal: number
+          supplier_id: string
+          supplier_name: string
+          total: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       admin_set_diagnostic_status: {
         Args: {
