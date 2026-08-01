@@ -181,28 +181,42 @@ function Checkout() {
               ))}
             </div>
             {showForm ? (
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {(["label", "area", "details", "phone"] as const).map((k) => (
+              <div className="mt-3 space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <input
-                    key={k}
-                    value={form[k]}
-                    onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                    placeholder={{
-                      label: t("লেবেল (বাসা/অফিস)", "Label (Home/Office)"),
-                      area: t("এলাকা, শহর", "Area, city"),
-                      details: t("রোড, বাড়ি, ফ্ল্যাট", "Road, house, flat"),
-                      phone: t("মোবাইল নম্বর", "Mobile number"),
-                    }[k]}
+                    value={form.label}
+                    onChange={(e) => setForm({ ...form, label: e.target.value })}
+                    placeholder={t("লেবেল (বাসা/অফিস)", "Label (Home/Office)")}
                     className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
                   />
-                ))}
+                  <input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder={t("মোবাইল নম্বর", "Mobile number")}
+                    className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+                  />
+                </div>
+                <AddressPicker value={picked} onChange={setPicked} />
                 <button
                   onClick={() => {
-                    if (form.area && form.phone) {
-                      addAddress({ ...form, label: form.label || t("নতুন", "New") });
-                      setForm({ label: "", area: "", details: "", phone: "" });
-                      setShowForm(false);
+                    if (!picked.district || !picked.thana || !picked.details.trim() || !form.phone.trim()) {
+                      toast.error(t("জেলা, থানা, বিস্তারিত ঠিকানা ও মোবাইল নম্বর দিন", "Please provide district, thana, full address and mobile number"));
+                      return;
                     }
+                    addAddress({
+                      label: form.label || t("নতুন", "New"),
+                      phone: form.phone,
+                      area: [picked.area, picked.thana, picked.cityZone, picked.district].filter(Boolean).join(", "),
+                      details: picked.details,
+                      district: picked.district,
+                      cityZone: picked.cityZone,
+                      thana: picked.thana,
+                      lat: picked.lat,
+                      lng: picked.lng,
+                    });
+                    setForm({ label: "", area: "", details: "", phone: "" });
+                    setPicked(emptyAddress);
+                    setShowForm(false);
                   }}
                   className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
                 >
