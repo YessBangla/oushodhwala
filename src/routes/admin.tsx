@@ -68,7 +68,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgaudit", "imgrev"]) },
-  { label: "সিস্টেম", items: pickTabs(["settings"]) },
+  { label: "সিস্টেম", items: pickTabs(["customers", "settings"]) },
 ];
 
 
