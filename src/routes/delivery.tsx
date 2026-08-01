@@ -49,8 +49,10 @@ function DeliveryPanel() {
   const t = useT();
   const { user, loading } = useAuth();
   const [otp, setOtp] = useState<Record<string, string>>({});
+  const [pod, setPod] = useState<Record<string, { photo?: File | null; sign?: Blob | null; receiver?: string }>>({});
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+
 
   const { data: rider, isLoading: riderLoading } = useQuery({
     queryKey: ["my-rider", user?.id],
