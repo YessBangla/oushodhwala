@@ -134,24 +134,40 @@ export function AdminShell({
 
       {/* main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4 lg:px-6">
           <button onClick={() => setOpen(true)} className="lg:hidden" aria-label="মেনু">
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+          <div className="hidden min-w-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
             <span>অ্যাডমিন</span>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="truncate font-semibold text-foreground">{title}</span>
           </div>
-          <div className="ml-auto flex items-center gap-3">
-            {email && (
-              <span className="hidden max-w-[180px] truncate text-xs text-muted-foreground sm:block">
-                {email}
+          <div className="relative mx-auto hidden w-full max-w-md md:block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              placeholder="অর্ডার, প্রোডাক্ট, কাস্টমার খুঁজুন…"
+              className="h-9 w-full rounded-full border border-border bg-secondary/60 pl-9 pr-3 text-xs outline-none focus:border-primary focus:bg-card"
+            />
+          </div>
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <button
+              className="relative rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary"
+              aria-label="নোটিফিকেশন"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-sale" />
+            </button>
+            <div className="hidden items-center gap-2 sm:flex">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-xs font-bold uppercase text-primary-foreground">
+                {(email ?? "A").slice(0, 1)}
               </span>
-            )}
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-xs font-bold uppercase text-primary-foreground">
-              {(email ?? "A").slice(0, 1)}
-            </span>
+              {email && (
+                <span className="max-w-[150px] truncate text-xs text-muted-foreground">
+                  {email}
+                </span>
+              )}
+            </div>
             {onSignOut && (
               <button
                 onClick={onSignOut}
@@ -166,10 +182,11 @@ export function AdminShell({
 
         <main className="flex-1 overflow-y-auto bg-background p-4 lg:p-6">
           <div className="mx-auto max-w-7xl">
-            <h1 className="mb-4 text-lg font-bold tracking-tight">{title}</h1>
+            <h1 className="mb-4 text-xl font-black tracking-tight">{title}</h1>
             {children}
           </div>
         </main>
+
       </div>
     </div>
   );
