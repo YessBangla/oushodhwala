@@ -178,29 +178,29 @@ export function SearchBox({ className = "" }: { className?: string }) {
       return;
     }
     if (e.key === "Enter") {
-      if (active >= 0 && rows[active]) {
+      if (active >= 0 && active < total) {
         e.preventDefault();
-        const r = rows[active]!;
-        goProduct(r.id, r.name);
+        openOption(active);
       }
       return; // অন্যথায় ফর্ম সাবমিট → পূর্ণ সার্চ
     }
-    if (!rows.length) return;
+    if (!total) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setOpen(true);
-      setActive((a) => (a + 1) % rows.length);
+      setActive((a) => (a + 1) % total);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setOpen(true);
-      setActive((a) => (a <= 0 ? rows.length - 1 : a - 1));
+      setActive((a) => (a <= 0 ? total - 1 : a - 1));
     } else if (e.key === "Home") {
       e.preventDefault();
       setActive(0);
     } else if (e.key === "End") {
       e.preventDefault();
-      setActive(rows.length - 1);
+      setActive(total - 1);
     }
+
   };
 
 
