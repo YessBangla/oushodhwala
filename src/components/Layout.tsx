@@ -60,7 +60,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
 
   return (
-    <div className="min-h-screen bg-background pb-20 font-sans">
+    <div className="min-h-screen bg-background pb-24 font-sans">
       {/* Utility strip — corporate trust row */}
       <div className="hidden bg-navy text-navy-foreground lg:block">
         <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-2 text-[11px]">
