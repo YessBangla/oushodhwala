@@ -345,16 +345,24 @@ export function ApiHub() {
             onClick={() =>
               downloadCsv(
                 "api-endpoints",
-                ["নাম", "গ্রুপ", "মেথড", "URL", "সর্বশেষ স্ট্যাটাস", "সময়(ms)", "টেস্ট"],
-                rows.map((r) => [
-                  r.name,
-                  r.grp,
-                  r.method,
-                  r.url,
-                  String(r.last_status ?? ""),
-                  String(r.last_ms ?? ""),
-                  fmt(r.last_tested_at),
-                ]),
+                [
+                  { key: "name", label: "নাম" },
+                  { key: "grp", label: "গ্রুপ" },
+                  { key: "method", label: "মেথড" },
+                  { key: "url", label: "URL" },
+                  { key: "status", label: "সর্বশেষ স্ট্যাটাস" },
+                  { key: "ms", label: "সময়(ms)" },
+                  { key: "at", label: "টেস্ট" },
+                ],
+                rows.map((r) => ({
+                  name: r.name,
+                  grp: r.grp,
+                  method: r.method,
+                  url: r.url,
+                  status: r.last_status ?? "",
+                  ms: r.last_ms ?? "",
+                  at: fmt(r.last_tested_at),
+                })),
               )
             }
           >
