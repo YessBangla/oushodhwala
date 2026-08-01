@@ -208,16 +208,41 @@ function Checkout() {
               {["যত দ্রুত সম্ভব", "আজ সন্ধ্যা ৬-৯", "আগামীকাল সকাল ৯-১২"].map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSlot(s)}
+                  onClick={() => { setSlot(s); setExpress(false); }}
                   className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
-                    slot === s ? "border-primary bg-primary text-primary-foreground" : "border-border"
+                    !expressOn && slot === s ? "border-primary bg-primary text-primary-foreground" : "border-border"
                   }`}
                 >
                   {s}
                 </button>
               ))}
             </div>
+
+            {settings.expressEnabled && (
+              <label
+                className={`mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 ${
+                  expressOn ? "border-sale bg-secondary" : "border-border"
+                }`}
+              >
+                <input type="checkbox" checked={express} onChange={(e) => setExpress(e.target.checked)} className="mt-1" />
+                <span className="text-xs">
+                  <span className="block font-bold">🚑 জরুরি ডেলিভারি — {settings.expressEta}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    জীবনরক্ষাকারী ঔষধ ও ইমার্জেন্সি পণ্য অগ্রাধিকার ভিত্তিতে পৌঁছে দেওয়া হবে। অতিরিক্ত চার্জ ৳{bn(settings.expressFee)}।
+                  </span>
+                </span>
+              </label>
+            )}
+
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              জরুরি প্রয়োজনে হটলাইন:{" "}
+              <a href={`tel:${settings.emergencyPhone}`} className="font-semibold text-primary underline">
+                {settings.emergencyPhone}
+              </a>{" "}
+              (২৪/৭)
+            </p>
           </section>
+
 
           <section className="rounded-xl border border-border bg-card p-4">
             <p className="text-sm font-bold">পেমেন্ট মাধ্যম</p>
