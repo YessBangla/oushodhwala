@@ -74,7 +74,7 @@ function HomeDiagnostics() {
   const [date, setDate] = useState(days[0]!.iso);
   const [slot, setSlot] = useState(SLOTS[0]!.id);
   const [form, setForm] = useState({ name: "", phone: "", area: "", address: "", note: "" });
-  const [picked, setPicked] = useState<PickedAddress>(emptyAddress);
+  const [addr, setAddr] = useState<PickedAddress>(emptyAddress);
   const [pay, setPay] = useState("cod");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -265,9 +265,9 @@ function HomeDiagnostics() {
           className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
         />
         <AddressPicker
-          value={picked}
+          value={addr}
           onChange={(v) => {
-            setPicked(v);
+            setAddr(v);
             setForm((prev) => ({
               ...prev,
               address: [v.details, v.area, v.thana, v.cityZone, v.district].filter(Boolean).join(", "),
