@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, MapPin, FileText, Heart, Bell, HelpCircle, FlaskConical, ShieldCheck } from "lucide-react";
+import { LogOut, MapPin, FileText, Heart, Bell, HelpCircle, FlaskConical, ShieldCheck, CalendarDays } from "lucide-react";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,15 @@ function Account() {
     enabled: !!user,
     queryFn: async () => {
       const { count } = await supabase.from("orders").select("id", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
+  const { data: apptCount } = useQuery({
+    queryKey: ["my-appointment-count"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { count } = await supabase.from("appointments").select("id", { count: "exact", head: true });
       return count ?? 0;
     },
   });
