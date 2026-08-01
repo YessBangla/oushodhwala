@@ -22,6 +22,7 @@ import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DoctorConsultationRouteImport } from './routes/doctor-consultation'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as HomeDiagnosticsRouteImport } from './routes/home-diagnostics'
+import { Route as HomeServicesRouteImport } from './routes/home-services'
 import { Route as LabTestRouteImport } from './routes/lab-test'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OffersRouteImport } from './routes/offers'
@@ -100,6 +101,11 @@ const HelpRoute = HelpRouteImport.update({
 const HomeDiagnosticsRoute = HomeDiagnosticsRouteImport.update({
   id: '/home-diagnostics',
   path: '/home-diagnostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeServicesRoute = HomeServicesRouteImport.update({
+  id: '/home-services',
+  path: '/home-services',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabTestRoute = LabTestRouteImport.update({
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
   '/home-diagnostics': typeof HomeDiagnosticsRoute
+  '/home-services': typeof HomeServicesRoute
   '/lab-test': typeof LabTestRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
   '/home-diagnostics': typeof HomeDiagnosticsRoute
+  '/home-services': typeof HomeServicesRoute
   '/lab-test': typeof LabTestRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
   '/home-diagnostics': typeof HomeDiagnosticsRoute
+  '/home-services': typeof HomeServicesRoute
   '/lab-test': typeof LabTestRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/doctor-consultation'
     | '/help'
     | '/home-diagnostics'
+    | '/home-services'
     | '/lab-test'
     | '/notifications'
     | '/offers'
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/doctor-consultation'
     | '/help'
     | '/home-diagnostics'
+    | '/home-services'
     | '/lab-test'
     | '/notifications'
     | '/offers'
@@ -335,6 +346,7 @@ export interface FileRouteTypes {
     | '/doctor-consultation'
     | '/help'
     | '/home-diagnostics'
+    | '/home-services'
     | '/lab-test'
     | '/notifications'
     | '/offers'
@@ -365,6 +377,7 @@ export interface RootRouteChildren {
   DoctorConsultationRoute: typeof DoctorConsultationRoute
   HelpRoute: typeof HelpRoute
   HomeDiagnosticsRoute: typeof HomeDiagnosticsRoute
+  HomeServicesRoute: typeof HomeServicesRoute
   LabTestRoute: typeof LabTestRoute
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       path: '/home-diagnostics'
       fullPath: '/home-diagnostics'
       preLoaderRoute: typeof HomeDiagnosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home-services': {
+      id: '/home-services'
+      path: '/home-services'
+      fullPath: '/home-services'
+      preLoaderRoute: typeof HomeServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab-test': {
@@ -589,6 +609,7 @@ const rootRouteChildren: RootRouteChildren = {
   DoctorConsultationRoute: DoctorConsultationRoute,
   HelpRoute: HelpRoute,
   HomeDiagnosticsRoute: HomeDiagnosticsRoute,
+  HomeServicesRoute: HomeServicesRoute,
   LabTestRoute: LabTestRoute,
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,

@@ -189,7 +189,7 @@ function Index() {
       <section className="pt-8">
         <SectionTitle title={t("ক্যাটাগরি", "Categories")} to="/categories" label={t("সব দেখুন", "See all")} />
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
-          {categories.slice(0, 8).map((c) => (
+          {categories.filter((c) => c.kind !== "service").slice(0, 8).map((c) => (
             <Link
               key={c.slug}
               to="/category/$slug"
@@ -203,6 +203,39 @@ function Index() {
           ))}
         </div>
       </section>
+
+      {/* ── Home services ──────────────────────────── */}
+      <section className="pt-8">
+        <SectionTitle
+          title={t("বাসায় স্বাস্থ্যসেবা", "Care at home")}
+          to="/home-services"
+          label={t("সব দেখুন", "See all")}
+        />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {categories
+            .filter((c) => c.kind === "service")
+            .slice(0, 8)
+            .map((c) => (
+              <Link
+                key={c.slug}
+                to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
+                search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+                className="surface-card flex items-center gap-3 px-3 py-3 transition hover:border-primary"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">
+                  {c.emoji}
+                </span>
+                <span className="min-w-0">
+                  <p className="truncate text-xs font-bold text-navy">{t(c.bn, c.en)}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {t(c.eta ?? "বাসায় সেবা", c.etaEn ?? "At your home")}
+                  </p>
+                </span>
+              </Link>
+            ))}
+        </div>
+      </section>
+
 
       {/* ── Popular ────────────────────────────────── */}
       <section className="pt-8">
