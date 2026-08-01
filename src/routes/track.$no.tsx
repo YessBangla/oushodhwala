@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Truck, Phone, ShieldCheck } from "lucide-react";
+import { Truck, Phone, ShieldCheck, Share2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { DELIVERY_FLOW, DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
+import { resolveFileUrl } from "@/lib/storage";
+
 
 export const Route = createFileRoute("/track/$no")({
   head: () => ({
