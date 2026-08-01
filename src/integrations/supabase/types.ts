@@ -777,6 +777,72 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          changes: Json
+          created_at: string
+          id: string
+          label: string
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          changes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          record_id?: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          changes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      error_logs: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          path: string
+          severity: string
+          source: string
+          stack: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          path?: string
+          severity?: string
+          source?: string
+          stack?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          path?: string
+          severity?: string
+          source?: string
+          stack?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       generic_info: {
         Row: {
           contraindications: string
@@ -2037,6 +2103,36 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_alerts: {
+        Row: {
+          created_at: string
+          detail: string
+          id: string
+          kind: string
+          product_id: string
+          product_name: string
+          ref: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string
+          id?: string
+          kind: string
+          product_id?: string
+          product_name?: string
+          ref: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string
+          id?: string
+          kind?: string
+          product_id?: string
+          product_name?: string
+          ref?: string
+        }
+        Relationships: []
+      }
       stock_batches: {
         Row: {
           batch_no: string
@@ -2505,6 +2601,7 @@ export type Database = {
         Args: { _make_admin: boolean; _user_id: string }
         Returns: boolean
       }
+      admin_system_stats: { Args: never; Returns: Json }
       apply_product_image_map: { Args: never; Returns: number }
       book_appointment: {
         Args: {
@@ -2696,6 +2793,7 @@ export type Database = {
           scheduled_at: string
         }[]
       }
+      has_erp_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2918,6 +3016,7 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      run_stock_alerts: { Args: { _expiry_days?: number }; Returns: number }
       save_order_location: {
         Args: {
           _area?: string
