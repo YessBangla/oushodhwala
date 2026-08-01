@@ -19,6 +19,7 @@ import { DiagnosticsAdmin } from "@/components/DiagnosticsAdmin";
 import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { ServiceRequestsAdmin } from "@/components/ServiceRequestsAdmin";
 import { AccountsAdmin } from "@/components/AccountsAdmin";
+import { SuppliersAdmin, PurchaseOrdersAdmin, BatchesAdmin } from "@/components/ProcurementAdmin";
 import { ReturnsAdmin, ReviewsAdmin } from "@/components/ModerationAdmin";
 import { CampaignsAdmin } from "@/components/CampaignsAdmin";
 import { ReportsAdmin } from "@/components/ReportsAdmin";
