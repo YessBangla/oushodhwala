@@ -155,7 +155,7 @@ function CategoryPage() {
         {pick(lang, cat.eta, cat.etaEn) && <span className="text-muted-foreground">{pick(lang, cat.eta, cat.etaEn)}</span>}
         <Link
           to={cat.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
-          search={cat.serviceRoute === "/home-diagnostics" ? undefined : { s: cat.slug }}
+          search={cat.serviceRoute === "/home-diagnostics" ? {} : { s: cat.slug }}
           className="ml-auto rounded-lg bg-primary px-3 py-1.5 font-bold text-primary-foreground"
         >
           {isService ? t("সেবা বুক করুন", "Book this service") : t("বাসায় সেবা নিন", "Get care at home")}

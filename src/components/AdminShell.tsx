@@ -27,6 +27,7 @@ import {
   UploadCloud,
   Activity,
   Bike,
+  Wallet,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -52,6 +53,7 @@ const ICONS: Record<string, typeof LayoutDashboard> = {
   imgupload: UploadCloud,
   health: Activity,
   customers: Users,
+  accounts: Wallet,
 };
 
 export function AdminShell({

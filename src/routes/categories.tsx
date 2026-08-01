@@ -93,7 +93,7 @@ function CategoriesPage() {
           <Link
             key={c.slug}
             to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
-            search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+            search={c.serviceRoute === "/home-diagnostics" ? {} : { s: c.slug }}
             className="flex gap-3 rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-card)] transition-colors hover:border-primary/40"
           >
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-xl">{c.emoji}</span>
