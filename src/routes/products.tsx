@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { bn } from "@/data/catalog";
 import { useCatalog, mapProduct } from "@/lib/catalog-db";
 import { searchProducts } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
+import { useT } from "@/lib/i18n";
+import { useLang, pick } from "@/lib/lang";
 
 type Search = { q: string; category: string; sort: string };
 
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/products")({
 });
 
 function ProductsPage() {
+  const t = useT();
+  const { lang } = useLang();
   const { categories } = useCatalog();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -64,8 +67,8 @@ function ProductsPage() {
   return (
     <div className="pt-4">
       <h1 className="text-base font-bold">
-        {search.q ? `“${search.q}” এর ফলাফল` : "সব পণ্য"}{" "}
-        <span className="text-xs font-normal text-muted-foreground">({bn(total)} টি)</span>
+        {search.q ? t(`“${search.q}” এর ফলাফল`, `Results for "${search.q}"`) : t("সব পণ্য", "All products")}{" "}
+        <span className="text-xs font-normal text-muted-foreground">({t.n(total)} {t("টি", "")})</span>
       </h1>
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -75,7 +78,7 @@ function ProductsPage() {
             search.category === "all" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
           }`}
         >
-          সব
+          {t("সব", "All")}
         </button>
         {categories.map((c) => (
           <button
@@ -85,28 +88,28 @@ function ProductsPage() {
               search.category === c.slug ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
             }`}
           >
-            {c.emoji} {c.bn}
+            {c.emoji} {pick(lang, c.bn, c.en)}
           </button>
         ))}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
         <label className="flex items-center gap-2 text-xs font-semibold">
-          সাজান:
+          {t("সাজান:", "Sort:")}
           <select
             value={search.sort}
             onChange={(e) => set({ sort: e.target.value })}
             className="rounded-md border border-border bg-background px-2 py-1 text-xs"
           >
-            <option value="popular">জনপ্রিয়</option>
-            <option value="low">দাম: কম থেকে বেশি</option>
-            <option value="high">দাম: বেশি থেকে কম</option>
-            <option value="discount">সর্বোচ্চ ছাড়</option>
-            <option value="rating">রেটিং</option>
+            <option value="popular">{t("জনপ্রিয়", "Popular")}</option>
+            <option value="low">{t("দাম: কম থেকে বেশি", "Price: low to high")}</option>
+            <option value="high">{t("দাম: বেশি থেকে কম", "Price: high to low")}</option>
+            <option value="discount">{t("সর্বোচ্চ ছাড়", "Highest discount")}</option>
+            <option value="rating">{t("রেটিং", "Rating")}</option>
           </select>
         </label>
         <label className="flex items-center gap-2 text-xs font-semibold">
-          সর্বোচ্চ দাম: ৳{bn(maxPrice)}
+          {t("সর্বোচ্চ দাম:", "Max price:")} {t.money(maxPrice)}
           <input
             type="range"
             min={50}
@@ -118,19 +121,19 @@ function ProductsPage() {
         </label>
         <label className="flex items-center gap-2 text-xs font-semibold">
           <input type="checkbox" checked={rxOnly} onChange={(e) => setRxOnly(e.target.checked)} />
-          শুধু প্রেসক্রিপশন ঔষধ
+          {t("শুধু প্রেসক্রিপশন ঔষধ", "Prescription medicines only")}
         </label>
       </div>
 
       {list.length === 0 ? (
         <div className="mt-8 rounded-xl border border-border bg-card p-8 text-center">
-          <p className="text-sm font-semibold">কোনো পণ্য পাওয়া যায়নি</p>
-          <p className="mt-1 text-xs text-muted-foreground">অন্য নাম দিয়ে খুঁজুন অথবা প্রেসক্রিপশন আপলোড করুন।</p>
+          <p className="text-sm font-semibold">{t("কোনো পণ্য পাওয়া যায়নি", "No products found")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("অন্য নাম দিয়ে খুঁজুন অথবা প্রেসক্রিপশন আপলোড করুন।", "Try another name or upload a prescription.")}</p>
           <Link
             to="/prescription"
             className="mt-3 inline-block rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
           >
-            প্রেসক্রিপশন আপলোড
+            {t("প্রেসক্রিপশন আপলোড", "Upload prescription")}
           </Link>
         </div>
       ) : (
@@ -148,17 +151,17 @@ function ProductsPage() {
             onClick={() => setPage((n) => Math.max(0, n - 1))}
             className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold disabled:opacity-40"
           >
-            আগের
+            {t("আগের", "Previous")}
           </button>
           <span className="text-xs text-muted-foreground">
-            পৃষ্ঠা {bn(page + 1)} / {bn(Math.ceil(total / PAGE))}
+            {t("পৃষ্ঠা", "Page")} {t.n(page + 1)} / {t.n(Math.ceil(total / PAGE))}
           </span>
           <button
             disabled={(page + 1) * PAGE >= total || isFetching}
             onClick={() => setPage((n) => n + 1)}
             className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold disabled:opacity-40"
           >
-            পরের
+            {t("পরের", "Next")}
           </button>
         </div>
       )}

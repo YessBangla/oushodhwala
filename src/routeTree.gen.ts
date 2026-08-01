@@ -18,8 +18,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DoctorConsultationRouteImport } from './routes/doctor-consultation'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as HomeDiagnosticsRouteImport } from './routes/home-diagnostics'
 import { Route as LabTestRouteImport } from './routes/lab-test'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OffersRouteImport } from './routes/offers'
@@ -32,6 +34,7 @@ import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as RxIdRouteImport } from './routes/rx.$id'
+import { Route as TrackNoRouteImport } from './routes/track.$no'
 import { Route as ApiPublicImgSplatRouteImport } from './routes/api/public/img/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -79,6 +82,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeliveryRoute = DeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DoctorConsultationRoute = DoctorConsultationRouteImport.update({
   id: '/doctor-consultation',
   path: '/doctor-consultation',
@@ -87,6 +95,11 @@ const DoctorConsultationRoute = DoctorConsultationRouteImport.update({
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeDiagnosticsRoute = HomeDiagnosticsRouteImport.update({
+  id: '/home-diagnostics',
+  path: '/home-diagnostics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabTestRoute = LabTestRouteImport.update({
@@ -149,6 +162,11 @@ const RxIdRoute = RxIdRouteImport.update({
   path: '/rx/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrackNoRoute = TrackNoRouteImport.update({
+  id: '/track/$no',
+  path: '/track/$no',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicImgSplatRoute = ApiPublicImgSplatRouteImport.update({
   id: '/api/public/img/$',
   path: '/api/public/img/$',
@@ -165,8 +183,10 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
+  '/home-diagnostics': typeof HomeDiagnosticsRoute
   '/lab-test': typeof LabTestRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
@@ -179,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
+  '/track/$no': typeof TrackNoRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
 export interface FileRoutesByTo {
@@ -191,8 +212,10 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
+  '/home-diagnostics': typeof HomeDiagnosticsRoute
   '/lab-test': typeof LabTestRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
@@ -205,6 +228,7 @@ export interface FileRoutesByTo {
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
+  '/track/$no': typeof TrackNoRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
 export interface FileRoutesById {
@@ -218,8 +242,10 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
+  '/home-diagnostics': typeof HomeDiagnosticsRoute
   '/lab-test': typeof LabTestRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
@@ -232,6 +258,7 @@ export interface FileRoutesById {
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
+  '/track/$no': typeof TrackNoRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
 export interface FileRouteTypes {
@@ -246,8 +273,10 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/delivery'
     | '/doctor-consultation'
     | '/help'
+    | '/home-diagnostics'
     | '/lab-test'
     | '/notifications'
     | '/offers'
@@ -260,6 +289,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/product/$id'
     | '/rx/$id'
+    | '/track/$no'
     | '/api/public/img/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -272,8 +302,10 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/delivery'
     | '/doctor-consultation'
     | '/help'
+    | '/home-diagnostics'
     | '/lab-test'
     | '/notifications'
     | '/offers'
@@ -286,6 +318,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/product/$id'
     | '/rx/$id'
+    | '/track/$no'
     | '/api/public/img/$'
   id:
     | '__root__'
@@ -298,8 +331,10 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/delivery'
     | '/doctor-consultation'
     | '/help'
+    | '/home-diagnostics'
     | '/lab-test'
     | '/notifications'
     | '/offers'
@@ -312,6 +347,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/product/$id'
     | '/rx/$id'
+    | '/track/$no'
     | '/api/public/img/$'
   fileRoutesById: FileRoutesById
 }
@@ -325,8 +361,10 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
+  DeliveryRoute: typeof DeliveryRoute
   DoctorConsultationRoute: typeof DoctorConsultationRoute
   HelpRoute: typeof HelpRoute
+  HomeDiagnosticsRoute: typeof HomeDiagnosticsRoute
   LabTestRoute: typeof LabTestRoute
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
@@ -339,6 +377,7 @@ export interface RootRouteChildren {
   ConsultationIdRoute: typeof ConsultationIdRoute
   ProductIdRoute: typeof ProductIdRoute
   RxIdRoute: typeof RxIdRoute
+  TrackNoRoute: typeof TrackNoRoute
   ApiPublicImgSplatRoute: typeof ApiPublicImgSplatRoute
 }
 
@@ -407,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/delivery': {
+      id: '/delivery'
+      path: '/delivery'
+      fullPath: '/delivery'
+      preLoaderRoute: typeof DeliveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/doctor-consultation': {
       id: '/doctor-consultation'
       path: '/doctor-consultation'
@@ -419,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/help'
       preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home-diagnostics': {
+      id: '/home-diagnostics'
+      path: '/home-diagnostics'
+      fullPath: '/home-diagnostics'
+      preLoaderRoute: typeof HomeDiagnosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab-test': {
@@ -505,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RxIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/track/$no': {
+      id: '/track/$no'
+      path: '/track/$no'
+      fullPath: '/track/$no'
+      preLoaderRoute: typeof TrackNoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/img/$': {
       id: '/api/public/img/$'
       path: '/api/public/img/$'
@@ -525,8 +585,10 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
+  DeliveryRoute: DeliveryRoute,
   DoctorConsultationRoute: DoctorConsultationRoute,
   HelpRoute: HelpRoute,
+  HomeDiagnosticsRoute: HomeDiagnosticsRoute,
   LabTestRoute: LabTestRoute,
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
@@ -539,6 +601,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsultationIdRoute: ConsultationIdRoute,
   ProductIdRoute: ProductIdRoute,
   RxIdRoute: RxIdRoute,
+  TrackNoRoute: TrackNoRoute,
   ApiPublicImgSplatRoute: ApiPublicImgSplatRoute,
 }
 export const routeTree = rootRouteImport

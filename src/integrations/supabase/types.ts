@@ -330,6 +330,200 @@ export type Database = {
           },
         ]
       }
+      deliveries: {
+        Row: {
+          assigned_at: string | null
+          created_at: string
+          delivered_at: string | null
+          eta_minutes: number
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          note: string
+          order_id: string
+          order_no: string
+          otp: string
+          picked_at: string | null
+          rider_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          eta_minutes?: number
+          id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen_at?: string | null
+          note?: string
+          order_id: string
+          order_no?: string
+          otp?: string
+          picked_at?: string | null
+          rider_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          eta_minutes?: number
+          id?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen_at?: string | null
+          note?: string
+          order_id?: string
+          order_no?: string
+          otp?: string
+          picked_at?: string | null
+          rider_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_events: {
+        Row: {
+          actor: string
+          created_at: string
+          delivery_id: string
+          id: string
+          lat: number | null
+          lng: number | null
+          note: string
+          status: string
+        }
+        Insert: {
+          actor?: string
+          created_at?: string
+          delivery_id: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          note?: string
+          status: string
+        }
+        Update: {
+          actor?: string
+          created_at?: string
+          delivery_id?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          note?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_events_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diagnostic_bookings: {
+        Row: {
+          address: string
+          area: string
+          booking_no: string
+          collection_fee: number
+          collector_name: string
+          collector_phone: string
+          created_at: string
+          discount: number
+          id: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_status: string
+          phone: string
+          report_url: string
+          scheduled_date: string
+          slot: string
+          status: string
+          subtotal: number
+          tests: Json
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          area?: string
+          booking_no: string
+          collection_fee?: number
+          collector_name?: string
+          collector_phone?: string
+          created_at?: string
+          discount?: number
+          id?: string
+          note?: string
+          patient_name?: string
+          payment_method?: string
+          payment_status?: string
+          phone?: string
+          report_url?: string
+          scheduled_date: string
+          slot?: string
+          status?: string
+          subtotal?: number
+          tests?: Json
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          area?: string
+          booking_no?: string
+          collection_fee?: number
+          collector_name?: string
+          collector_phone?: string
+          created_at?: string
+          discount?: number
+          id?: string
+          note?: string
+          patient_name?: string
+          payment_method?: string
+          payment_status?: string
+          phone?: string
+          report_url?: string
+          scheduled_date?: string
+          slot?: string
+          status?: string
+          subtotal?: number
+          tests?: Json
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       doctor_blackouts: {
         Row: {
           created_at: string
@@ -1301,6 +1495,42 @@ export type Database = {
         }
         Relationships: []
       }
+      riders: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+          user_id: string | null
+          vehicle: string
+          zone: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle?: string
+          zone?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle?: string
+          zone?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1324,7 +1554,75 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_assign_delivery: {
+        Args: { _eta?: number; _order_id: string; _rider_id: string }
+        Returns: {
+          assigned_at: string | null
+          created_at: string
+          delivered_at: string | null
+          eta_minutes: number
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          note: string
+          order_id: string
+          order_no: string
+          otp: string
+          picked_at: string | null
+          rider_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_exists: { Args: never; Returns: boolean }
+      admin_set_diagnostic_status: {
+        Args: {
+          _booking_id: string
+          _collector_name?: string
+          _collector_phone?: string
+          _report_url?: string
+          _status: string
+        }
+        Returns: {
+          address: string
+          area: string
+          booking_no: string
+          collection_fee: number
+          collector_name: string
+          collector_phone: string
+          created_at: string
+          discount: number
+          id: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_status: string
+          phone: string
+          report_url: string
+          scheduled_date: string
+          slot: string
+          status: string
+          subtotal: number
+          tests: Json
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "diagnostic_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_set_order_status: {
         Args: { _note?: string; _order_id: string; _status: string }
         Returns: {
@@ -1433,6 +1731,52 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      book_home_diagnostic: {
+        Args: {
+          _address: string
+          _area: string
+          _collection_fee: number
+          _discount: number
+          _note: string
+          _patient_name: string
+          _payment_method: string
+          _phone: string
+          _scheduled_date: string
+          _slot: string
+          _tests: Json
+        }
+        Returns: {
+          address: string
+          area: string
+          booking_no: string
+          collection_fee: number
+          collector_name: string
+          collector_phone: string
+          created_at: string
+          discount: number
+          id: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_status: string
+          phone: string
+          report_url: string
+          scheduled_date: string
+          slot: string
+          status: string
+          subtotal: number
+          tests: Json
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "diagnostic_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_appointment: {
         Args: { _appointment_id: string; _reason?: string }
         Returns: {
@@ -1482,6 +1826,27 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_rider: { Args: { _user_id: string }; Returns: boolean }
+      my_rider: {
+        Args: never
+        Returns: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+          user_id: string | null
+          vehicle: string
+          zone: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "riders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       place_order: {
         Args: {
           _address: string
@@ -1523,6 +1888,41 @@ export type Database = {
       queue_appointment_reminders: {
         Args: { _within_hours?: number }
         Returns: number
+      }
+      rider_update_delivery: {
+        Args: {
+          _delivery_id: string
+          _lat?: number
+          _lng?: number
+          _note?: string
+          _otp?: string
+          _status: string
+        }
+        Returns: {
+          assigned_at: string | null
+          created_at: string
+          delivered_at: string | null
+          eta_minutes: number
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          note: string
+          order_id: string
+          order_no: string
+          otp: string
+          picked_at: string | null
+          rider_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

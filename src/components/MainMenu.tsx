@@ -17,6 +17,7 @@ import {
   Heart,
   FileText,
   User,
+  Home as HomeIcon,
 } from "lucide-react";
 import { useCatalog } from "@/lib/catalog-db";
 import { useLang, pick } from "@/lib/lang";
@@ -30,6 +31,7 @@ function useItems() {
   const items: Item[] = [
     { t: en ? "Store" : "স্টোর", to: "/products", icon: Store, search: { q: "", category: "all", sort: "popular" } },
     { t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test", icon: FlaskConical },
+    { t: en ? "Home Diagnostics" : "বাসায় ডায়াগনস্টিক", to: "/home-diagnostics", icon: HomeIcon },
     { t: en ? "Doctors" : "ডাক্তার", to: "/doctor-consultation", icon: Stethoscope },
     { t: en ? "Prescription" : "প্রেসক্রিপশন", to: "/prescription", icon: Upload },
     { t: en ? "Offers" : "অফার", to: "/offers", icon: Tag },

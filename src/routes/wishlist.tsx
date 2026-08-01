@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({
@@ -17,19 +18,20 @@ export const Route = createFileRoute("/wishlist")({
 });
 
 function Wishlist() {
+  const t = useT();
   const { products } = useCatalog();
   const { wishlist } = useStore();
   const list = products.filter((p) => wishlist.includes(p.id));
 
   return (
     <div className="pt-4">
-      <h1 className="text-base font-bold">উইশলিস্ট</h1>
+      <h1 className="text-base font-bold">{t("উইশলিস্ট", "Wishlist")}</h1>
       {list.length === 0 ? (
         <div className="pt-12 text-center">
           <p className="text-4xl">🤍</p>
-          <p className="mt-2 text-xs text-muted-foreground">উইশলিস্ট খালি — পণ্যের হার্ট আইকনে চাপ দিন।</p>
+          <p className="mt-2 text-xs text-muted-foreground">{t("উইশলিস্ট খালি — পণ্যের হার্ট আইকনে চাপ দিন।", "Your wishlist is empty — tap the heart icon on a product.")}</p>
           <Link to="/products" search={{ q: "", category: "all", sort: "popular" }} className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-            পণ্য দেখুন
+            {t("পণ্য দেখুন", "Browse products")}
           </Link>
         </div>
       ) : (

@@ -76,9 +76,9 @@ export function Consultations() {
         মোবাইল: a.phone,
         মাধ্যম: MODE_LABEL[(a.mode as CallMode) ?? "video"].bn,
         ফি: a.fee,
-        স্ট্যাটাস: STATUS_LABEL[a.status] ?? a.status,
+        স্ট্যাটাস: STATUS_LABEL[a.status]?.bn ?? a.status,
         পেমেন্ট: a.payment_status,
-        রিফান্ড: REFUND_LABEL[a.refund_status] ?? a.refund_status,
+        রিফান্ড: REFUND_LABEL[a.refund_status]?.bn ?? a.refund_status,
         "রিফান্ড টাকা": a.refund_amount,
       })),
     );
@@ -92,7 +92,7 @@ export function Consultations() {
         {STATUSES.map((s) => (
           <button key={s} onClick={() => setStatus(s)}
             className={`rounded-lg border px-3 py-1.5 text-[11px] font-bold ${status === s ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
-            {s === "all" ? "সব" : STATUS_LABEL[s] ?? s}
+            {s === "all" ? "সব" : STATUS_LABEL[s]?.bn ?? s}
           </button>
         ))}
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ইনভয়েস / ডাক্তার / রোগী / মোবাইল"
@@ -110,7 +110,7 @@ export function Consultations() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[11px] font-bold text-navy">#{a.invoice_no}</span>
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${a.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary-dark"}`}>
-                {STATUS_LABEL[a.status] ?? a.status}
+                {STATUS_LABEL[a.status]?.bn ?? a.status}
               </span>
               <span className="text-[11px] text-muted-foreground">{fmtDateTime(a.scheduled_at)}</span>
               <span className="ml-auto font-display text-sm font-extrabold text-primary">৳{bn(Number(a.fee))}</span>
@@ -119,7 +119,7 @@ export function Consultations() {
               <span className="font-semibold">{a.doctor_name}</span> · {a.patient_name} · {a.phone} · {MODE_LABEL[(a.mode as CallMode) ?? "video"].bn}
             </p>
             <p className="mt-0.5 text-[10px] text-muted-foreground">
-              পেমেন্ট: {a.payment_status} · রিফান্ড: {REFUND_LABEL[a.refund_status] ?? a.refund_status}
+              পেমেন্ট: {a.payment_status} · রিফান্ড: {REFUND_LABEL[a.refund_status]?.bn ?? a.refund_status}
               {Number(a.refund_amount) > 0 ? ` (৳${bn(Number(a.refund_amount))})` : ""}
               {a.cancel_reason ? ` · কারণ: ${a.cancel_reason}` : ""}
             </p>

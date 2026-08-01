@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays } from "lucide-react";
 
-import { bn } from "@/data/catalog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { MODE_LABEL, REFUND_LABEL, STATUS_LABEL, fmtDateTime, type CallMode } from "@/lib/appointments";
+import { MODE_LABEL, fmtDateTime, type CallMode } from "@/lib/appointments";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/appointments")({
   head: () => ({
@@ -23,7 +23,23 @@ export const Route = createFileRoute("/appointments")({
   component: Appointments,
 });
 
+const STATUS_T: Record<string, { bn: string; en: string }> = {
+  confirmed: { bn: "নিশ্চিত", en: "Confirmed" },
+  completed: { bn: "সম্পন্ন", en: "Completed" },
+  cancelled: { bn: "বাতিল", en: "Cancelled" },
+};
+
+const REFUND_T: Record<string, { bn: string; en: string }> = {
+  none: { bn: "—", en: "—" },
+  not_applicable: { bn: "প্রযোজ্য নয়", en: "Not applicable" },
+  not_eligible: { bn: "রিফান্ড প্রযোজ্য নয়", en: "Not eligible for refund" },
+  pending: { bn: "রিফান্ড প্রক্রিয়াধীন", en: "Refund pending" },
+  processing: { bn: "রিফান্ড চলছে", en: "Refund processing" },
+  refunded: { bn: "রিফান্ড সম্পন্ন", en: "Refunded" },
+};
+
 function Appointments() {
+  const t = useT();
   const { user } = useAuth();
 
   const { data: list = [], isLoading } = useQuery({
@@ -42,25 +58,25 @@ function Appointments() {
   if (!user) {
     return (
       <div className="pt-16 text-center text-sm">
-        <p className="text-muted-foreground">অ্যাপয়েন্টমেন্ট দেখতে লগইন করুন।</p>
-        <Link to="/auth" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">লগইন</Link>
+        <p className="text-muted-foreground">{t("অ্যাপয়েন্টমেন্ট দেখতে লগইন করুন।", "Log in to view appointments.")}</p>
+        <Link to="/auth" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">{t("লগইন", "Log in")}</Link>
       </div>
     );
   }
 
   return (
     <div className="pt-4">
-      <h1 className="font-display text-lg font-extrabold">আমার অ্যাপয়েন্টমেন্ট</h1>
-      <p className="text-xs text-muted-foreground">কল, চ্যাট, রেকর্ডিং ও ইনভয়েস দেখতে যেকোনো অ্যাপয়েন্টমেন্টে ক্লিক করুন।</p>
+      <h1 className="font-display text-lg font-extrabold">{t("আমার অ্যাপয়েন্টমেন্ট", "My Appointments")}</h1>
+      <p className="text-xs text-muted-foreground">{t("কল, চ্যাট, রেকর্ডিং ও ইনভয়েস দেখতে যেকোনো অ্যাপয়েন্টমেন্টে ক্লিক করুন।", "Click any appointment to view call, chat, recording and invoice.")}</p>
 
-      {isLoading && <p className="mt-6 text-center text-xs text-muted-foreground">লোড হচ্ছে...</p>}
+      {isLoading && <p className="mt-6 text-center text-xs text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>}
 
       {!isLoading && list.length === 0 && (
         <div className="mt-10 text-center">
           <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-2 text-xs text-muted-foreground">এখনো কোনো অ্যাপয়েন্টমেন্ট নেই।</p>
+          <p className="mt-2 text-xs text-muted-foreground">{t("এখনো কোনো অ্যাপয়েন্টমেন্ট নেই।", "No appointments yet.")}</p>
           <Link to="/doctor-consultation" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-            ডাক্তার দেখুন
+            {t("ডাক্তার দেখুন", "See doctors")}
           </Link>
         </div>
       )}
@@ -74,24 +90,24 @@ function Appointments() {
                 <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   a.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary-dark"
                 }`}>
-                  {STATUS_LABEL[a.status] ?? a.status}
+                  {t(STATUS_T[a.status]?.bn ?? a.status, STATUS_T[a.status]?.en ?? a.status)}
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">{a.doctor_spec}</p>
               <p className="mt-1 text-[11px] font-semibold">
-                🗓️ {fmtDateTime(a.scheduled_at)} · {MODE_LABEL[(a.mode as CallMode) ?? "video"].bn}
+                🗓️ {fmtDateTime(a.scheduled_at)} · {t(MODE_LABEL[(a.mode as CallMode) ?? "video"].bn, MODE_LABEL[(a.mode as CallMode) ?? "video"].en)}
               </p>
               <div className="mt-2 flex items-center text-[11px]">
-                <span className="text-muted-foreground">ইনভয়েস #{a.invoice_no}</span>
-                <span className="ml-auto font-display text-sm font-extrabold text-primary">৳{bn(Number(a.fee))}</span>
+                <span className="text-muted-foreground">{t("ইনভয়েস", "Invoice")} #{a.invoice_no}</span>
+                <span className="ml-auto font-display text-sm font-extrabold text-primary">{t.money(Number(a.fee))}</span>
               </div>
               {a.refund_status && a.refund_status !== "none" && (
                 <p className="mt-1 text-[10px] font-semibold text-destructive">
-                  রিফান্ড: {REFUND_LABEL[a.refund_status] ?? a.refund_status}
-                  {Number(a.refund_amount) > 0 ? ` · ৳${bn(Number(a.refund_amount))}` : ""}
+                  {t("রিফান্ড:", "Refund:")} {t(REFUND_T[a.refund_status]?.bn ?? a.refund_status, REFUND_T[a.refund_status]?.en ?? a.refund_status)}
+                  {Number(a.refund_amount) > 0 ? ` · ${t.money(Number(a.refund_amount))}` : ""}
                 </p>
               )}
-              {a.cancel_reason && <p className="mt-0.5 text-[10px] text-muted-foreground">কারণ: {a.cancel_reason}</p>}
+              {a.cancel_reason && <p className="mt-0.5 text-[10px] text-muted-foreground">{t("কারণ:", "Reason:")} {a.cancel_reason}</p>}
             </Link>
           </li>
         ))}

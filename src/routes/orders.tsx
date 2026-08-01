@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/orders")({
   head: () => ({
@@ -20,21 +20,22 @@ export const Route = createFileRoute("/orders")({
 });
 
 const STEPS = [
-  { key: "confirmed", t: "নিশ্চিত হয়েছে" },
-  { key: "processing", t: "প্রস্তুত হচ্ছে" },
-  { key: "shipped", t: "পথে আছে" },
-  { key: "delivered", t: "ডেলিভারি হয়েছে" },
+  { key: "confirmed", bn: "নিশ্চিত হয়েছে", en: "Confirmed" },
+  { key: "processing", bn: "প্রস্তুত হচ্ছে", en: "Processing" },
+  { key: "shipped", bn: "পথে আছে", en: "Shipped" },
+  { key: "delivered", bn: "ডেলিভারি হয়েছে", en: "Delivered" },
 ];
 
-const LABEL: Record<string, string> = {
-  confirmed: "নিশ্চিত হয়েছে",
-  processing: "প্রস্তুত হচ্ছে",
-  shipped: "পথে আছে",
-  delivered: "ডেলিভারি হয়েছে",
-  cancelled: "বাতিল",
+const LABEL: Record<string, { bn: string; en: string }> = {
+  confirmed: { bn: "নিশ্চিত হয়েছে", en: "Confirmed" },
+  processing: { bn: "প্রস্তুত হচ্ছে", en: "Processing" },
+  shipped: { bn: "পথে আছে", en: "Shipped" },
+  delivered: { bn: "ডেলিভারি হয়েছে", en: "Delivered" },
+  cancelled: { bn: "বাতিল", en: "Cancelled" },
 };
 
 function Orders() {
+  const t = useT();
   const { add } = useStore();
   const { user, loading } = useAuth();
 
@@ -52,16 +53,16 @@ function Orders() {
   });
 
   if (loading || (user && isLoading)) {
-    return <p className="pt-16 text-center text-sm text-muted-foreground">লোড হচ্ছে...</p>;
+    return <p className="pt-16 text-center text-sm text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>;
   }
 
   if (!user) {
     return (
       <div className="pt-16 text-center">
         <p className="text-4xl">🧾</p>
-        <h1 className="mt-3 text-base font-bold">অর্ডার দেখতে লগইন করুন</h1>
+        <h1 className="mt-3 text-base font-bold">{t("অর্ডার দেখতে লগইন করুন", "Log in to view orders")}</h1>
         <Link to="/auth" className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-          লগইন করুন
+          {t("লগইন করুন", "Log in")}
         </Link>
       </div>
     );
@@ -73,13 +74,13 @@ function Orders() {
     return (
       <div className="pt-16 text-center">
         <p className="text-4xl">🧾</p>
-        <h1 className="mt-3 text-base font-bold">এখনো কোনো অর্ডার নেই</h1>
+        <h1 className="mt-3 text-base font-bold">{t("এখনো কোনো অর্ডার নেই", "No orders yet")}</h1>
         <Link
           to="/products"
           search={{ q: "", category: "all", sort: "popular" }}
           className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
         >
-          কেনাকাটা শুরু করুন
+          {t("কেনাকাটা শুরু করুন", "Start shopping")}
         </Link>
       </div>
     );
@@ -87,7 +88,7 @@ function Orders() {
 
   return (
     <div className="pt-4">
-      <h1 className="text-base font-bold">আমার অর্ডার</h1>
+      <h1 className="text-base font-bold">{t("আমার অর্ডার", "My Orders")}</h1>
       <div className="mt-3 space-y-3">
         {orders.map((o) => {
           const idx = STEPS.findIndex((s) => s.key === o.status);
@@ -97,15 +98,15 @@ function Orders() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-bold">#{o.order_no}</p>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${cancelled ? "bg-sale text-sale-foreground" : "bg-secondary"}`}>
-                  {LABEL[o.status] ?? o.status}
+                  {t(LABEL[o.status]?.bn ?? o.status, LABEL[o.status]?.en ?? o.status)}
                 </span>
                 <span className="rounded-full border border-border px-2 py-0.5 text-[10px]">
-                  {o.payment_method.toUpperCase()} · {o.payment_status === "paid" ? "পরিশোধিত" : "বাকি"}
+                  {o.payment_method.toUpperCase()} · {o.payment_status === "paid" ? t("পরিশোধিত", "Paid") : t("বাকি", "Due")}
                 </span>
-                <p className="ml-auto text-sm font-bold text-primary-dark">৳{bn(Math.round(Number(o.total)))}</p>
+                <p className="ml-auto text-sm font-bold text-primary-dark">{t.money(Math.round(Number(o.total)))}</p>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {new Date(o.created_at).toLocaleString("bn-BD")} · {o.slot} · {o.address}
+                {new Date(o.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")} · {o.slot} · {o.address}
               </p>
 
               {!cancelled && (
@@ -113,7 +114,7 @@ function Orders() {
                   {STEPS.map((s, i) => (
                     <li key={s.key} className="flex-1">
                       <div className={`h-1 rounded-full ${i <= idx ? "bg-primary" : "bg-border"}`} />
-                      <p className={`mt-1 text-[9px] ${i <= idx ? "font-semibold text-primary" : "text-muted-foreground"}`}>{s.t}</p>
+                      <p className={`mt-1 text-[9px] ${i <= idx ? "font-semibold text-primary" : "text-muted-foreground"}`}>{t(s.bn, s.en)}</p>
                     </li>
                   ))}
                 </ol>
@@ -122,8 +123,8 @@ function Orders() {
               <ul className="mt-3 space-y-1 text-xs">
                 {o.order_items.map((l) => (
                   <li key={l.id} className="flex justify-between">
-                    <span className="text-muted-foreground">{l.name} × {bn(l.qty)}</span>
-                    <span className="font-semibold">৳{bn(Math.round(Number(l.price) * l.qty))}</span>
+                    <span className="text-muted-foreground">{l.name} × {t.n(l.qty)}</span>
+                    <span className="font-semibold">{t.money(Math.round(Number(l.price) * l.qty))}</span>
                   </li>
                 ))}
               </ul>
@@ -134,23 +135,34 @@ function Orders() {
                     .sort((a, b) => a.created_at.localeCompare(b.created_at))
                     .map((e) => (
                       <li key={e.id}>
-                        {new Date(e.created_at).toLocaleString("bn-BD")} — {LABEL[e.status] ?? e.status}
+                        {new Date(e.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")} — {t(LABEL[e.status]?.bn ?? e.status, LABEL[e.status]?.en ?? e.status)}
                         {e.note ? ` · ${e.note}` : ""}
                       </li>
                     ))}
                 </ul>
               )}
 
-              <button
-                onClick={() =>
-                  o.order_items.forEach((l) =>
-                    add({ id: l.product_id, kind: l.kind as "product" | "lab", name: l.name, price: Number(l.price) }, l.qty),
-                  )
-                }
-                className="mt-3 rounded-lg border border-primary px-3 py-1.5 text-xs font-semibold text-primary"
-              >
-                আবার অর্ডার করুন
-              </button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() =>
+                    o.order_items.forEach((l) =>
+                      add({ id: l.product_id, kind: l.kind as "product" | "lab", name: l.name, price: Number(l.price) }, l.qty),
+                    )
+                  }
+                  className="rounded-lg border border-primary px-3 py-1.5 text-xs font-semibold text-primary"
+                >
+                  {t("আবার অর্ডার করুন", "Reorder")}
+                </button>
+                {!cancelled && (
+                  <Link
+                    to="/track/$no"
+                    params={{ no: o.order_no }}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                  >
+                    🛵 {t("লাইভ ট্র্যাক করুন", "Track live")}
+                  </Link>
+                )}
+              </div>
             </article>
           );
         })}

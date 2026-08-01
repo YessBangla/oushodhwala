@@ -1,9 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { categories as staticCategories, bn } from "@/data/catalog";
+import { categories as staticCategories } from "@/data/catalog";
 import { mapProduct } from "@/lib/catalog-db";
 import { searchProducts } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
+import { useT } from "@/lib/i18n";
+import { useLang, pick } from "@/lib/lang";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: ({ params }) => {
@@ -30,6 +32,8 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 function CategoryPage() {
+  const t = useT();
+  const { lang } = useLang();
   const { cat } = Route.useLoaderData();
   const { data } = useQuery({
     queryKey: ["category-products", cat.slug],
@@ -44,9 +48,9 @@ function CategoryPage() {
       <div className="flex items-center gap-3">
         <span className="grid h-11 w-11 place-items-center rounded-lg bg-secondary text-xl">{cat.emoji}</span>
         <div>
-          <h1 className="text-base font-bold">{cat.bn}</h1>
+          <h1 className="text-base font-bold">{pick(lang, cat.bn, cat.en)}</h1>
           <p className="text-xs text-muted-foreground">
-            {cat.en} · {bn(total)} টি পণ্য
+            {lang === "en" ? cat.bn : cat.en} · {t(`${t.n(total)} টি পণ্য`, `${t.n(total)} products`)}
           </p>
         </div>
         <Link
@@ -54,7 +58,7 @@ function CategoryPage() {
           search={{ q: "", category: cat.slug, sort: "popular" }}
           className="ml-auto rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold"
         >
-          ফিল্টার
+          {t("ফিল্টার", "Filter")}
         </Link>
       </div>
 
