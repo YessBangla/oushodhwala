@@ -257,6 +257,10 @@ function BookDoctor() {
         </div>
       </div>
 
+      <p className="mt-3 rounded-xl border border-dashed border-border p-3 text-[10px] leading-relaxed text-muted-foreground">
+        {REFUND_POLICY_BN}
+      </p>
+
       {!user && (
         <p className="mt-3 rounded-lg bg-secondary p-3 text-xs">
           বুকিং করতে{" "}
