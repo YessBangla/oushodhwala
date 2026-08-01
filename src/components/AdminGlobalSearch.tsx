@@ -16,13 +16,26 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
       if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        input.current?.focus();
+        input.current?.select();
+      }
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   useEffect(() => {
@@ -38,10 +51,10 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
       const [orders, products, customers] = await Promise.all([
         supabase
           .from("orders")
-          .select("order_no, customer_name, customer_phone, total, status")
-          .or(`order_no.ilike.${like},customer_name.ilike.${like},customer_phone.ilike.${like}`)
+          .select("order_no, customer_name, phone, total, status")
+          .or(`order_no.ilike.${like},customer_name.ilike.${like},phone.ilike.${like}`)
           .limit(5),
-        supabase.from("products").select("id, name, name_en, stock").or(`name.ilike.${like},name_en.ilike.${like}`).limit(5),
+        supabase.from("products").select("id, name, en, stock").or(`name.ilike.${like},en.ilike.${like}`).limit(5),
         supabase.from("profiles").select("id, name, phone").or(`name.ilike.${like},phone.ilike.${like}`).limit(5),
       ]);
 
@@ -55,7 +68,7 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
         ...(products.data ?? []).map((p: any) => ({
           kind: "product" as const,
           tab: "products",
-          title: p.name ?? p.name_en ?? "",
+          title: p.name ?? p.en ?? "",
           sub: `স্টক ${p.stock ?? 0}`,
         })),
         ...(customers.data ?? []).map((c: any) => ({
@@ -76,10 +89,11 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
     <div ref={box} className="relative mx-auto hidden w-full max-w-md md:block">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <input
+        ref={input}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => hits.length > 0 && setOpen(true)}
-        placeholder="অর্ডার, প্রোডাক্ট, কাস্টমার খুঁজুন…"
+        placeholder="অর্ডার, প্রোডাক্ট, কাস্টমার খুঁজুন…  (Ctrl+K)"
         className="h-9 w-full rounded-full border border-border bg-secondary/60 pl-9 pr-8 text-xs outline-none focus:border-primary focus:bg-card"
       />
       {busy ? (
