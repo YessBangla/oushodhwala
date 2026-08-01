@@ -212,8 +212,37 @@ function Track() {
               );
             })}
           </ol>
+
+          {(proof?.photo || proof?.sign || d?.pod_receiver_name) && (
+            <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-navy">
+                <ShieldCheck className="h-4 w-4 text-primary" /> {t("ডেলিভারির প্রমাণ", "Proof of delivery")}
+              </p>
+              {d?.pod_receiver_name && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {t("গ্রহণ করেছেন", "Received by")}: <span className="font-semibold">{d.pod_receiver_name}</span>
+                  {d.pod_at ? ` · ${fmtTime(d.pod_at, t.en)}` : ""}
+                </p>
+              )}
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {proof?.photo && (
+                  <a href={proof.photo} target="_blank" rel="noreferrer">
+                    <img src={proof.photo} alt={t("ডেলিভারির ছবি", "Delivery photo")} className="w-full rounded-xl border border-border" />
+                  </a>
+                )}
+                {proof?.sign && (
+                  <img
+                    src={proof.sign}
+                    alt={t("গ্রাহকের স্বাক্ষর", "Customer signature")}
+                    className="w-full rounded-xl border border-border bg-white"
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
+
 
       <Link to="/orders" className="mt-6 inline-block text-xs font-semibold text-primary">
         ← {t("আমার সব অর্ডার", "All my orders")}
