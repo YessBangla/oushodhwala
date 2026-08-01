@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
+import { AdminNotifications } from "@/components/AdminNotifications";
 
 import {
   LayoutDashboard,
