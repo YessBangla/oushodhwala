@@ -89,6 +89,7 @@ function Track() {
       .channel(`track-${no}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, () => void refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "delivery_events" }, () => void refetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => void refetch())
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
@@ -253,6 +254,21 @@ function Track() {
         </>
       )}
 
+
+      {(data?.notifications?.length ?? 0) > 0 && (
+        <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+          <p className="text-xs font-bold text-navy">{t("নোটিফিকেশন হিস্ট্রি", "Notification history")}</p>
+          <ul className="mt-2 space-y-2">
+            {data!.notifications.map((n) => (
+              <li key={n.id} className="border-l-2 border-primary/40 pl-2">
+                <p className="text-[11px] font-semibold text-navy">{n.title}</p>
+                <p className="text-[10px] text-muted-foreground">{n.body}</p>
+                <p className="text-[10px] text-muted-foreground">{fmtTime(n.created_at, t.en)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Link to="/orders" className="mt-6 inline-block text-xs font-semibold text-primary">
         ← {t("আমার সব অর্ডার", "All my orders")}
