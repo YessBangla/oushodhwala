@@ -75,6 +75,10 @@ export type ShopSettings = {
   bkash: boolean;
   nagad: boolean;
   card: boolean;
+  expressEnabled: boolean;
+  expressFee: number;
+  expressEta: string;
+  emergencyPhone: string;
 };
 
 export type Catalog = {
@@ -95,6 +99,10 @@ export const defaultSettings: ShopSettings = {
   bkash: true,
   nagad: true,
   card: true,
+  expressEnabled: true,
+  expressFee: 120,
+  expressEta: "৩০–৬০ মিনিট",
+  emergencyPhone: "01700-000911",
 };
 
 const fallback: Catalog = {
@@ -232,6 +240,10 @@ export function useCatalog(): Catalog {
           bkash: bool("bkash_enabled"),
           nagad: bool("nagad_enabled"),
           card: bool("card_enabled"),
+          expressEnabled: bool("express_enabled"),
+          expressFee: num("express_fee", 120),
+          expressEta: map.get("express_eta") ?? defaultSettings.expressEta,
+          emergencyPhone: map.get("emergency_phone") ?? defaultSettings.emergencyPhone,
         },
       };
     },

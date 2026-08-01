@@ -40,6 +40,7 @@ function Checkout() {
   const [payment, setPayment] = useState("cod");
   const [note, setNote] = useState("");
   const [slot, setSlot] = useState("যত দ্রুত সম্ভব");
+  const [express, setExpress] = useState(false);
   const [form, setForm] = useState({ label: "", area: "", details: "", phone: "" });
   const [showForm, setShowForm] = useState(false);
   const [placed, setPlaced] = useState<string | null>(null);
@@ -48,7 +49,10 @@ function Checkout() {
   const couponCut = appliedOffer
     ? Math.min(Math.round((subtotal * appliedOffer.discountPct) / 100), appliedOffer.maxDiscount || Infinity)
     : 0;
-  const delivery = deliveryChargeFor(subtotal - couponCut, settings);
+  const expressOn = settings.expressEnabled && express;
+  const expressFee = expressOn ? settings.expressFee : 0;
+  const delivery = deliveryChargeFor(subtotal - couponCut, settings) + expressFee;
+  const effectiveSlot = expressOn ? `জরুরি ডেলিভারি (${settings.expressEta})` : slot;
   const total = Math.max(0, subtotal - couponCut + delivery);
   const payments = ALL_PAYMENTS.filter((m) => settings[m.key]);
   const method: string = payments.some((m) => m.id === payment) ? payment : (payments[0]?.id ?? "cod");
@@ -90,7 +94,7 @@ function Checkout() {
         _customer_name: profile?.name || user.email || "গ্রাহক",
         _phone: addr.phone,
         _address: `${addr.label} · ${addr.area} — ${addr.details}${note.trim() ? ` (${note.trim()})` : ""}`,
-        _slot: slot,
+        _slot: effectiveSlot,
         _delivery_fee: delivery,
         _discount: couponCut,
         _payment_method: method,
@@ -204,16 +208,41 @@ function Checkout() {
               {["যত দ্রুত সম্ভব", "আজ সন্ধ্যা ৬-৯", "আগামীকাল সকাল ৯-১২"].map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSlot(s)}
+                  onClick={() => { setSlot(s); setExpress(false); }}
                   className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
-                    slot === s ? "border-primary bg-primary text-primary-foreground" : "border-border"
+                    !expressOn && slot === s ? "border-primary bg-primary text-primary-foreground" : "border-border"
                   }`}
                 >
                   {s}
                 </button>
               ))}
             </div>
+
+            {settings.expressEnabled && (
+              <label
+                className={`mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 ${
+                  expressOn ? "border-sale bg-secondary" : "border-border"
+                }`}
+              >
+                <input type="checkbox" checked={express} onChange={(e) => setExpress(e.target.checked)} className="mt-1" />
+                <span className="text-xs">
+                  <span className="block font-bold">🚑 জরুরি ডেলিভারি — {settings.expressEta}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    জীবনরক্ষাকারী ঔষধ ও ইমার্জেন্সি পণ্য অগ্রাধিকার ভিত্তিতে পৌঁছে দেওয়া হবে। অতিরিক্ত চার্জ ৳{bn(settings.expressFee)}।
+                  </span>
+                </span>
+              </label>
+            )}
+
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              জরুরি প্রয়োজনে হটলাইন:{" "}
+              <a href={`tel:${settings.emergencyPhone}`} className="font-semibold text-primary underline">
+                {settings.emergencyPhone}
+              </a>{" "}
+              (২৪/৭)
+            </p>
           </section>
+
 
           <section className="rounded-xl border border-border bg-card p-4">
             <p className="text-sm font-bold">পেমেন্ট মাধ্যম</p>
@@ -277,6 +306,12 @@ function Checkout() {
             <span className="text-muted-foreground">ডেলিভারি</span>
             <span className="font-semibold">{delivery === 0 ? "ফ্রি" : `৳${bn(delivery)}`}</span>
           </div>
+          {expressOn && (
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>এর মধ্যে জরুরি চার্জ</span>
+              <span>৳{bn(expressFee)}</span>
+            </div>
+          )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-sm font-bold">
             <span>সর্বমোট</span>
             <span className="text-primary-dark">৳{bn(total)}</span>

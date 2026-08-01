@@ -29,12 +29,32 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { products, categories } = useCatalog();
+  const { products, categories, settings } = useCatalog();
   const popular = products.filter((p) => p.category === "medicine").slice(0, 6);
   const deals = [...products].sort((a, b) => (b.mrp - b.price) / b.mrp - (a.mrp - a.price) / a.mrp).slice(0, 6);
 
   return (
     <div>
+      {settings.expressEnabled && (
+        <section className="pt-4">
+          <div className="flex items-center gap-3 rounded-xl border border-sale/40 bg-secondary p-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-sale/10 text-xl">🚑</span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold">জরুরি ডেলিভারি — {settings.expressEta}</p>
+              <p className="text-xs text-muted-foreground">
+                ইমার্জেন্সি ঔষধ ও অক্সিজেন অগ্রাধিকারে · হটলাইন {settings.emergencyPhone}
+              </p>
+            </div>
+            <a
+              href={`tel:${settings.emergencyPhone}`}
+              className="ml-auto shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+            >
+              কল করুন
+            </a>
+          </div>
+        </section>
+      )}
+
       <section className="pt-4">
         <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
