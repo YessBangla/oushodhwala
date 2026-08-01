@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,10 +36,24 @@ const LABEL: Record<string, { bn: string; en: string }> = {
   cancelled: { bn: "বাতিল", en: "Cancelled" },
 };
 
+const REASONS = [
+  { key: "damaged", bn: "পণ্য ক্ষতিগ্রস্ত", en: "Item damaged" },
+  { key: "wrong_item", bn: "ভুল পণ্য এসেছে", en: "Wrong item delivered" },
+  { key: "expired", bn: "মেয়াদোত্তীর্ণ", en: "Expired product" },
+  { key: "not_needed", bn: "আর প্রয়োজন নেই", en: "No longer needed" },
+  { key: "other", bn: "অন্যান্য", en: "Other" },
+];
+
 function Orders() {
   const t = useT();
   const { add } = useStore();
   const { user, loading } = useAuth();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [returnFor, setReturnFor] = useState<string | null>(null);
+  const [reason, setReason] = useState("damaged");
+  const [details, setDetails] = useState("");
+  const [msg, setMsg] = useState<{ id: string; text: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-orders"],
@@ -51,6 +67,37 @@ function Orders() {
       return data;
     },
   });
+
+  async function cancelOrder(id: string, no: string) {
+    if (!window.confirm(t(`অর্ডার #${no} বাতিল করতে চান?`, `Cancel order #${no}?`))) return;
+    setBusy(id);
+    const { error } = await supabase.rpc("cancel_my_order", { _order_no: no });
+    setBusy(null);
+    setMsg({ id, text: error ? t("বাতিল করা যায়নি।", "Could not cancel.") : t("অর্ডার বাতিল হয়েছে।", "Order cancelled.") });
+    if (!error) void qc.invalidateQueries({ queryKey: ["my-orders"] });
+  }
+
+  async function submitReturn(id: string, no: string) {
+    if (!user) return;
+    setBusy(id);
+    const { error } = await supabase.from("order_returns").insert({
+      user_id: user.id,
+      order_id: id,
+      order_no: no,
+      reason,
+      details: details.trim() || null,
+    });
+    setBusy(null);
+    if (!error) {
+      setReturnFor(null);
+      setDetails("");
+    }
+    setMsg({
+      id,
+      text: error ? t("অনুরোধ পাঠানো যায়নি।", "Could not submit.") : t("রিটার্ন অনুরোধ জমা হয়েছে।", "Return request submitted."),
+    });
+  }
+
 
   if (loading || (user && isLoading)) {
     return <p className="pt-16 text-center text-sm text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>;
@@ -162,7 +209,58 @@ function Orders() {
                     🛵 {t("লাইভ ট্র্যাক করুন", "Track live")}
                   </Link>
                 )}
+                {(o.status === "confirmed" || o.status === "processing") && (
+                  <button
+                    disabled={busy === o.id}
+                    onClick={() => void cancelOrder(o.id, o.order_no)}
+                    className="rounded-lg border border-sale px-3 py-1.5 text-xs font-semibold text-sale disabled:opacity-60"
+                  >
+                    {t("অর্ডার বাতিল", "Cancel order")}
+                  </button>
+                )}
+                {o.status === "delivered" && (
+                  <button
+                    onClick={() => setReturnFor(returnFor === o.id ? null : o.id)}
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+                  >
+                    ↩ {t("রিটার্ন/রিফান্ড", "Return / refund")}
+                  </button>
+                )}
               </div>
+
+              {returnFor === o.id && (
+                <div className="mt-3 rounded-lg border border-border bg-secondary/40 p-3">
+                  <p className="text-xs font-semibold">{t("রিটার্নের কারণ", "Reason for return")}</p>
+                  <select
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs"
+                  >
+                    {REASONS.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {t(r.bn, r.en)}
+                      </option>
+                    ))}
+                  </select>
+                  <textarea
+                    value={details}
+                    onChange={(e) => setDetails(e.target.value)}
+                    rows={2}
+                    placeholder={t("বিস্তারিত লিখুন (ঐচ্ছিক)", "Add details (optional)")}
+                    className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs"
+                  />
+                  <button
+                    disabled={busy === o.id}
+                    onClick={() => void submitReturn(o.id, o.order_no)}
+                    className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                  >
+                    {t("রিটার্ন অনুরোধ পাঠান", "Submit request")}
+                  </button>
+                </div>
+              )}
+
+              {msg?.id === o.id && <p className="mt-2 text-[11px] font-semibold text-primary">{msg.text}</p>}
+
             </article>
           );
         })}

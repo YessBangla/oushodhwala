@@ -8,6 +8,8 @@ import { mapProduct, type ShopProduct } from "@/lib/catalog-db";
 import { getProductById } from "@/lib/catalog.functions";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
+import { ProductReviews } from "@/components/ProductReviews";
+import { RefillReminder } from "@/components/RefillReminder";
 
 import { useStore, toLine } from "@/lib/store";
 import { useLang, pick } from "@/lib/lang";
@@ -339,7 +341,13 @@ function ProductPage() {
         );
       })()}
 
+      <div className={reading ? "hidden" : ""}>
+        <RefillReminder productId={p.id} productName={isEn ? p.en || p.name : p.name} />
+        <ProductReviews productId={p.id} />
+      </div>
+
       <section className={`pt-6 ${reading ? "hidden" : ""}`}>
+
         <h2 className="mb-2 text-sm font-bold">{isEn ? "Related products" : "সম্পর্কিত পণ্য"}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {related.map((r) => (

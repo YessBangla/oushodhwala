@@ -1287,6 +1287,59 @@ export type Database = {
           },
         ]
       }
+      order_returns: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          details: string | null
+          id: string
+          order_id: string | null
+          order_no: string
+          photo_urls: string[]
+          reason: string
+          refund_amount: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          order_id?: string | null
+          order_no: string
+          photo_urls?: string[]
+          reason: string
+          refund_amount?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          order_id?: string | null
+          order_no?: string
+          photo_urls?: string[]
+          reason?: string
+          refund_amount?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           address: string
@@ -1461,6 +1514,45 @@ export type Database = {
         }
         Relationships: []
       }
+      product_reviews: {
+        Row: {
+          author_name: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          status: string
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          author_name?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          author_name?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
@@ -1614,6 +1706,45 @@ export type Database = {
           id?: string
           name?: string
           phone?: string
+        }
+        Relationships: []
+      }
+      refill_reminders: {
+        Row: {
+          active: boolean
+          created_at: string
+          every_days: number
+          id: string
+          last_notified_at: string | null
+          next_at: string
+          product_id: string
+          product_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          every_days?: number
+          id?: string
+          last_notified_at?: string | null
+          next_at?: string
+          product_id: string
+          product_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          every_days?: number
+          id?: string
+          last_notified_at?: string | null
+          next_at?: string
+          product_id?: string
+          product_name?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2153,6 +2284,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      cancel_my_order: {
+        Args: { _order_no: string; _reason?: string }
+        Returns: boolean
       }
       claim_first_admin: { Args: never; Returns: boolean }
       doctor_taken_slots: {
