@@ -9,6 +9,8 @@ import { catalogQueryKey } from "@/lib/catalog-db";
 import { MediaGallery, MediaPickerModal } from "@/components/MediaGallery";
 import { ImageAudit } from "@/components/ImageAudit";
 import { ImageRevisions } from "@/components/ImageRevisions";
+import { AdminShell, type AdminNavGroup } from "@/components/AdminShell";
+
 
 
 
