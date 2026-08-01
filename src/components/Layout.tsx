@@ -24,6 +24,7 @@ import { useT } from "@/lib/i18n";
 import { SearchBox } from "@/components/SearchBox";
 import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
 import { DeliverToBar } from "@/components/DeliverToBar";
+import { BackToTop } from "@/components/BackToTop";
 
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -144,6 +145,8 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto max-w-7xl px-4">{children}</main>
+
+      <BackToTop />
 
       <footer className="mt-12 bg-navy text-navy-foreground">
         <div className="mx-auto max-w-7xl px-4 py-8">
