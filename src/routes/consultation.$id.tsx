@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Phone, MessageCircle, Video, Paperclip, Send, Mic, FileText, Star, Printer } from "lucide-react";
+import { Phone, MessageCircle, Video, Paperclip, Send, Mic, FileText, Star, Printer, XCircle, ClipboardList } from "lucide-react";
 
 import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
@@ -11,10 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   MODE_LABEL,
   PAYMENT_LABEL,
+  REFUND_LABEL,
+  REFUND_POLICY_BN,
   STATUS_LABEL,
   fmtDateTime,
   fmtTime,
   openConsultFile,
+  refundPreview,
   telNumber,
   uploadConsultFile,
   waNumber,
