@@ -344,6 +344,8 @@ function Inventory() {
 
   return (
     <div>
+      <AddProduct />
+
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <input
           value={q}
@@ -359,6 +361,7 @@ function Inventory() {
           {bn(companies.length)} কোম্পানি · {bn(list.length)} ঔষধ
         </span>
       </div>
+
 
       {companies.length === 0 && <p className="text-xs text-muted-foreground">কিছু পাওয়া যায়নি।</p>}
 
