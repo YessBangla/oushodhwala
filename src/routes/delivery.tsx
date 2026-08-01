@@ -54,6 +54,30 @@ function DeliveryPanel() {
   const [err, setErr] = useState("");
   const [sharing, setSharing] = useState(false);
   const [lastPing, setLastPing] = useState<string>("");
+  const [perm, setPerm] = useState<"unknown" | "granted" | "denied" | "prompt" | "unsupported">("unknown");
+
+  // লোকেশন পারমিশনের অবস্থা
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setPerm("unsupported");
+      return;
+    }
+    if (!navigator.permissions?.query) {
+      setPerm("prompt");
+      return;
+    }
+    let status: PermissionStatus | null = null;
+    const onChange = () => setPerm((status?.state as "granted" | "denied" | "prompt") ?? "prompt");
+    void navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((s) => {
+        status = s;
+        onChange();
+        s.addEventListener("change", onChange);
+      })
+      .catch(() => setPerm("prompt"));
+    return () => status?.removeEventListener("change", onChange);
+  }, []);
 
 
   const { data: rider, isLoading: riderLoading } = useQuery({
