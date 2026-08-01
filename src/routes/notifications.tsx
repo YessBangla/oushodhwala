@@ -5,6 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 
+/** নোটিফিকেশনের টাকার অঙ্ক বাংলা সংখ্যায় দেখায় (অর্ডার নম্বর/ওটিপি অপরিবর্তিত থাকে) */
+const bnAmounts = (s: string) =>
+  s.replace(/৳\s?\d+/g, (m) => m.replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)] ?? d));
+
 export const Route = createFileRoute("/notifications")({
   head: () => ({
     meta: [
