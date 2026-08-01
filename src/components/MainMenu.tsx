@@ -233,7 +233,8 @@ export function MobileMenu() {
               </p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
