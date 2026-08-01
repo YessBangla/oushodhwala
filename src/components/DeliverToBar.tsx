@@ -102,7 +102,7 @@ export function DeliverToBar() {
   };
 
   return (
-    <div className="border-t border-border bg-muted lg:hidden">
+    <div className="border-t border-border bg-muted">
       <button
         type="button"
         onClick={toggle}
@@ -210,21 +210,36 @@ export function DeliverToBar() {
               ))}
             </div>
           ) : (
-            <div className="mt-2 flex gap-2">
-              <input
-                value={orderNo}
-                onChange={(e) => setOrderNo(e.target.value)}
-                placeholder={t("অর্ডার নম্বর", "Order number")}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-[11px]"
-              />
-              <button
-                type="button"
-                disabled={!orderNo.trim()}
-                onClick={() => void navigate({ to: "/track/$no", params: { no: orderNo.trim() } })}
-                className="rounded-lg bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground disabled:opacity-50"
-              >
-                {t("লাইভ ট্র্যাক", "Live track")}
-              </button>
+            <div className="mt-2">
+              <div className="flex gap-2">
+                <input
+                  value={orderNo}
+                  onChange={(e) => setOrderNo(e.target.value)}
+                  placeholder={t("অর্ডার নম্বর", "Order number")}
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-[11px]"
+                />
+                <button
+                  type="button"
+                  disabled={!orderNo.trim()}
+                  onClick={() => void navigate({ to: "/track/$no", params: { no: orderNo.trim() } })}
+                  className="rounded-lg bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {t("লাইভ ট্র্যাক", "Live track")}
+                </button>
+              </div>
+              {!user && (
+                <p className="mt-1.5 text-[10px] text-muted-foreground">
+                  {t("চলমান অর্ডারের রাইডার ম্যাপে দেখতে ", "To see your rider on the map, ")}
+                  <button
+                    type="button"
+                    onClick={() => void navigate({ to: "/auth" })}
+                    className="font-semibold text-primary underline"
+                  >
+                    {t("লগইন করুন", "log in")}
+                  </button>
+                  {t("।", ".")}
+                </p>
+              )}
             </div>
           )}
         </div>
