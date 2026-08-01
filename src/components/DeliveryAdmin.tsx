@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Truck, Bike, Plus, Trash2 } from "lucide-react";
+import { Truck, Bike, Plus, Trash2, Send, Check } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
+import { CHANNEL_LABEL, notifyLink, withAbsoluteLinks, type NotifyChannel } from "@/lib/notify";
 
 type Delivery = {
   id: string;
@@ -15,14 +16,29 @@ type Delivery = {
   otp: string;
   rider_id: string | null;
   last_seen_at: string | null;
+  pod_photo_url: string;
+  pod_signature_url: string;
+  pod_receiver_name: string;
   riders: { name: string; phone: string } | null;
 };
 
 type Rider = { id: string; name: string; phone: string; vehicle: string; zone: string; active: boolean; user_id: string | null };
 
+type Notif = {
+  id: string;
+  order_no: string;
+  channel: string;
+  target: string;
+  status_key: string;
+  body: string;
+  status: string;
+  created_at: string;
+};
+
 export function DeliveryAdmin() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"deliveries" | "riders">("deliveries");
+  const [tab, setTab] = useState<"deliveries" | "riders" | "notifications">("deliveries");
+
 
   const { data: riders = [] } = useQuery({
     queryKey: ["admin-riders"],
