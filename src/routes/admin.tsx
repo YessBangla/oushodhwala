@@ -214,6 +214,10 @@ function Admin() {
       {tab === "suppliers" && <SuppliersAdmin />}
       {tab === "purchases" && <PurchaseOrdersAdmin />}
       {tab === "batches" && <BatchesAdmin />}
+      {tab === "monitor" && <SystemMonitor />}
+      {tab === "audit" && <ErpAudit />}
+      {tab === "erpreports" && <ErpReports />}
+      {tab === "erproles" && <ErpRoles />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
