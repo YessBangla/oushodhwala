@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { AdminGlobalSearch } from "@/components/AdminGlobalSearch";
+
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -19,7 +21,6 @@ import {
   ExternalLink,
   LogOut,
   ChevronRight,
-  Search,
   Bell,
   Users,
   Truck,
@@ -169,13 +170,8 @@ export function AdminShell({
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="truncate font-semibold text-foreground">{title}</span>
           </div>
-          <div className="relative mx-auto hidden w-full max-w-md md:block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              placeholder="অর্ডার, প্রোডাক্ট, কাস্টমার খুঁজুন…"
-              className="h-9 w-full rounded-full border border-border bg-secondary/60 pl-9 pr-3 text-xs outline-none focus:border-primary focus:bg-card"
-            />
-          </div>
+          <AdminGlobalSearch onSelect={onSelect} />
+
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <button
               className="relative rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary"
