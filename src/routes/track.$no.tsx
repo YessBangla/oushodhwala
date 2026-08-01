@@ -58,6 +58,23 @@ function Track() {
     },
   });
 
+  const d = data?.delivery as unknown as
+    | { id: string; pod_photo_url?: string; pod_signature_url?: string; pod_receiver_name?: string; pod_at?: string | null }
+    | null
+    | undefined;
+
+  // ডেলিভারির প্রমাণ — প্রাইভেট ফাইলের সাইনড লিংক
+  const { data: proof } = useQuery({
+    queryKey: ["pod", d?.id, d?.pod_photo_url, d?.pod_signature_url],
+    enabled: !!(d?.pod_photo_url || d?.pod_signature_url),
+    queryFn: async () => ({
+      photo: await resolveFileUrl("pod", d?.pod_photo_url),
+      sign: await resolveFileUrl("pod", d?.pod_signature_url),
+    }),
+  });
+
+
+
   // রিয়েল-টাইম আপডেট
   useEffect(() => {
     if (!user) return;
