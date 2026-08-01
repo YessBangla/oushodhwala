@@ -114,12 +114,36 @@ async function load(): Promise<Item[]> {
   return items;
 }
 
+const SEEN_KEY = "admin-notif-seen";
+
 export function AdminNotifications({ onSelect }: { onSelect: (id: string) => void }) {
   const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState<string[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   const q = useQuery({ queryKey: ["admin-notifications"], queryFn: load, refetchInterval: 60000 });
   const items = q.data ?? [];
+  const unseen = items.filter((it) => !seen.includes(it.id));
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SEEN_KEY);
+      if (raw) setSeen(JSON.parse(raw) as string[]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open || items.length === 0) return;
+    const ids = items.map((it) => it.id);
+    setSeen(ids);
+    try {
+      localStorage.setItem(SEEN_KEY, JSON.stringify(ids));
+    } catch {
+      /* ignore */
+    }
+  }, [open, items]);
 
   useEffect(() => {
     if (!open) return;
@@ -138,12 +162,13 @@ export function AdminNotifications({ onSelect }: { onSelect: (id: string) => voi
         aria-label="নোটিফিকেশন"
       >
         <Bell className="h-4 w-4" />
-        {items.length > 0 && (
+        {unseen.length > 0 && (
           <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-[9px] font-bold text-primary-foreground">
-            {bn(items.length)}
+            {bn(unseen.length)}
           </span>
         )}
       </button>
+
 
       {open && (
         <div className="absolute right-0 top-11 z-50 max-h-[70vh] w-[19rem] overflow-y-auto rounded-xl border border-border bg-card shadow-xl">
