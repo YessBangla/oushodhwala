@@ -52,6 +52,17 @@ function Checkout() {
   const [picked, setPicked] = useState<PickedAddress>(emptyAddress);
   const [showForm, setShowForm] = useState(false);
   const [placed, setPlaced] = useState<string | null>(null);
+  const [usePoints, setUsePoints] = useState(false);
+
+  const { data: loyalty } = useQuery({
+    queryKey: ["my-loyalty"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("my_loyalty");
+      if (error) throw error;
+      return data as unknown as { balance: number; tier: string } | null;
+    },
+  });
 
   const appliedOffer = offers.find((o) => o.code === couponCode && subtotal >= o.minOrder) ?? null;
   const couponCut = appliedOffer
@@ -64,7 +75,11 @@ function Checkout() {
   const effectiveSlot = expressOn
     ? t(`জরুরি ডেলিভারি (${settings.expressEta})`, `Express delivery (${settings.expressEta})`)
     : t(slot, slotLabel?.en ?? slot);
-  const total = Math.max(0, subtotal - couponCut + delivery);
+  const payableBeforePoints = Math.max(0, subtotal - couponCut + delivery);
+  const pointBalance = loyalty?.balance ?? 0;
+  const maxPoints = Math.min(pointBalance, Math.floor(payableBeforePoints * 0.5));
+  const pointCut = usePoints ? maxPoints : 0;
+  const total = Math.max(0, payableBeforePoints - pointCut);
   const payments = ALL_PAYMENTS.filter((m) => settings[m.key]);
   const method: string = payments.some((m) => m.id === payment) ? payment : (payments[0]?.id ?? "cod");
 
@@ -107,11 +122,17 @@ function Checkout() {
         _address: `${addr.label} · ${addr.area} — ${addr.details}${note.trim() ? ` (${note.trim()})` : ""}`,
         _slot: effectiveSlot,
         _delivery_fee: delivery,
-        _discount: couponCut,
+        _discount: couponCut + pointCut,
         _payment_method: method,
         _payment_ref: ref,
       });
       if (error) throw error;
+      if (pointCut > 0) {
+        const { error: rErr } = await supabase.rpc("redeem_loyalty", { _points: pointCut });
+        if (rErr) console.error(rErr);
+        void qc.invalidateQueries({ queryKey: ["my-loyalty"] });
+        void qc.invalidateQueries({ queryKey: ["my-loyalty-tx"] });
+      }
       clear();
       setCouponCode(null);
       void qc.invalidateQueries({ queryKey: catalogQueryKey });
@@ -347,6 +368,12 @@ function Checkout() {
               <span className="font-semibold text-primary">− {t.money(couponCut)}</span>
             </div>
           )}
+          {pointCut > 0 && (
+            <div className="mt-2 flex justify-between text-xs">
+              <span className="text-muted-foreground">{t("পয়েন্ট ছাড়", "Points discount")}</span>
+              <span className="font-semibold text-primary">− {t.money(pointCut)}</span>
+            </div>
+          )}
           <div className="mt-2 flex justify-between text-xs">
             <span className="text-muted-foreground">{t("ডেলিভারি", "Delivery")}</span>
             <span className="font-semibold">{delivery === 0 ? t("ফ্রি", "Free") : t.money(delivery)}</span>
@@ -356,6 +383,27 @@ function Checkout() {
               <span>{t("এর মধ্যে জরুরি চার্জ", "Includes express charge")}</span>
               <span>{t.money(expressFee)}</span>
             </div>
+          )}
+          {user && pointBalance > 0 && (
+            <label className="mt-3 flex items-start gap-2 rounded-lg border border-border p-2 text-[11px]">
+              <input
+                type="checkbox"
+                checked={usePoints}
+                onChange={(e) => setUsePoints(e.target.checked)}
+                disabled={maxPoints <= 0}
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                <span className="block font-semibold">
+                  {t(`লয়ালটি পয়েন্ট ব্যবহার করুন (${t.n(pointBalance)} পয়েন্ট)`, `Use loyalty points (${t.n(pointBalance)} points)`)}
+                </span>
+                <span className="block text-muted-foreground">
+                  {maxPoints > 0
+                    ? t(`সর্বোচ্চ ${t.n(maxPoints)} পয়েন্ট = ${t.money(maxPoints)} ছাড়`, `Up to ${t.n(maxPoints)} points = ${t.money(maxPoints)} off`)
+                    : t("এই অর্ডারে পয়েন্ট ব্যবহারযোগ্য নয়", "Points cannot be used on this order")}
+                </span>
+              </span>
+            </label>
           )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-sm font-bold">
             <span>{t("সর্বমোট", "Total")}</span>
