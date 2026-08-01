@@ -25,6 +25,7 @@ import { SearchBox } from "@/components/SearchBox";
 import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
 import { DeliverToBar } from "@/components/DeliverToBar";
 import { BackToTop } from "@/components/BackToTop";
+import { AskChat } from "@/components/AskChat";
 import { installErrorLogger } from "@/lib/error-log";
 
 
