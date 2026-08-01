@@ -206,6 +206,9 @@ function Admin() {
       {tab === "reviews" && <ReviewsAdmin />}
       {tab === "campaigns" && <CampaignsAdmin />}
       {tab === "loyalty" && <LoyaltyAdmin />}
+      {tab === "suppliers" && <SuppliersAdmin />}
+      {tab === "purchases" && <PurchaseOrdersAdmin />}
+      {tab === "batches" && <BatchesAdmin />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
