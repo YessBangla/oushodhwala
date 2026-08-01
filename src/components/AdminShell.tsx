@@ -21,8 +21,12 @@ import {
   ChevronRight,
   Search,
   Bell,
+  Users,
   Truck,
   HeartPulse,
+  UploadCloud,
+  Activity,
+  Bike,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -44,6 +48,10 @@ const ICONS: Record<string, typeof LayoutDashboard> = {
   settings: SettingsIcon,
   delivery: Truck,
   diagnostics: HeartPulse,
+  riders: Bike,
+  imgupload: UploadCloud,
+  health: Activity,
+  customers: Users,
 };
 
 export function AdminShell({
