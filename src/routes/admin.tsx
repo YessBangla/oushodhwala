@@ -1043,6 +1043,9 @@ function Categories() {
           ক্যাটাগরি যোগ / আপডেট
         </button>
       </div>
+
+      <CategoryPreview form={form} />
+
       <div className="mt-3 space-y-2">
         {(data ?? []).map((c) => (
           <div key={c.slug} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
