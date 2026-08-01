@@ -34,10 +34,24 @@ const LABEL: Record<string, { bn: string; en: string }> = {
   cancelled: { bn: "বাতিল", en: "Cancelled" },
 };
 
+const REASONS = [
+  { key: "damaged", bn: "পণ্য ক্ষতিগ্রস্ত", en: "Item damaged" },
+  { key: "wrong_item", bn: "ভুল পণ্য এসেছে", en: "Wrong item delivered" },
+  { key: "expired", bn: "মেয়াদোত্তীর্ণ", en: "Expired product" },
+  { key: "not_needed", bn: "আর প্রয়োজন নেই", en: "No longer needed" },
+  { key: "other", bn: "অন্যান্য", en: "Other" },
+];
+
 function Orders() {
   const t = useT();
   const { add } = useStore();
   const { user, loading } = useAuth();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [returnFor, setReturnFor] = useState<string | null>(null);
+  const [reason, setReason] = useState("damaged");
+  const [details, setDetails] = useState("");
+  const [msg, setMsg] = useState<{ id: string; text: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-orders"],
@@ -51,6 +65,37 @@ function Orders() {
       return data;
     },
   });
+
+  async function cancelOrder(id: string, no: string) {
+    if (!window.confirm(t(`অর্ডার #${no} বাতিল করতে চান?`, `Cancel order #${no}?`))) return;
+    setBusy(id);
+    const { error } = await supabase.rpc("cancel_my_order", { _order_no: no });
+    setBusy(null);
+    setMsg({ id, text: error ? t("বাতিল করা যায়নি।", "Could not cancel.") : t("অর্ডার বাতিল হয়েছে।", "Order cancelled.") });
+    if (!error) void qc.invalidateQueries({ queryKey: ["my-orders"] });
+  }
+
+  async function submitReturn(id: string, no: string) {
+    if (!user) return;
+    setBusy(id);
+    const { error } = await supabase.from("order_returns").insert({
+      user_id: user.id,
+      order_id: id,
+      order_no: no,
+      reason,
+      details: details.trim() || null,
+    });
+    setBusy(null);
+    if (!error) {
+      setReturnFor(null);
+      setDetails("");
+    }
+    setMsg({
+      id,
+      text: error ? t("অনুরোধ পাঠানো যায়নি।", "Could not submit.") : t("রিটার্ন অনুরোধ জমা হয়েছে।", "Return request submitted."),
+    });
+  }
+
 
   if (loading || (user && isLoading)) {
     return <p className="pt-16 text-center text-sm text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>;
