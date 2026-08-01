@@ -96,20 +96,39 @@ function Notifications() {
     );
   }
 
-  const items = data ?? [];
+  const items = (data ?? []).filter((n) => filter === "all" || n.kind === filter);
 
   return (
     <div className="pt-4">
       <h1 className="text-base font-bold">{t("নোটিফিকেশন", "Notifications")}</h1>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFilter(f.key)}
+            className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
+              filter === f.key ? "border-primary bg-secondary text-primary-dark" : "border-border text-muted-foreground"
+            }`}
+          >
+            {t(f.bn, f.en)}
+          </button>
+        ))}
+      </div>
       {items.length === 0 && <p className="mt-3 text-xs text-muted-foreground">{t("এখনো কোনো নোটিফিকেশন নেই।", "No notifications yet.")}</p>}
       <ul className="mt-3 space-y-2">
         {items.map((n) => (
           <li key={n.id} className={`flex gap-3 rounded-xl border bg-card p-3 ${n.read ? "border-border" : "border-primary"}`}>
             <span className="text-lg">{ICON[n.kind] ?? "🔔"}</span>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold">{n.title}</p>
               <p className="text-[11px] text-muted-foreground">{n.body}</p>
               <p className="mt-0.5 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")}</p>
+              {n.kind === "order" && n.order_no && (
+                <Link to="/track/$no" params={{ no: n.order_no }} className="mt-1 inline-block text-[10px] font-semibold text-primary">
+                  {t("লাইভ ট্র্যাক", "Live track")} →
+                </Link>
+              )}
             </div>
           </li>
         ))}
