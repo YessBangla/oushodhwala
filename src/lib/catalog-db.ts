@@ -99,6 +99,10 @@ export const defaultSettings: ShopSettings = {
   bkash: true,
   nagad: true,
   card: true,
+  expressEnabled: true,
+  expressFee: 120,
+  expressEta: "৩০–৬০ মিনিট",
+  emergencyPhone: "01700-000911",
 };
 
 const fallback: Catalog = {
