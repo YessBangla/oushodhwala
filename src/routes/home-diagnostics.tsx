@@ -8,6 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { matchesQuery } from "@/lib/bn-search";
+import { resolveDownloadUrl, resolveFileUrl } from "@/lib/storage";
+
 
 export const Route = createFileRoute("/home-diagnostics")({
   head: () => ({
@@ -96,6 +98,17 @@ function HomeDiagnostics() {
   });
 
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  /** প্রাইভেট স্টোরেজ থেকে রিপোর্ট খোলা/ডাউনলোড */
+  const openReport = async (ref: string, download: boolean, fileName?: string) => {
+    const url = download ? await resolveDownloadUrl("reports", ref, fileName) : await resolveFileUrl("reports", ref);
+    if (!url) {
+      setErr(t("রিপোর্ট এখন পাওয়া যাচ্ছে না।", "Report is not available right now."));
+      return;
+    }
+    window.open(url, "_blank", "noopener");
+  };
+
 
   const submit = async () => {
     setErr("");
