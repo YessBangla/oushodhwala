@@ -240,6 +240,10 @@ export function useCatalog(): Catalog {
           bkash: bool("bkash_enabled"),
           nagad: bool("nagad_enabled"),
           card: bool("card_enabled"),
+          expressEnabled: bool("express_enabled"),
+          expressFee: num("express_fee", 120),
+          expressEta: map.get("express_eta") ?? defaultSettings.expressEta,
+          emergencyPhone: map.get("emergency_phone") ?? defaultSettings.emergencyPhone,
         },
       };
     },
