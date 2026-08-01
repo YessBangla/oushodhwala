@@ -30,6 +30,7 @@ import {
   Wallet,
   RotateCcw,
   Star,
+  BarChart3,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -58,6 +59,7 @@ const ICONS: Record<string, typeof LayoutDashboard> = {
   accounts: Wallet,
   returns: RotateCcw,
   reviews: Star,
+  reports: BarChart3,
 };
 
 export function AdminShell({

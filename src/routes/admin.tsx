@@ -20,6 +20,7 @@ import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { ServiceRequestsAdmin } from "@/components/ServiceRequestsAdmin";
 import { AccountsAdmin } from "@/components/AccountsAdmin";
 import { ReturnsAdmin, ReviewsAdmin } from "@/components/ModerationAdmin";
+import { ReportsAdmin } from "@/components/ReportsAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 
 
@@ -62,6 +63,7 @@ const TABS = [
   { id: "customers", t: "গ্রাহক" },
   { id: "accounts", t: "একাউন্টস ও হিসাব" },
   { id: "returns", t: "রিটার্ন ও রিফান্ড" },
+  { id: "reports", t: "রিপোর্ট ও বিশ্লেষণ" },
   { id: "reviews", t: "রিভিউ মডারেশন" },
 
 
@@ -76,7 +78,7 @@ const pickTabs = (ids: string[]) =>
 
 const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ওভারভিউ", items: pickTabs(["dash"]) },
-  { label: "বিক্রয়", items: pickTabs(["orders", "inventory", "accounts", "returns"]) },
+  { label: "বিক্রয়", items: pickTabs(["orders", "inventory", "accounts", "reports", "returns"]) },
   { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
@@ -192,6 +194,7 @@ function Admin() {
       {tab === "health" && <AdminHealth onNavigate={(id) => setTab(id as TabId)} />}
       {tab === "customers" && <CustomersAdmin />}
       {tab === "accounts" && <AccountsAdmin />}
+      {tab === "reports" && <ReportsAdmin />}
       {tab === "returns" && <ReturnsAdmin />}
       {tab === "reviews" && <ReviewsAdmin />}
       {tab === "settings" && <Settings />}
