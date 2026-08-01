@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { AdminDashboard } from "@/components/AdminDashboard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -198,38 +199,12 @@ function useOrders() {
 function Dashboard() {
   const products = useProducts();
   const orders = useOrders();
-
-  const stats = useMemo(() => {
-    const os = orders.data ?? [];
-    const ps = products.data ?? [];
-    return {
-      orders: os.length,
-      revenue: os.filter((o) => o.status !== "cancelled").reduce((t, o) => t + Number(o.total), 0),
-      pending: os.filter((o) => o.status === "confirmed" || o.status === "processing").length,
-      products: ps.length,
-      low: ps.filter((p) => p.stock <= p.low_stock_threshold).length,
-      out: ps.filter((p) => p.stock <= 0).length,
-    };
-  }, [orders.data, products.data]);
-
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      <Card t="মোট অর্ডার" v={bn(stats.orders)} />
-      <Card t="মোট বিক্রি" v={`৳${bn(Math.round(stats.revenue))}`} />
-      <Card t="প্রসেসিং" v={bn(stats.pending)} />
-      <Card t="প্রোডাক্ট" v={bn(stats.products)} />
-      <Card t="কম স্টক" v={bn(stats.low)} warn={stats.low > 0} />
-      <Card t="স্টক শেষ" v={bn(stats.out)} warn={stats.out > 0} />
-    </div>
-  );
-}
-
-function Card({ t, v, warn }: { t: string; v: string; warn?: boolean }) {
-  return (
-    <div className={`rounded-xl border bg-card p-3 ${warn ? "border-sale" : "border-border"}`}>
-      <p className="text-[10px] text-muted-foreground">{t}</p>
-      <p className={`mt-1 text-lg font-bold ${warn ? "text-sale" : "text-primary-dark"}`}>{v}</p>
-    </div>
+    <AdminDashboard
+      orders={(orders.data ?? []) as never[]}
+      products={(products.data ?? []) as never[]}
+      loading={orders.isLoading || products.isLoading}
+    />
   );
 }
 
