@@ -40,6 +40,7 @@ function Checkout() {
   const [payment, setPayment] = useState("cod");
   const [note, setNote] = useState("");
   const [slot, setSlot] = useState("যত দ্রুত সম্ভব");
+  const [express, setExpress] = useState(false);
   const [form, setForm] = useState({ label: "", area: "", details: "", phone: "" });
   const [showForm, setShowForm] = useState(false);
   const [placed, setPlaced] = useState<string | null>(null);
