@@ -173,13 +173,7 @@ export function AdminShell({
           <AdminGlobalSearch onSelect={onSelect} />
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <button
-              className="relative rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary"
-              aria-label="নোটিফিকেশন"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-sale" />
-            </button>
+            <AdminNotifications onSelect={onSelect} />
             <div className="hidden items-center gap-2 sm:flex">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-xs font-bold uppercase text-primary-foreground">
                 {(email ?? "A").slice(0, 1)}
