@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -205,15 +205,6 @@ function Dashboard() {
       products={(products.data ?? []) as never[]}
       loading={orders.isLoading || products.isLoading}
     />
-  );
-}
-
-function Card({ t, v, warn }: { t: string; v: string; warn?: boolean }) {
-  return (
-    <div className={`rounded-xl border bg-card p-3 ${warn ? "border-sale" : "border-border"}`}>
-      <p className="text-[10px] text-muted-foreground">{t}</p>
-      <p className={`mt-1 text-lg font-bold ${warn ? "text-sale" : "text-primary-dark"}`}>{v}</p>
-    </div>
   );
 }
 
