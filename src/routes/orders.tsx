@@ -162,7 +162,58 @@ function Orders() {
                     🛵 {t("লাইভ ট্র্যাক করুন", "Track live")}
                   </Link>
                 )}
+                {(o.status === "confirmed" || o.status === "processing") && (
+                  <button
+                    disabled={busy === o.id}
+                    onClick={() => void cancelOrder(o.id, o.order_no)}
+                    className="rounded-lg border border-sale px-3 py-1.5 text-xs font-semibold text-sale disabled:opacity-60"
+                  >
+                    {t("অর্ডার বাতিল", "Cancel order")}
+                  </button>
+                )}
+                {o.status === "delivered" && (
+                  <button
+                    onClick={() => setReturnFor(returnFor === o.id ? null : o.id)}
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+                  >
+                    ↩ {t("রিটার্ন/রিফান্ড", "Return / refund")}
+                  </button>
+                )}
               </div>
+
+              {returnFor === o.id && (
+                <div className="mt-3 rounded-lg border border-border bg-secondary/40 p-3">
+                  <p className="text-xs font-semibold">{t("রিটার্নের কারণ", "Reason for return")}</p>
+                  <select
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs"
+                  >
+                    {REASONS.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {t(r.bn, r.en)}
+                      </option>
+                    ))}
+                  </select>
+                  <textarea
+                    value={details}
+                    onChange={(e) => setDetails(e.target.value)}
+                    rows={2}
+                    placeholder={t("বিস্তারিত লিখুন (ঐচ্ছিক)", "Add details (optional)")}
+                    className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs"
+                  />
+                  <button
+                    disabled={busy === o.id}
+                    onClick={() => void submitReturn(o.id, o.order_no)}
+                    className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                  >
+                    {t("রিটার্ন অনুরোধ পাঠান", "Submit request")}
+                  </button>
+                </div>
+              )}
+
+              {msg?.id === o.id && <p className="mt-2 text-[11px] font-semibold text-primary">{msg.text}</p>}
+
             </article>
           );
         })}
