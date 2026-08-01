@@ -166,7 +166,13 @@ export function DeliveryAdmin() {
                         <span className="text-[10px] text-muted-foreground">—</span>
                       )}
                       {d?.last_seen_at && <span className="block text-[10px] text-muted-foreground">{fmtTime(String(d.last_seen_at))}</span>}
+                      {(d?.pod_photo_url || d?.pod_signature_url) && (
+                        <span className="mt-0.5 block text-[10px] font-semibold text-primary">
+                          ✓ প্রমাণ সংরক্ষিত{d?.pod_receiver_name ? ` · ${d.pod_receiver_name}` : ""}
+                        </span>
+                      )}
                     </td>
+
                     <td className="px-3 py-2 font-mono text-[11px]">{d?.otp ?? "—"}</td>
                     <td className="px-3 py-2">
                       {d && (
