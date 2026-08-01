@@ -6,6 +6,8 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { printInvoice } from "@/lib/invoice";
+
 
 export const Route = createFileRoute("/orders")({
   head: () => ({
