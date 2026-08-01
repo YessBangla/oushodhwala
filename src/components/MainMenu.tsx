@@ -242,6 +242,23 @@ export function MobileMenu() {
                   </Link>
                 ))}
               </div>
+
+              <p className="mt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                {en ? "Home services" : "হোম সার্ভিস"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {serviceCats.map((c) => (
+                  <Link
+                    key={c.slug}
+                    to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
+                    search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+                    className="flex items-center gap-2 rounded-xl border border-border px-2.5 py-2 text-[11px] font-semibold text-navy"
+                  >
+                    <span className="text-base">{c.emoji}</span>
+                    <span className="truncate">{pick(lang, c.bn, c.en)}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
 
             <div className="border-t border-border px-4 py-3">
