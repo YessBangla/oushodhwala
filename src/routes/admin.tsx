@@ -8,6 +8,8 @@ import { bn } from "@/data/catalog";
 import { catalogQueryKey } from "@/lib/catalog-db";
 import { MediaGallery, MediaPickerModal } from "@/components/MediaGallery";
 import { ImageAudit } from "@/components/ImageAudit";
+import { ImageRevisions } from "@/components/ImageRevisions";
+
 
 
 export const Route = createFileRoute("/admin")({
@@ -36,6 +38,8 @@ const TABS = [
   { id: "rx", t: "প্রেসক্রিপশন" },
   { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "imgaudit", t: "ছবি যাচাই" },
+  { id: "imgrev", t: "ছবি রিভিশন" },
+
 
   { id: "settings", t: "সেটিংস" },
 ] as const;
@@ -142,6 +146,8 @@ function Admin() {
         {tab === "rx" && <Prescriptions />}
         {tab === "gallery" && <MediaGallery />}
         {tab === "imgaudit" && <ImageAudit />}
+        {tab === "imgrev" && <ImageRevisions />}
+
 
         {tab === "settings" && <Settings />}
       </div>
