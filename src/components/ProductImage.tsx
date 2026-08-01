@@ -45,8 +45,9 @@ export function ProductImage({
           loading={eager ? "eager" : "lazy"}
           decoding="async"
           onError={() => setFailed(true)}
-          className={`absolute inset-0 h-full w-full object-contain p-2 ${imgClassName}`}
+          className={`absolute inset-0 h-full w-full object-contain p-2 ${cropBrand ? "scale-[1.18] origin-top" : ""} ${imgClassName}`}
         />
+
       ) : (
         <span className="absolute inset-0 grid place-items-center text-3xl">{emoji}</span>
       )}
