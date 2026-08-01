@@ -1,7 +1,6 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { type ReactNode } from "react";
 import {
-  Search,
   ShoppingCart,
   Bell,
   MapPin,
@@ -21,20 +20,18 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useLang } from "@/lib/lang";
-
-import { useAuth } from "@/hooks/useAuth";
+import { SearchBox } from "@/components/SearchBox";
+import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
 import { bn } from "@/data/catalog";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count, addresses, activeAddress, wishlist } = useStore();
   const { lang, setLang } = useLang();
-  const { isAdmin } = useAuth();
-  const navigate = useNavigate();
-  const [q, setQ] = useState("");
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
   const en = lang === "en";
+
   const nav = [
     { icon: Home, t: en ? "Home" : "হোম", to: "/" as const },
     { icon: LayoutGrid, t: en ? "Categories" : "ক্যাটাগরি", to: "/categories" as const },
@@ -43,15 +40,6 @@ export function Layout({ children }: { children: ReactNode }) {
     { icon: User, t: en ? "Account" : "একাউন্ট", to: "/account" as const },
   ];
 
-  const menu = [
-    { t: en ? "Store" : "স্টোর", to: "/products" as const, search: { q: "", category: "all", sort: "popular" } },
-    { t: en ? "Categories" : "ক্যাটাগরি", to: "/categories" as const },
-    { t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test" as const },
-    { t: en ? "Doctors" : "ডাক্তার", to: "/doctor-consultation" as const },
-    { t: en ? "Prescription" : "প্রেসক্রিপশন", to: "/prescription" as const },
-    { t: en ? "Offers" : "অফার", to: "/offers" as const },
-    { t: en ? "Help" : "সহায়তা", to: "/help" as const },
-  ];
 
   return (
     <div className="min-h-screen bg-background pb-20 font-sans">
@@ -75,7 +63,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:flex lg:gap-6">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:flex lg:gap-6">
+            <MobileMenu />
             <Link to="/" className="flex min-w-0 items-center gap-2">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl brand-gradient text-lg text-primary-foreground">
                 💊
@@ -86,32 +75,11 @@ export function Layout({ children }: { children: ReactNode }) {
               </span>
             </Link>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                navigate({ to: "/products", search: { q, category: "all", sort: "popular" } });
-              }}
-              className="order-3 col-span-2 flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2.5 focus-within:border-primary focus-within:bg-card lg:order-none lg:col-auto lg:min-w-0 lg:flex-1"
-            >
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                className="w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-                placeholder={en ? "Search medicine, brand or generic..." : "ঔষধ, ব্র্যান্ড বা জেনেরিক খুঁজুন..."}
-                aria-label={en ? "Search" : "সার্চ"}
-              />
-              <button
-                type="submit"
-                className="hidden shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground sm:block"
-              >
-                {en ? "Search" : "খুঁজুন"}
-              </button>
-            </form>
+            <SearchBox className="order-3 col-span-3 lg:order-none lg:min-w-0 lg:flex-1" />
 
             <div className="flex shrink-0 items-center gap-4">
               <div
-                className="flex items-center rounded-full bg-muted p-0.5 text-[11px] font-bold"
+                className="hidden items-center rounded-full bg-muted p-0.5 text-[11px] font-bold sm:flex"
                 role="group"
                 aria-label="ভাষা / Language"
               >
@@ -127,7 +95,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 ))}
               </div>
 
-              <Link to="/wishlist" className="relative text-navy" aria-label="উইশলিস্ট">
+              <Link to="/wishlist" className="relative hidden text-navy sm:block" aria-label="উইশলিস্ট">
                 <Heart className="h-5 w-5" />
                 {wishlist.length > 0 && (
                   <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-sale text-[10px] font-bold text-sale-foreground">
@@ -135,7 +103,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   </span>
                 )}
               </Link>
-              <Link to="/notifications" className="text-navy" aria-label="নোটিফিকেশন">
+              <Link to="/notifications" className="hidden text-navy sm:block" aria-label="নোটিফিকেশন">
                 <Bell className="h-5 w-5" />
               </Link>
               <Link to="/cart" className="relative text-navy" aria-label="কার্ট">
@@ -150,31 +118,8 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="hidden border-t border-border bg-card lg:block">
-          <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-2.5 text-sm font-semibold">
-            {menu.map((m) =>
-              m.search ? (
-                <Link key={m.t} to={m.to} search={m.search} className="text-navy/80 hover:text-primary">
-                  {m.t}
-                </Link>
-              ) : (
-                <Link key={m.t} to={m.to} className="text-navy/80 hover:text-primary">
-                  {m.t}
-                </Link>
-              ),
-            )}
-            {isAdmin && (
-              <Link to="/admin" className="rounded-full bg-navy px-3 py-1 text-xs text-navy-foreground">
-                {en ? "Admin" : "অ্যাডমিন"}
-              </Link>
-            )}
-            <Link to="/account" className="ml-auto flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              {en ? "Deliver to" : "ডেলিভারি"}: {addr ? addr.area : en ? "Add address" : "ঠিকানা যোগ করুন"}
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </nav>
+        <DesktopMenu />
+
 
         <Link
           to="/account"
