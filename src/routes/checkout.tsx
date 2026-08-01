@@ -7,6 +7,7 @@ import { useCatalog, catalogQueryKey, deliveryChargeFor } from "@/lib/catalog-db
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -48,6 +49,7 @@ function Checkout() {
   const [slot, setSlot] = useState<string>(SLOTS[0].bn);
   const [express, setExpress] = useState(false);
   const [form, setForm] = useState({ label: "", area: "", details: "", phone: "" });
+  const [picked, setPicked] = useState<PickedAddress>(emptyAddress);
   const [showForm, setShowForm] = useState(false);
   const [placed, setPlaced] = useState<string | null>(null);
 
@@ -115,7 +117,19 @@ function Checkout() {
       void qc.invalidateQueries({ queryKey: catalogQueryKey });
       void qc.invalidateQueries({ queryKey: ["my-orders"] });
       void qc.invalidateQueries({ queryKey: ["my-notifications"] });
-      setPlaced(data?.order_no ?? "");
+      const orderNo = data?.order_no ?? "";
+      if (orderNo && addr.lat != null && addr.lng != null) {
+        await supabase.rpc("save_order_location", {
+          _order_no: orderNo,
+          _lat: addr.lat,
+          _lng: addr.lng,
+          _district: addr.district ?? "",
+          _city_zone: addr.cityZone ?? "",
+          _thana: addr.thana ?? "",
+          _area: addr.area ?? "",
+        });
+      }
+      setPlaced(orderNo);
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("অর্ডার সম্পন্ন হয়নি", "Order could not be placed");
       if (msg.startsWith("OUT_OF_STOCK")) {
