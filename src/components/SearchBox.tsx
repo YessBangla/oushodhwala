@@ -168,7 +168,9 @@ export function SearchBox({ className = "" }: { className?: string }) {
           role="combobox"
           aria-expanded={open}
           aria-controls="search-suggestions"
+          aria-activedescendant={active >= 0 ? `search-opt-${active}` : undefined}
           aria-autocomplete="list"
+
           className="w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           placeholder={en ? "Search medicine, brand or generic..." : "ঔষধ, ব্র্যান্ড বা জেনেরিক খুঁজুন..."}
           aria-label={en ? "Search" : "সার্চ"}
