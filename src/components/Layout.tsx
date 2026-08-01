@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   ShoppingCart,
   Bell,
@@ -25,6 +25,7 @@ import { SearchBox } from "@/components/SearchBox";
 import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
 import { DeliverToBar } from "@/components/DeliverToBar";
 import { BackToTop } from "@/components/BackToTop";
+import { installErrorLogger } from "@/lib/error-log";
 
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -33,6 +34,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
+
+  useEffect(() => { installErrorLogger(); }, []);
 
   const en = lang === "en";
 
