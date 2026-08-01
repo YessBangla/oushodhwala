@@ -171,28 +171,55 @@ export type Database = {
       categories: {
         Row: {
           active: boolean
+          base_fee: number
           bn: string
           created_at: string
+          description: string
+          description_en: string
           emoji: string
           en: string
+          eta: string
+          eta_en: string
+          home_delivery: boolean
+          home_service: boolean
+          kind: string
+          service_route: string
           slug: string
           sort_order: number
         }
         Insert: {
           active?: boolean
+          base_fee?: number
           bn: string
           created_at?: string
+          description?: string
+          description_en?: string
           emoji?: string
           en: string
+          eta?: string
+          eta_en?: string
+          home_delivery?: boolean
+          home_service?: boolean
+          kind?: string
+          service_route?: string
           slug: string
           sort_order?: number
         }
         Update: {
           active?: boolean
+          base_fee?: number
           bn?: string
           created_at?: string
+          description?: string
+          description_en?: string
           emoji?: string
           en?: string
+          eta?: string
+          eta_en?: string
+          home_delivery?: boolean
+          home_service?: boolean
+          kind?: string
+          service_route?: string
           slug?: string
           sort_order?: number
         }
@@ -1593,6 +1620,81 @@ export type Database = {
         }
         Relationships: []
       }
+      service_requests: {
+        Row: {
+          address: string
+          admin_note: string
+          area: string
+          assignee_name: string
+          assignee_phone: string
+          created_at: string
+          duration: string
+          fee: number
+          id: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_status: string
+          phone: string
+          request_no: string
+          scheduled_date: string
+          service_name: string
+          service_slug: string
+          slot: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          admin_note?: string
+          area?: string
+          assignee_name?: string
+          assignee_phone?: string
+          created_at?: string
+          duration?: string
+          fee?: number
+          id?: string
+          note?: string
+          patient_name?: string
+          payment_method?: string
+          payment_status?: string
+          phone?: string
+          request_no: string
+          scheduled_date: string
+          service_name: string
+          service_slug: string
+          slot?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          admin_note?: string
+          area?: string
+          assignee_name?: string
+          assignee_phone?: string
+          created_at?: string
+          duration?: string
+          fee?: number
+          id?: string
+          note?: string
+          patient_name?: string
+          payment_method?: string
+          payment_status?: string
+          phone?: string
+          request_no?: string
+          scheduled_date?: string
+          service_name?: string
+          service_slug?: string
+          slot?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1765,6 +1867,45 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_set_service_status: {
+        Args: {
+          _admin_note?: string
+          _assignee_name?: string
+          _assignee_phone?: string
+          _request_id: string
+          _status: string
+        }
+        Returns: {
+          address: string
+          admin_note: string
+          area: string
+          assignee_name: string
+          assignee_phone: string
+          created_at: string
+          duration: string
+          fee: number
+          id: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_status: string
+          phone: string
+          request_no: string
+          scheduled_date: string
+          service_name: string
+          service_slug: string
+          slot: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "service_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_set_user_admin: {
         Args: { _make_admin: boolean; _user_id: string }
         Returns: boolean
@@ -1856,6 +1997,50 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "diagnostic_bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      book_home_service: {
+        Args: {
+          _address: string
+          _area: string
+          _duration: string
+          _note: string
+          _patient_name: string
+          _payment_method: string
+          _phone: string
+          _scheduled_date: string
+          _service_slug: string
+          _slot: string
+        }
+        Returns: {
+          address: string
+          admin_note: string
+          area: string
+          assignee_name: string
+          assignee_phone: string
+          created_at: string
+          duration: string
+          fee: number
+          id: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_status: string
+          phone: string
+          request_no: string
+          scheduled_date: string
+          service_name: string
+          service_slug: string
+          slot: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "service_requests"
           isOneToOne: true
           isSetofReturn: false
         }
