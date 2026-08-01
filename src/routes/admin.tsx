@@ -22,6 +22,7 @@ import { AccountsAdmin } from "@/components/AccountsAdmin";
 import { SuppliersAdmin, PurchaseOrdersAdmin, BatchesAdmin } from "@/components/ProcurementAdmin";
 import { SystemMonitor, ErpAudit, ErpReports, ErpRoles } from "@/components/SystemMonitor";
 import { ApiHub } from "@/components/ApiHub";
+import { SupportInbox } from "@/components/SupportInbox";
 import { ReturnsAdmin, ReviewsAdmin } from "@/components/ModerationAdmin";
 import { CampaignsAdmin } from "@/components/CampaignsAdmin";
 import { ReportsAdmin } from "@/components/ReportsAdmin";
@@ -75,6 +76,7 @@ const TABS = [
   { id: "suppliers", t: "সাপ্লায়ার" },
   { id: "purchases", t: "ক্রয় আদেশ" },
   { id: "batches", t: "ব্যাচ ও মেয়াদ" },
+  { id: "support", t: "সাপোর্ট চ্যাট" },
   { id: "apihub", t: "API HUB" },
   { id: "monitor", t: "সিস্টেম মনিটর" },
   { id: "audit", t: "ERP অডিট ট্রেইল" },
@@ -95,7 +97,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "সাপ্লাই চেইন", items: pickTabs(["suppliers", "purchases", "batches", "erpreports"]) },
   { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
-  { label: "সেবা", items: pickTabs(["lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
+  { label: "সেবা", items: pickTabs(["support", "lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
   { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
@@ -217,6 +219,7 @@ function Admin() {
       {tab === "suppliers" && <SuppliersAdmin />}
       {tab === "purchases" && <PurchaseOrdersAdmin />}
       {tab === "batches" && <BatchesAdmin />}
+      {tab === "support" && <SupportInbox />}
       {tab === "apihub" && <ApiHub />}
       {tab === "monitor" && <SystemMonitor />}
       {tab === "audit" && <ErpAudit />}
