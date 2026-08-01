@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, MapPin, RefreshCw, Phone } from "lucide-react";
+import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
+import { SignaturePad } from "@/components/SignaturePad";
+import { uploadFile, safeName } from "@/lib/storage";
+
 
 export const Route = createFileRoute("/delivery")({
   head: () => ({
