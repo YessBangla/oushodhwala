@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Phone, MessageCircle, Video, Paperclip, Send, Mic, FileText, Star, Printer } from "lucide-react";
+import { Phone, MessageCircle, Video, Paperclip, Send, Mic, FileText, Star, Printer, XCircle, ClipboardList } from "lucide-react";
 
 import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
@@ -11,10 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   MODE_LABEL,
   PAYMENT_LABEL,
+  REFUND_LABEL,
+  REFUND_POLICY_BN,
   STATUS_LABEL,
   fmtDateTime,
   fmtTime,
   openConsultFile,
+  refundPreview,
   telNumber,
   uploadConsultFile,
   waNumber,
@@ -117,7 +120,7 @@ function ConsultationRoom() {
   const waText = encodeURIComponent(
     `আসসালামু আলাইকুম, আমি ঔষধওয়ালা থেকে ${appt.patient_name}। ${appt.doctor_name} এর সাথে ${fmtDateTime(appt.scheduled_at)} সময়ে অ্যাপয়েন্টমেন্ট (ইনভয়েস #${appt.invoice_no})।`,
   );
-  const video = doctor?.videoUrl ?? "";
+  const video = (appt.join_url || doctor?.videoUrl) ?? "";
   const started = new Date(appt.scheduled_at).getTime() - 10 * 60000 <= Date.now();
 
   return (
@@ -154,7 +157,11 @@ function ConsultationRoom() {
         )}
       </section>
 
+      <CancelBox appt={appt} qc={qc} />
+
       <Invoice appt={appt} />
+
+      <RxBox appointmentId={id} userId={user.id} doctorName={appt.doctor_name} patientName={appt.patient_name} qc={qc} />
 
       <ChatBox appointmentId={id} userId={user.id} messages={messages} qc={qc} />
 
@@ -162,6 +169,177 @@ function ConsultationRoom() {
 
       <ReviewBox appointmentId={id} doctorId={appt.doctor_id} userId={user.id} name={appt.patient_name} review={review} qc={qc} />
     </div>
+  );
+}
+
+function CancelBox({
+  appt, qc,
+}: {
+  appt: { id: string; status: string; fee: number; scheduled_at: string; payment_status: string; refund_status: string; refund_amount: number; cancel_reason: string };
+  qc: ReturnType<typeof useQueryClient>;
+}) {
+  const [reason, setReason] = useState("");
+  const preview = refundPreview(Number(appt.fee), appt.scheduled_at, appt.payment_status === "paid");
+
+  const cancel = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("cancel_appointment", { _appointment_id: appt.id, _reason: reason.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("অ্যাপয়েন্টমেন্ট বাতিল হয়েছে");
+      void qc.invalidateQueries({ queryKey: ["appointment", appt.id] });
+      void qc.invalidateQueries({ queryKey: ["my-appointments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (appt.status === "cancelled") {
+    return (
+      <section className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-xs">
+        <h2 className="text-sm font-bold text-destructive">অ্যাপয়েন্টমেন্ট বাতিল</h2>
+        {appt.cancel_reason && <p className="mt-1 text-muted-foreground">কারণ: {appt.cancel_reason}</p>}
+        <p className="mt-1 font-semibold">
+          রিফান্ড: {REFUND_LABEL[appt.refund_status] ?? appt.refund_status}
+          {Number(appt.refund_amount) > 0 ? ` · ৳${bn(Number(appt.refund_amount))}` : ""}
+        </p>
+      </section>
+    );
+  }
+  if (appt.status === "completed") return null;
+
+  return (
+    <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+      <h2 className="flex items-center gap-2 text-sm font-bold"><XCircle className="h-4 w-4 text-destructive" /> অ্যাপয়েন্টমেন্ট বাতিল করুন</h2>
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{REFUND_POLICY_BN}</p>
+      <p className="mt-2 rounded-lg bg-secondary p-2.5 text-[11px] font-semibold">
+        এখন বাতিল করলে: {preview.text} {preview.amount > 0 ? `(৳${bn(preview.amount)})` : ""}
+      </p>
+      <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder="বাতিলের কারণ (ঐচ্ছিক)"
+        className="mt-2 w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+      <button onClick={() => cancel.mutate()} disabled={cancel.isPending}
+        className="mt-2 w-full rounded-lg border border-destructive py-2 text-xs font-bold text-destructive disabled:opacity-50">
+        {cancel.isPending ? "বাতিল হচ্ছে..." : "বাতিল নিশ্চিত করুন"}
+      </button>
+    </section>
+  );
+}
+
+type RxItem = { name: string; dose: string; duration: string };
+
+function RxBox({
+  appointmentId, userId, doctorName, patientName, qc,
+}: { appointmentId: string; userId: string; doctorName: string; patientName: string; qc: ReturnType<typeof useQueryClient> }) {
+  const { data: rx } = useQuery({
+    queryKey: ["consult-rx", appointmentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("consultation_prescriptions").select("*").eq("appointment_id", appointmentId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [open, setOpen] = useState(false);
+  const [diagnosis, setDiagnosis] = useState("");
+  const [advice, setAdvice] = useState("");
+  const [followUp, setFollowUp] = useState("");
+  const [items, setItems] = useState<RxItem[]>([{ name: "", dose: "", duration: "" }]);
+  const [loaded, setLoaded] = useState(false);
+
+  if (rx && !loaded) {
+    setLoaded(true);
+    setDiagnosis(rx.diagnosis ?? "");
+    setAdvice(rx.advice ?? "");
+    setFollowUp(rx.follow_up ?? "");
+    const list = (Array.isArray(rx.items) ? rx.items : []) as unknown as RxItem[];
+    if (list.length) setItems(list);
+  }
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const clean = items.filter((i) => i.name.trim()).map((i) => ({ name: i.name.trim(), dose: i.dose.trim(), duration: i.duration.trim() }));
+      if (clean.length === 0 && !diagnosis.trim() && !advice.trim()) throw new Error("অন্তত একটি ঔষধ বা পরামর্শ লিখুন");
+      const payload = {
+        appointment_id: appointmentId,
+        user_id: userId,
+        doctor_name: doctorName,
+        patient_name: patientName,
+        diagnosis: diagnosis.trim(),
+        advice: advice.trim(),
+        items: clean,
+        follow_up: followUp || null,
+      };
+      const { error } = rx
+        ? await supabase.from("consultation_prescriptions").update(payload).eq("appointment_id", appointmentId)
+        : await supabase.from("consultation_prescriptions").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("প্রেসক্রিপশন সংরক্ষণ হয়েছে");
+      void qc.invalidateQueries({ queryKey: ["consult-rx", appointmentId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center">
+        <h2 className="flex items-center gap-2 text-sm font-bold"><ClipboardList className="h-4 w-4 text-primary" /> প্রেসক্রিপশন</h2>
+        {rx && (
+          <Link to="/rx/$id" params={{ id: appointmentId }}
+            className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
+            <Printer className="h-3 w-3" /> প্রিন্ট / PDF
+          </Link>
+        )}
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        কল শেষে ডাক্তারের দেওয়া ঔষধ ও পরামর্শ এখানে লিখে রাখুন — প্রিন্টযোগ্য প্রেসক্রিপশন তৈরি হবে ও একাউন্টে সংরক্ষিত থাকবে।
+      </p>
+
+      {!open && !rx && (
+        <button onClick={() => setOpen(true)} className="mt-3 w-full rounded-lg bg-secondary py-2 text-xs font-bold text-primary-dark">
+          প্রেসক্রিপশন তৈরি করুন
+        </button>
+      )}
+
+      {(open || rx) && (
+        <div className="mt-3 space-y-2">
+          <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} rows={2} maxLength={1000}
+            placeholder="রোগ নির্ণয় / Diagnosis"
+            className="w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+
+          {items.map((it, i) => (
+            <div key={i} className="grid grid-cols-3 gap-2">
+              <input value={it.name} maxLength={120} placeholder="ঔষধের নাম"
+                onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                className="rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+              <input value={it.dose} maxLength={60} placeholder="মাত্রা (১+০+১)"
+                onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, dose: e.target.value } : x)))}
+                className="rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+              <input value={it.duration} maxLength={60} placeholder="সময়কাল (৭ দিন)"
+                onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, duration: e.target.value } : x)))}
+                className="rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+            </div>
+          ))}
+          <button onClick={() => setItems([...items, { name: "", dose: "", duration: "" }])}
+            className="text-[11px] font-semibold text-primary underline">+ আরেকটি ঔষধ</button>
+
+          <textarea value={advice} onChange={(e) => setAdvice(e.target.value)} rows={2} maxLength={1000}
+            placeholder="পরামর্শ / Advice"
+            className="w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+          <label className="block text-[11px] font-semibold text-muted-foreground">
+            ফলো-আপ তারিখ
+            <input type="date" value={followUp} onChange={(e) => setFollowUp(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
+          </label>
+
+          <button onClick={() => save.mutate()} disabled={save.isPending}
+            className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50">
+            {save.isPending ? "সংরক্ষণ হচ্ছে..." : rx ? "প্রেসক্রিপশন হালনাগাদ করুন" : "প্রেসক্রিপশন সংরক্ষণ করুন"}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 

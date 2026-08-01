@@ -35,8 +35,54 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_reminders: {
+        Row: {
+          appointment_id: string
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          sent_at: string | null
+          status: string
+          target: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          sent_at?: string | null
+          status?: string
+          target?: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          sent_at?: string | null
+          status?: string
+          target?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
+          cancel_reason: string
+          cancelled_at: string | null
           created_at: string
           doctor_id: string
           doctor_name: string
@@ -44,6 +90,7 @@ export type Database = {
           fee: number
           id: string
           invoice_no: string
+          join_url: string
           mode: string
           note: string
           patient_name: string
@@ -51,12 +98,17 @@ export type Database = {
           payment_ref: string
           payment_status: string
           phone: string
+          refund_amount: number
+          refund_status: string
+          reminder_sent_at: string | null
           scheduled_at: string
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          cancel_reason?: string
+          cancelled_at?: string | null
           created_at?: string
           doctor_id: string
           doctor_name?: string
@@ -64,6 +116,7 @@ export type Database = {
           fee?: number
           id?: string
           invoice_no: string
+          join_url?: string
           mode?: string
           note?: string
           patient_name?: string
@@ -71,12 +124,17 @@ export type Database = {
           payment_ref?: string
           payment_status?: string
           phone?: string
+          refund_amount?: number
+          refund_status?: string
+          reminder_sent_at?: string | null
           scheduled_at: string
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          cancel_reason?: string
+          cancelled_at?: string | null
           created_at?: string
           doctor_id?: string
           doctor_name?: string
@@ -84,6 +142,7 @@ export type Database = {
           fee?: number
           id?: string
           invoice_no?: string
+          join_url?: string
           mode?: string
           note?: string
           patient_name?: string
@@ -91,6 +150,9 @@ export type Database = {
           payment_ref?: string
           payment_status?: string
           phone?: string
+          refund_amount?: number
+          refund_status?: string
+          reminder_sent_at?: string | null
           scheduled_at?: string
           status?: string
           updated_at?: string
@@ -218,6 +280,88 @@ export type Database = {
           },
         ]
       }
+      consultation_prescriptions: {
+        Row: {
+          advice: string
+          appointment_id: string
+          created_at: string
+          diagnosis: string
+          doctor_name: string
+          follow_up: string | null
+          id: string
+          items: Json
+          patient_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advice?: string
+          appointment_id: string
+          created_at?: string
+          diagnosis?: string
+          doctor_name?: string
+          follow_up?: string | null
+          id?: string
+          items?: Json
+          patient_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advice?: string
+          appointment_id?: string
+          created_at?: string
+          diagnosis?: string
+          doctor_name?: string
+          follow_up?: string | null
+          id?: string
+          items?: Json
+          patient_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_prescriptions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_blackouts: {
+        Row: {
+          created_at: string
+          day: string
+          doctor_id: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          doctor_id: string
+          id?: string
+          reason?: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          doctor_id?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_blackouts_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_reviews: {
         Row: {
           appointment_id: string
@@ -279,11 +423,15 @@ export type Database = {
           online: boolean
           phone: string
           photo_url: string
+          slot_minutes: number
           sort_order: number
           spec: string
           updated_at: string
           video_url: string
           whatsapp: string
+          work_days: number[]
+          work_end: string
+          work_start: string
         }
         Insert: {
           active?: boolean
@@ -297,11 +445,15 @@ export type Database = {
           online?: boolean
           phone?: string
           photo_url?: string
+          slot_minutes?: number
           sort_order?: number
           spec?: string
           updated_at?: string
           video_url?: string
           whatsapp?: string
+          work_days?: number[]
+          work_end?: string
+          work_start?: string
         }
         Update: {
           active?: boolean
@@ -315,11 +467,15 @@ export type Database = {
           online?: boolean
           phone?: string
           photo_url?: string
+          slot_minutes?: number
           sort_order?: number
           spec?: string
           updated_at?: string
           video_url?: string
           whatsapp?: string
+          work_days?: number[]
+          work_end?: string
+          work_start?: string
         }
         Relationships: []
       }
@@ -1197,6 +1353,41 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_set_refund_status: {
+        Args: { _appointment_id: string; _status: string }
+        Returns: {
+          cancel_reason: string
+          cancelled_at: string | null
+          created_at: string
+          doctor_id: string
+          doctor_name: string
+          doctor_spec: string
+          fee: number
+          id: string
+          invoice_no: string
+          join_url: string
+          mode: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_ref: string
+          payment_status: string
+          phone: string
+          refund_amount: number
+          refund_status: string
+          reminder_sent_at: string | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       apply_product_image_map: { Args: never; Returns: number }
       book_appointment: {
         Args: {
@@ -1210,6 +1401,8 @@ export type Database = {
           _scheduled_at: string
         }
         Returns: {
+          cancel_reason: string
+          cancelled_at: string | null
           created_at: string
           doctor_id: string
           doctor_name: string
@@ -1217,6 +1410,7 @@ export type Database = {
           fee: number
           id: string
           invoice_no: string
+          join_url: string
           mode: string
           note: string
           patient_name: string
@@ -1224,6 +1418,44 @@ export type Database = {
           payment_ref: string
           payment_status: string
           phone: string
+          refund_amount: number
+          refund_status: string
+          reminder_sent_at: string | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_appointment: {
+        Args: { _appointment_id: string; _reason?: string }
+        Returns: {
+          cancel_reason: string
+          cancelled_at: string | null
+          created_at: string
+          doctor_id: string
+          doctor_name: string
+          doctor_spec: string
+          fee: number
+          id: string
+          invoice_no: string
+          join_url: string
+          mode: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_ref: string
+          payment_status: string
+          phone: string
+          refund_amount: number
+          refund_status: string
+          reminder_sent_at: string | null
           scheduled_at: string
           status: string
           updated_at: string
@@ -1287,6 +1519,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      queue_appointment_reminders: {
+        Args: { _within_hours?: number }
+        Returns: number
       }
     }
     Enums: {

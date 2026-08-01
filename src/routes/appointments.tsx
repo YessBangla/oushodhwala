@@ -5,7 +5,7 @@ import { CalendarDays } from "lucide-react";
 import { bn } from "@/data/catalog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { MODE_LABEL, STATUS_LABEL, fmtDateTime, type CallMode } from "@/lib/appointments";
+import { MODE_LABEL, REFUND_LABEL, STATUS_LABEL, fmtDateTime, type CallMode } from "@/lib/appointments";
 
 export const Route = createFileRoute("/appointments")({
   head: () => ({
@@ -71,7 +71,9 @@ function Appointments() {
             <Link to="/consultation/$id" params={{ id: a.id }} className="block rounded-2xl border border-border bg-card p-4 transition hover:border-primary">
               <div className="flex items-center gap-2">
                 <p className="text-xs font-bold text-navy">{a.doctor_name}</p>
-                <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
+                <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  a.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-secondary text-primary-dark"
+                }`}>
                   {STATUS_LABEL[a.status] ?? a.status}
                 </span>
               </div>
@@ -83,6 +85,13 @@ function Appointments() {
                 <span className="text-muted-foreground">ইনভয়েস #{a.invoice_no}</span>
                 <span className="ml-auto font-display text-sm font-extrabold text-primary">৳{bn(Number(a.fee))}</span>
               </div>
+              {a.refund_status && a.refund_status !== "none" && (
+                <p className="mt-1 text-[10px] font-semibold text-destructive">
+                  রিফান্ড: {REFUND_LABEL[a.refund_status] ?? a.refund_status}
+                  {Number(a.refund_amount) > 0 ? ` · ৳${bn(Number(a.refund_amount))}` : ""}
+                </p>
+              )}
+              {a.cancel_reason && <p className="mt-0.5 text-[10px] text-muted-foreground">কারণ: {a.cancel_reason}</p>}
             </Link>
           </li>
         ))}

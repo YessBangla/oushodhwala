@@ -31,6 +31,7 @@ import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as RxIdRouteImport } from './routes/rx.$id'
 import { Route as ApiPublicImgSplatRouteImport } from './routes/api/public/img/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -143,6 +144,11 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RxIdRoute = RxIdRouteImport.update({
+  id: '/rx/$id',
+  path: '/rx/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicImgSplatRoute = ApiPublicImgSplatRouteImport.update({
   id: '/api/public/img/$',
   path: '/api/public/img/$',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/rx/$id': typeof RxIdRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
 export interface FileRoutesByTo {
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/rx/$id': typeof RxIdRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
 export interface FileRoutesById {
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/rx/$id': typeof RxIdRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
 export interface FileRouteTypes {
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/consultation/$id'
     | '/product/$id'
+    | '/rx/$id'
     | '/api/public/img/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/consultation/$id'
     | '/product/$id'
+    | '/rx/$id'
     | '/api/public/img/$'
   id:
     | '__root__'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/consultation/$id'
     | '/product/$id'
+    | '/rx/$id'
     | '/api/public/img/$'
   fileRoutesById: FileRoutesById
 }
@@ -326,6 +338,7 @@ export interface RootRouteChildren {
   CategorySlugRoute: typeof CategorySlugRoute
   ConsultationIdRoute: typeof ConsultationIdRoute
   ProductIdRoute: typeof ProductIdRoute
+  RxIdRoute: typeof RxIdRoute
   ApiPublicImgSplatRoute: typeof ApiPublicImgSplatRoute
 }
 
@@ -485,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rx/$id': {
+      id: '/rx/$id'
+      path: '/rx/$id'
+      fullPath: '/rx/$id'
+      preLoaderRoute: typeof RxIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/img/$': {
       id: '/api/public/img/$'
       path: '/api/public/img/$'
@@ -518,6 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategorySlugRoute: CategorySlugRoute,
   ConsultationIdRoute: ConsultationIdRoute,
   ProductIdRoute: ProductIdRoute,
+  RxIdRoute: RxIdRoute,
   ApiPublicImgSplatRoute: ApiPublicImgSplatRoute,
 }
 export const routeTree = rootRouteImport
