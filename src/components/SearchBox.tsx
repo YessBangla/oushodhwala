@@ -30,7 +30,9 @@ export function SearchBox({ className = "" }: { className?: string }) {
   const [active, setActive] = useState(-1);
   const [recent, setRecent] = useState<string[]>([]);
   const boxRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => setRecent(readRecent()), []);
 
