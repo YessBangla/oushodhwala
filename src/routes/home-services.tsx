@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCatalog } from "@/lib/catalog-db";
 import { useT } from "@/lib/i18n";
+import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
 import { useLang, pick } from "@/lib/lang";
 
 const SLOTS = [
@@ -96,6 +97,7 @@ function HomeServices() {
     note: "",
     payment: "cod",
   });
+  const [picked, setPicked] = useState<PickedAddress>(emptyAddress);
 
   const now = new Date();
   const slotDisabled = (startHour: number) => f.date === today && now.getHours() >= startHour;
@@ -282,18 +284,19 @@ function HomeServices() {
             placeholder={t("মোবাইল নম্বর", "Mobile number")}
             className="rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none"
           />
-          <input
-            value={f.address}
-            onChange={(e) => setF({ ...f, address: e.target.value })}
-            placeholder={t("পূর্ণ ঠিকানা", "Full address")}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none sm:col-span-2"
-          />
-          <input
-            value={f.area}
-            onChange={(e) => setF({ ...f, area: e.target.value })}
-            placeholder={t("এলাকা (যেমন: ধানমন্ডি)", "Area (e.g. Dhanmondi)")}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none"
-          />
+          <div className="sm:col-span-2">
+            <AddressPicker
+              value={picked}
+              onChange={(v) => {
+                setPicked(v);
+                setF((prev) => ({
+                  ...prev,
+                  address: [v.details, v.area, v.thana, v.cityZone, v.district].filter(Boolean).join(", "),
+                  area: v.area || v.thana,
+                }));
+              }}
+            />
+          </div>
           <input
             value={f.duration}
             onChange={(e) => setF({ ...f, duration: e.target.value })}

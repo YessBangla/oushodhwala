@@ -7,6 +7,7 @@ import { useCatalog, catalogQueryKey, deliveryChargeFor } from "@/lib/catalog-db
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -48,6 +49,7 @@ function Checkout() {
   const [slot, setSlot] = useState<string>(SLOTS[0].bn);
   const [express, setExpress] = useState(false);
   const [form, setForm] = useState({ label: "", area: "", details: "", phone: "" });
+  const [picked, setPicked] = useState<PickedAddress>(emptyAddress);
   const [showForm, setShowForm] = useState(false);
   const [placed, setPlaced] = useState<string | null>(null);
 
@@ -115,7 +117,19 @@ function Checkout() {
       void qc.invalidateQueries({ queryKey: catalogQueryKey });
       void qc.invalidateQueries({ queryKey: ["my-orders"] });
       void qc.invalidateQueries({ queryKey: ["my-notifications"] });
-      setPlaced(data?.order_no ?? "");
+      const orderNo = data?.order_no ?? "";
+      if (orderNo && addr.lat != null && addr.lng != null) {
+        await supabase.rpc("save_order_location", {
+          _order_no: orderNo,
+          _lat: addr.lat,
+          _lng: addr.lng,
+          _district: addr.district ?? "",
+          _city_zone: addr.cityZone ?? "",
+          _thana: addr.thana ?? "",
+          _area: addr.area ?? "",
+        });
+      }
+      setPlaced(orderNo);
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("অর্ডার সম্পন্ন হয়নি", "Order could not be placed");
       if (msg.startsWith("OUT_OF_STOCK")) {
@@ -181,28 +195,42 @@ function Checkout() {
               ))}
             </div>
             {showForm ? (
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {(["label", "area", "details", "phone"] as const).map((k) => (
+              <div className="mt-3 space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <input
-                    key={k}
-                    value={form[k]}
-                    onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                    placeholder={{
-                      label: t("লেবেল (বাসা/অফিস)", "Label (Home/Office)"),
-                      area: t("এলাকা, শহর", "Area, city"),
-                      details: t("রোড, বাড়ি, ফ্ল্যাট", "Road, house, flat"),
-                      phone: t("মোবাইল নম্বর", "Mobile number"),
-                    }[k]}
+                    value={form.label}
+                    onChange={(e) => setForm({ ...form, label: e.target.value })}
+                    placeholder={t("লেবেল (বাসা/অফিস)", "Label (Home/Office)")}
                     className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
                   />
-                ))}
+                  <input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder={t("মোবাইল নম্বর", "Mobile number")}
+                    className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
+                  />
+                </div>
+                <AddressPicker value={picked} onChange={setPicked} />
                 <button
                   onClick={() => {
-                    if (form.area && form.phone) {
-                      addAddress({ ...form, label: form.label || t("নতুন", "New") });
-                      setForm({ label: "", area: "", details: "", phone: "" });
-                      setShowForm(false);
+                    if (!picked.district || !picked.thana || !picked.details.trim() || !form.phone.trim()) {
+                      toast.error(t("জেলা, থানা, বিস্তারিত ঠিকানা ও মোবাইল নম্বর দিন", "Please provide district, thana, full address and mobile number"));
+                      return;
                     }
+                    addAddress({
+                      label: form.label || t("নতুন", "New"),
+                      phone: form.phone,
+                      area: [picked.area, picked.thana, picked.cityZone, picked.district].filter(Boolean).join(", "),
+                      details: picked.details,
+                      district: picked.district,
+                      cityZone: picked.cityZone,
+                      thana: picked.thana,
+                      lat: picked.lat,
+                      lng: picked.lng,
+                    });
+                    setForm({ label: "", area: "", details: "", phone: "" });
+                    setPicked(emptyAddress);
+                    setShowForm(false);
                   }}
                   className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
                 >

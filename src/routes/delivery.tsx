@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2 } from "lucide-react";
+import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2, Navigation } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +52,8 @@ function DeliveryPanel() {
   const [pod, setPod] = useState<Record<string, { photo?: File | null; sign?: Blob | null; receiver?: string }>>({});
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [lastPing, setLastPing] = useState<string>("");
 
 
   const { data: rider, isLoading: riderLoading } = useQuery({
@@ -87,6 +89,44 @@ function DeliveryPanel() {
       void supabase.removeChannel(ch);
     };
   }, [rider, refetch]);
+
+  // লাইভ লোকেশন স্ট্রিমিং — চলমান ডেলিভারির জন্য রাইডারের অবস্থান পাঠানো হয়
+  const activeIds = rows
+    .filter((r) => !["delivered", "failed"].includes(r.status))
+    .map((r) => r.id)
+    .join(",");
+
+  useEffect(() => {
+    if (!sharing || !activeIds) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setErr("GPS unavailable");
+      setSharing(false);
+      return;
+    }
+    const ids = activeIds.split(",");
+    let last = 0;
+    const watch = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - last < 15000) return; // ১৫ সেকেন্ডে একবার
+        last = now;
+        setLastPing(new Date().toISOString());
+        ids.forEach((id) => {
+          void supabase.rpc("rider_ping_location", {
+            _delivery_id: id,
+            _lat: pos.coords.latitude,
+            _lng: pos.coords.longitude,
+          });
+        });
+      },
+      () => {
+        setSharing(false);
+        setErr("LOCATION_DENIED");
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(watch);
+  }, [sharing, activeIds]);
 
   const update = async (row: Row, status: string) => {
     setErr("");
@@ -198,6 +238,28 @@ function DeliveryPanel() {
         <button onClick={() => void refetch()} className="ml-auto rounded-lg bg-muted p-2" aria-label={t("রিফ্রেশ", "Refresh")}>
           <RefreshCw className="h-4 w-4" />
         </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
+        <button
+          onClick={() => setSharing((v) => !v)}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold ${
+            sharing ? "bg-primary text-primary-foreground" : "bg-muted text-navy"
+          }`}
+        >
+          <Navigation className={`h-3.5 w-3.5 ${sharing ? "animate-pulse" : ""}`} />
+          {sharing ? t("লাইভ লোকেশন চালু", "Live location on") : t("লাইভ লোকেশন চালু করুন", "Start live location")}
+        </button>
+        <p className="text-[10px] text-muted-foreground">
+          {sharing
+            ? t("গ্রাহক আপনার অবস্থান ম্যাপে দেখতে পাচ্ছেন।", "Customers can see your position on the map.")
+            : t("চালু করলে গ্রাহক রিয়েল-টাইমে আপনাকে ট্র্যাক করতে পারবেন।", "Turn on so customers can track you in real time.")}
+        </p>
+        {lastPing && (
+          <span className="ml-auto text-[10px] font-semibold text-primary">
+            {t("সর্বশেষ পাঠানো", "Last sent")}: {fmtTime(lastPing, t.en)}
+          </span>
+        )}
       </div>
 
       {err && <p className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-[11px] font-semibold text-destructive">{err}</p>}

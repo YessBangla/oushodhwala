@@ -14,7 +14,18 @@ export type Order = {
   phone: string;
 };
 
-export type Address = { id: string; label: string; area: string; details: string; phone: string };
+export type Address = {
+  id: string;
+  label: string;
+  area: string;
+  details: string;
+  phone: string;
+  district?: string;
+  cityZone?: string;
+  thana?: string;
+  lat?: number | null;
+  lng?: number | null;
+};
 
 type Store = {
   cart: CartLine[];

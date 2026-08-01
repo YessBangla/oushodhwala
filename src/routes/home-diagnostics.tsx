@@ -7,6 +7,7 @@ import { useCatalog } from "@/lib/catalog-db";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
 import { matchesQuery } from "@/lib/bn-search";
 import { resolveDownloadUrl, resolveFileUrl } from "@/lib/storage";
 
@@ -73,6 +74,7 @@ function HomeDiagnostics() {
   const [date, setDate] = useState(days[0]!.iso);
   const [slot, setSlot] = useState(SLOTS[0]!.id);
   const [form, setForm] = useState({ name: "", phone: "", area: "", address: "", note: "" });
+  const [addr, setAddr] = useState<PickedAddress>(emptyAddress);
   const [pay, setPay] = useState("cod");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -262,17 +264,16 @@ function HomeDiagnostics() {
           placeholder={t("মোবাইল নম্বর", "Mobile number")}
           className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
         />
-        <input
-          value={form.area}
-          onChange={(e) => setForm({ ...form, area: e.target.value })}
-          placeholder={t("এলাকা (যেমন: ধানমন্ডি)", "Area (e.g. Dhanmondi)")}
-          className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-        />
-        <input
-          value={form.address}
-          onChange={(e) => setForm({ ...form, address: e.target.value })}
-          placeholder={t("বিস্তারিত ঠিকানা", "Full address")}
-          className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
+        <AddressPicker
+          value={addr}
+          onChange={(v) => {
+            setAddr(v);
+            setForm((prev) => ({
+              ...prev,
+              address: [v.details, v.area, v.thana, v.cityZone, v.district].filter(Boolean).join(", "),
+              area: v.area || v.thana,
+            }));
+          }}
         />
         <textarea
           value={form.note}

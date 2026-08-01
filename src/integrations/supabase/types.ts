@@ -540,12 +540,16 @@ export type Database = {
           address: string
           area: string
           booking_no: string
+          city_zone: string
           collection_fee: number
           collector_name: string
           collector_phone: string
           created_at: string
           discount: number
+          district: string
           id: string
+          lat: number | null
+          lng: number | null
           note: string
           patient_name: string
           payment_method: string
@@ -557,6 +561,7 @@ export type Database = {
           status: string
           subtotal: number
           tests: Json
+          thana: string
           total: number
           updated_at: string
           user_id: string
@@ -565,12 +570,16 @@ export type Database = {
           address?: string
           area?: string
           booking_no: string
+          city_zone?: string
           collection_fee?: number
           collector_name?: string
           collector_phone?: string
           created_at?: string
           discount?: number
+          district?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           note?: string
           patient_name?: string
           payment_method?: string
@@ -582,6 +591,7 @@ export type Database = {
           status?: string
           subtotal?: number
           tests?: Json
+          thana?: string
           total?: number
           updated_at?: string
           user_id: string
@@ -590,12 +600,16 @@ export type Database = {
           address?: string
           area?: string
           booking_no?: string
+          city_zone?: string
           collection_fee?: number
           collector_name?: string
           collector_phone?: string
           created_at?: string
           discount?: number
+          district?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           note?: string
           patient_name?: string
           payment_method?: string
@@ -607,6 +621,7 @@ export type Database = {
           status?: string
           subtotal?: number
           tests?: Json
+          thana?: string
           total?: number
           updated_at?: string
           user_id?: string
@@ -1275,11 +1290,16 @@ export type Database = {
       orders: {
         Row: {
           address: string
+          area: string
+          city_zone: string
           created_at: string
           customer_name: string
           delivery_fee: number
           discount: number
+          district: string
           id: string
+          lat: number | null
+          lng: number | null
           order_no: string
           payment_method: string
           payment_ref: string
@@ -1288,17 +1308,23 @@ export type Database = {
           slot: string
           status: string
           subtotal: number
+          thana: string
           total: number
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string
+          area?: string
+          city_zone?: string
           created_at?: string
           customer_name?: string
           delivery_fee?: number
           discount?: number
+          district?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           order_no: string
           payment_method?: string
           payment_ref?: string
@@ -1307,17 +1333,23 @@ export type Database = {
           slot?: string
           status?: string
           subtotal?: number
+          thana?: string
           total?: number
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string
+          area?: string
+          city_zone?: string
           created_at?: string
           customer_name?: string
           delivery_fee?: number
           discount?: number
+          district?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           order_no?: string
           payment_method?: string
           payment_ref?: string
@@ -1326,6 +1358,7 @@ export type Database = {
           slot?: string
           status?: string
           subtotal?: number
+          thana?: string
           total?: number
           updated_at?: string
           user_id?: string
@@ -1627,10 +1660,14 @@ export type Database = {
           area: string
           assignee_name: string
           assignee_phone: string
+          city_zone: string
           created_at: string
+          district: string
           duration: string
           fee: number
           id: string
+          lat: number | null
+          lng: number | null
           note: string
           patient_name: string
           payment_method: string
@@ -1642,6 +1679,7 @@ export type Database = {
           service_slug: string
           slot: string
           status: string
+          thana: string
           updated_at: string
           user_id: string
         }
@@ -1651,10 +1689,14 @@ export type Database = {
           area?: string
           assignee_name?: string
           assignee_phone?: string
+          city_zone?: string
           created_at?: string
+          district?: string
           duration?: string
           fee?: number
           id?: string
+          lat?: number | null
+          lng?: number | null
           note?: string
           patient_name?: string
           payment_method?: string
@@ -1666,6 +1708,7 @@ export type Database = {
           service_slug: string
           slot?: string
           status?: string
+          thana?: string
           updated_at?: string
           user_id: string
         }
@@ -1675,10 +1718,14 @@ export type Database = {
           area?: string
           assignee_name?: string
           assignee_phone?: string
+          city_zone?: string
           created_at?: string
+          district?: string
           duration?: string
           fee?: number
           id?: string
+          lat?: number | null
+          lng?: number | null
           note?: string
           patient_name?: string
           payment_method?: string
@@ -1690,6 +1737,7 @@ export type Database = {
           service_slug?: string
           slot?: string
           status?: string
+          thana?: string
           updated_at?: string
           user_id?: string
         }
@@ -1776,12 +1824,16 @@ export type Database = {
           address: string
           area: string
           booking_no: string
+          city_zone: string
           collection_fee: number
           collector_name: string
           collector_phone: string
           created_at: string
           discount: number
+          district: string
           id: string
+          lat: number | null
+          lng: number | null
           note: string
           patient_name: string
           payment_method: string
@@ -1793,6 +1845,7 @@ export type Database = {
           status: string
           subtotal: number
           tests: Json
+          thana: string
           total: number
           updated_at: string
           user_id: string
@@ -1808,11 +1861,16 @@ export type Database = {
         Args: { _note?: string; _order_id: string; _status: string }
         Returns: {
           address: string
+          area: string
+          city_zone: string
           created_at: string
           customer_name: string
           delivery_fee: number
           discount: number
+          district: string
           id: string
+          lat: number | null
+          lng: number | null
           order_no: string
           payment_method: string
           payment_ref: string
@@ -1821,6 +1879,7 @@ export type Database = {
           slot: string
           status: string
           subtotal: number
+          thana: string
           total: number
           updated_at: string
           user_id: string
@@ -1881,10 +1940,14 @@ export type Database = {
           area: string
           assignee_name: string
           assignee_phone: string
+          city_zone: string
           created_at: string
+          district: string
           duration: string
           fee: number
           id: string
+          lat: number | null
+          lng: number | null
           note: string
           patient_name: string
           payment_method: string
@@ -1896,6 +1959,7 @@ export type Database = {
           service_slug: string
           slot: string
           status: string
+          thana: string
           updated_at: string
           user_id: string
         }
@@ -1973,12 +2037,16 @@ export type Database = {
           address: string
           area: string
           booking_no: string
+          city_zone: string
           collection_fee: number
           collector_name: string
           collector_phone: string
           created_at: string
           discount: number
+          district: string
           id: string
+          lat: number | null
+          lng: number | null
           note: string
           patient_name: string
           payment_method: string
@@ -1990,6 +2058,7 @@ export type Database = {
           status: string
           subtotal: number
           tests: Json
+          thana: string
           total: number
           updated_at: string
           user_id: string
@@ -2020,10 +2089,14 @@ export type Database = {
           area: string
           assignee_name: string
           assignee_phone: string
+          city_zone: string
           created_at: string
+          district: string
           duration: string
           fee: number
           id: string
+          lat: number | null
+          lng: number | null
           note: string
           patient_name: string
           payment_method: string
@@ -2035,6 +2108,7 @@ export type Database = {
           service_slug: string
           slot: string
           status: string
+          thana: string
           updated_at: string
           user_id: string
         }
@@ -2129,11 +2203,16 @@ export type Database = {
         }
         Returns: {
           address: string
+          area: string
+          city_zone: string
           created_at: string
           customer_name: string
           delivery_fee: number
           discount: number
+          district: string
           id: string
+          lat: number | null
+          lng: number | null
           order_no: string
           payment_method: string
           payment_ref: string
@@ -2142,6 +2221,7 @@ export type Database = {
           slot: string
           status: string
           subtotal: number
+          thana: string
           total: number
           updated_at: string
           user_id: string
@@ -2156,6 +2236,10 @@ export type Database = {
       queue_appointment_reminders: {
         Args: { _within_hours?: number }
         Returns: number
+      }
+      rider_ping_location: {
+        Args: { _delivery_id: string; _lat: number; _lng: number }
+        Returns: boolean
       }
       rider_update_delivery:
         | {
@@ -2239,6 +2323,18 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      save_order_location: {
+        Args: {
+          _area?: string
+          _city_zone?: string
+          _district?: string
+          _lat: number
+          _lng: number
+          _order_no: string
+          _thana?: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
