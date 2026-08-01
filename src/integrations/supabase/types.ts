@@ -1106,6 +1106,66 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          points_earned: number
+          points_spent: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          points_earned?: number
+          points_spent?: number
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          points_earned?: number
+          points_spent?: number
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          order_no: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          order_no?: string
+          points: number
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          order_no?: string
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           created_at: string
@@ -1897,6 +1957,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_loyalty: {
+        Args: { _points: number; _reason: string; _user_id: string }
+        Returns: {
+          balance: number
+          created_at: string
+          points_earned: number
+          points_spent: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "loyalty_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_assign_delivery: {
         Args: { _eta?: number; _order_id: string; _rider_id: string }
         Returns: {
@@ -1940,6 +2018,18 @@ export type Database = {
           orders_count: number
           phone: string
           total_spent: number
+          user_id: string
+        }[]
+      }
+      admin_list_loyalty: {
+        Args: { _limit?: number }
+        Returns: {
+          balance: number
+          name: string
+          phone: string
+          points_earned: number
+          points_spent: number
+          tier: string
           user_id: string
         }[]
       }
@@ -2304,6 +2394,48 @@ export type Database = {
         Returns: boolean
       }
       is_rider: { Args: { _user_id: string }; Returns: boolean }
+      loyalty_apply: {
+        Args: {
+          _kind: string
+          _order_no: string
+          _points: number
+          _reason: string
+          _user_id: string
+        }
+        Returns: {
+          balance: number
+          created_at: string
+          points_earned: number
+          points_spent: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "loyalty_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      my_loyalty: {
+        Args: never
+        Returns: {
+          balance: number
+          created_at: string
+          points_earned: number
+          points_spent: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "loyalty_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       my_rider: {
         Args: never
         Returns: {
@@ -2371,6 +2503,24 @@ export type Database = {
       queue_appointment_reminders: {
         Args: { _within_hours?: number }
         Returns: number
+      }
+      redeem_loyalty: {
+        Args: { _points: number }
+        Returns: {
+          balance: number
+          created_at: string
+          points_earned: number
+          points_spent: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "loyalty_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       rider_ping_location: {
         Args: { _delivery_id: string; _lat: number; _lng: number }
