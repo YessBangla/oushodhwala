@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCatalog } from "@/lib/catalog-db";
 import { useT } from "@/lib/i18n";
+import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
 import { useLang, pick } from "@/lib/lang";
 
 const SLOTS = [
@@ -96,6 +97,7 @@ function HomeServices() {
     note: "",
     payment: "cod",
   });
+  const [picked, setPicked] = useState<PickedAddress>(emptyAddress);
 
   const now = new Date();
   const slotDisabled = (startHour: number) => f.date === today && now.getHours() >= startHour;
