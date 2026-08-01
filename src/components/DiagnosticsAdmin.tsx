@@ -72,6 +72,38 @@ export function DiagnosticsAdmin() {
     void qc.invalidateQueries({ queryKey: ["admin-diagnostics"] });
   };
 
+  /** রিপোর্ট ফাইল আপলোড → স্টোরেজ পাথ সংরক্ষণ ও স্ট্যাটাস "রিপোর্ট প্রস্তুত" */
+  const uploadReport = async (b: Booking, file: File) => {
+    setUploading(b.id);
+    try {
+      const path = await uploadFile("reports", `${b.booking_no}/${Date.now()}-${safeName(file.name)}`, file, file.type);
+      const { error } = await supabase.rpc("admin_set_diagnostic_status", {
+        _booking_id: b.id,
+        _status: "report_ready",
+        _collector_name: edit[b.id]?.collector ?? "",
+        _collector_phone: "",
+        _report_url: path,
+      });
+      if (error) throw error;
+      toast.success("রিপোর্ট আপলোড হয়েছে ও রোগীকে জানানো হয়েছে");
+      void qc.invalidateQueries({ queryKey: ["admin-diagnostics"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading("");
+    }
+  };
+
+  const openReport = async (b: Booking) => {
+    const url = await resolveFileUrl("reports", b.report_url);
+    if (!url) {
+      toast.error("রিপোর্ট পাওয়া যায়নি");
+      return;
+    }
+    window.open(url, "_blank", "noopener");
+  };
+
+
   const exportCsv = () => {
     const head = ["booking_no", "patient", "phone", "date", "slot", "area", "total", "status"];
     const body = list.map((r) => [r.booking_no, r.patient_name, r.phone, r.scheduled_date, r.slot, r.area, r.total, r.status]);
