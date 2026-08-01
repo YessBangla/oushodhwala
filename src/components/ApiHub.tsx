@@ -48,6 +48,25 @@ const GROUPS = [
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
+/** এনভায়রনমেন্ট — একই API ভিন্ন সার্ভারে টেস্ট করার জন্য */
+const ENVS = [
+  { id: "dev", t: "ডেভেলপমেন্ট", key: "api_base_dev", fallback: "http://localhost:8080" },
+  { id: "staging", t: "স্টেজিং", key: "api_base_staging", fallback: "https://id-preview--4c282ff2-061d-4bef-824e-7eb6c51ba36f.lovable.app" },
+  { id: "prod", t: "প্রোডাকশন", key: "api_base_prod", fallback: "https://oushodhwala.lovable.app" },
+] as const;
+
+type EnvId = (typeof ENVS)[number]["id"];
+
+/** রিলেটিভ পাথ হলে নির্বাচিত এনভায়রনমেন্টের বেস URL যুক্ত করে */
+function resolveUrl(url: string, base: string) {
+  const u = (url || "").trim();
+  if (!u) return u;
+  if (/^https?:\/\//i.test(u)) return u;
+  const b = (base || "").trim().replace(/\/$/, "");
+  return b + (u.startsWith("/") ? u : `/${u}`);
+}
+
+
 const EMPTY = {
   name: "",
   grp: "general",
@@ -83,6 +102,41 @@ export function ApiHub() {
   const [filter, setFilter] = useState("all");
   const [result, setResult] = useState<(ApiTestResult & { name: string }) | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [env, setEnv] = useState<EnvId>("prod");
+  const [baseDraft, setBaseDraft] = useState<string | null>(null);
+
+  const { data: bases = {} } = useQuery({
+    queryKey: ["api-env-bases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ENVS.map((e) => e.key));
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const r of data ?? []) map[(r as { key: string }).key] = (r as { value: string }).value;
+      return map;
+    },
+  });
+
+  const envDef = ENVS.find((e) => e.id === env)!;
+  const baseUrl = (bases[envDef.key] ?? "").trim() || envDef.fallback;
+
+  const saveBase = useMutation({
+    mutationFn: async (value: string) => {
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ key: envDef.key, value: value.trim(), label: `API base — ${envDef.t}` }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("বেস URL সংরক্ষিত");
+      setBaseDraft(null);
+      void qc.invalidateQueries({ queryKey: ["api-env-bases"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["api-endpoints"],
@@ -160,16 +214,17 @@ export function ApiHub() {
 
   async function runOne(ep: Endpoint) {
     setBusyId(ep.id);
+    const target = resolveUrl(ep.url, baseUrl);
     try {
       const r = await test({
         data: {
-          url: ep.url,
+          url: target,
           method: ep.method,
           headers: ep.headers ?? {},
           body: ep.sample_body || "",
         },
       });
-      setResult({ ...r, name: ep.name });
+      setResult({ ...r, name: `${ep.name} · ${envDef.t}` });
       await supabase
         .from("api_endpoints")
         .update({
@@ -182,9 +237,10 @@ export function ApiHub() {
       const { data: u } = await supabase.auth.getUser();
       await supabase.from("api_test_logs").insert({
         endpoint_id: ep.id,
-        name: ep.name,
+        name: `${ep.name} [${envDef.t}]`,
         method: ep.method,
-        url: ep.url,
+        url: target,
+
         status_code: r.status,
         ok: r.ok,
         duration_ms: r.ms,
@@ -228,6 +284,57 @@ export function ApiHub() {
           </div>
         ))}
       </div>
+
+      {/* এনভায়রনমেন্ট সুইচ */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="mr-2 text-sm font-extrabold">এনভায়রনমেন্ট</h3>
+          <div className="flex rounded-lg bg-muted p-0.5">
+            {ENVS.map((e) => (
+              <button
+                key={e.id}
+                onClick={() => {
+                  setEnv(e.id);
+                  setBaseDraft(null);
+                }}
+                className={`rounded-md px-3 py-1.5 text-xs font-bold ${
+                  env === e.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {e.t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            className="h-11 min-w-[240px] flex-1 rounded-lg border border-border bg-background px-3 font-mono text-sm"
+            placeholder="বেস URL (https://...)"
+            value={baseDraft ?? baseUrl}
+            onChange={(ev) => setBaseDraft(ev.target.value)}
+          />
+          <button
+            className="h-11 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            disabled={saveBase.isPending || baseDraft === null || baseDraft.trim() === baseUrl}
+            onClick={() => saveBase.mutate(baseDraft ?? baseUrl)}
+          >
+            সংরক্ষণ
+          </button>
+          {baseDraft !== null && (
+            <button
+              className="h-11 rounded-lg border border-border px-4 text-sm font-bold"
+              onClick={() => setBaseDraft(null)}
+            >
+              বাতিল
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          রিলেটিভ পাথ (যেমন <span className="font-mono">/api/public/health</span>) এই বেস URL দিয়ে টেস্ট হবে; সম্পূর্ণ
+          URL থাকলে তা অপরিবর্তিত থাকবে।
+        </p>
+      </div>
+
 
       {/* ফর্ম */}
       <div className="rounded-xl border border-border bg-card p-4">
@@ -385,7 +492,10 @@ export function ApiHub() {
                     {!ep.active && <span className="text-[10px] text-muted-foreground">(নিষ্ক্রিয়)</span>}
                     <StatusPill ok={ep.last_ok} status={ep.last_status} />
                   </div>
-                  <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">{ep.url}</p>
+                  <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">
+                    {resolveUrl(ep.url, baseUrl)}
+                  </p>
+
                   <p className="text-[11px] text-muted-foreground">
                     {ep.note} · সর্বশেষ: {fmt(ep.last_tested_at)}
                     {ep.last_ms ? ` · ${ep.last_ms}ms` : ""}
