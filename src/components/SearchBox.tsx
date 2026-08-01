@@ -81,15 +81,36 @@ export function SearchBox({ className = "" }: { className?: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const [scope, setScope] = useState<Scope>("all");
+  const { categories } = useCatalog();
+
   const enabled = debounced.length >= 2;
   const { data, isFetching } = useQuery({
     queryKey: ["search-suggest", debounced],
-    queryFn: () => searchProducts({ data: { q: debounced, limit: 7 } }),
-    enabled,
+    queryFn: () => searchProducts({ data: { q: debounced, limit: 10 } }),
+    enabled: enabled && scope !== "service",
     staleTime: 60_000,
   });
 
-  const rows = useMemo(() => (enabled ? (data?.rows ?? []) : []), [data, enabled]);
+  const rows = useMemo(() => {
+    if (!enabled || scope === "service") return [];
+    const list = [...(data?.rows ?? [])];
+    list.sort(
+      (a, b) =>
+        relevance(debounced, a.name, a.en, a.brand, a.generic) - relevance(debounced, b.name, b.en, b.brand, b.generic),
+    );
+    return list.slice(0, 7);
+  }, [data, enabled, debounced, scope]);
+
+  const services = useMemo(() => {
+    if (!enabled || scope === "product") return [];
+    return categories
+      .filter((c) => c.kind === "service")
+      .filter((c) => matchesQuery(debounced, c.bn, c.en, c.desc, c.descEn, c.slug))
+      .sort((a, b) => relevance(debounced, a.bn, a.en) - relevance(debounced, b.bn, b.en))
+      .slice(0, 4);
+  }, [categories, debounced, enabled, scope]);
+
 
   const saveTerm = (term: string) => {
     const next = [term, ...readRecent().filter((r) => r !== term)].slice(0, 6);
