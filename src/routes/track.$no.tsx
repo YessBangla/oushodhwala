@@ -126,6 +126,17 @@ function Track() {
       <p className="text-xs text-muted-foreground">
         #{order.order_no} · {t.money(Number(order.total))} · {order.address}
       </p>
+      <a
+        href={`https://wa.me/?text=${encodeURIComponent(
+          `${t("অর্ডার", "Order")} #${order.order_no} — ${typeof window !== "undefined" ? window.location.href : ""}`,
+        )}`}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-[11px] font-semibold"
+      >
+        <Share2 className="h-3.5 w-3.5 text-primary" /> {t("ট্র্যাকিং লিংক শেয়ার করুন", "Share tracking link")}
+      </a>
+
 
       {!delivery && (
         <div className="mt-4 rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground">
