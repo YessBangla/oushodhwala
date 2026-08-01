@@ -22,7 +22,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/home-services")({
-  validateSearch: (s: Record<string, unknown>) => ({ s: typeof s.s === "string" ? s.s : "" }),
+  validateSearch: (s: Record<string, unknown>) => ({ s: typeof s["s"] === "string" ? (s["s"] as string) : "" }),
   head: () => ({
     meta: [
       { title: "হোম হেলথ সার্ভিস — নার্স, ডাক্তার ও কেয়ারগিভার | ঔষধওয়ালা" },
