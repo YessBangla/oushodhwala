@@ -2402,6 +2402,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_erp_users: {
+        Args: never
+        Returns: {
+          is_admin: boolean
+          is_erp_manager: boolean
+          name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       admin_list_loyalty: {
         Args: { _limit?: number }
         Returns: {
@@ -2483,6 +2493,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_set_erp_manager: {
+        Args: { _grant: boolean; _user_id: string }
+        Returns: boolean
       }
       admin_set_order_status: {
         Args: { _note?: string; _order_id: string; _status: string }
