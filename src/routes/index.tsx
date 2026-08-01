@@ -189,7 +189,7 @@ function Index() {
       <section className="pt-8">
         <SectionTitle title={t("ক্যাটাগরি", "Categories")} to="/categories" label={t("সব দেখুন", "See all")} />
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
-          {categories.slice(0, 8).map((c) => (
+          {categories.filter((c) => c.kind !== "service").slice(0, 8).map((c) => (
             <Link
               key={c.slug}
               to="/category/$slug"

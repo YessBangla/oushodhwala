@@ -9,6 +9,7 @@ import {
   Upload,
   Tag,
   LifeBuoy,
+  HeartHandshake,
   Store,
   Menu,
   X,
@@ -32,6 +33,7 @@ function useItems() {
     { t: en ? "Store" : "স্টোর", to: "/products", icon: Store, search: { q: "", category: "all", sort: "popular" } },
     { t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test", icon: FlaskConical },
     { t: en ? "Home Diagnostics" : "বাসায় ডায়াগনস্টিক", to: "/home-diagnostics", icon: HomeIcon },
+    { t: en ? "Home Services" : "হোম সার্ভিস", to: "/home-services", icon: HeartHandshake },
     { t: en ? "Doctors" : "ডাক্তার", to: "/doctor-consultation", icon: Stethoscope },
     { t: en ? "Prescription" : "প্রেসক্রিপশন", to: "/prescription", icon: Upload },
     { t: en ? "Offers" : "অফার", to: "/offers", icon: Tag },
@@ -43,6 +45,8 @@ function useItems() {
 /** ডেস্কটপ মেনুবার — ক্যাটাগরি মেগা-ড্রপডাউনসহ */
 export function DesktopMenu() {
   const { categories } = useCatalog();
+  const productCats = categories.filter((c) => c.kind !== "service");
+  const serviceCats = categories.filter((c) => c.kind === "service");
   const { lang } = useLang();
   const { isAdmin } = useAuth();
   const en = lang === "en";
@@ -68,7 +72,7 @@ export function DesktopMenu() {
           {openCat && (
             <div className="absolute left-0 top-full z-40 w-[720px] rounded-b-2xl border border-border bg-card p-3 shadow-[var(--shadow-elevated)]">
               <div className="grid grid-cols-3 gap-1">
-                {categories.map((c) => (
+                {productCats.map((c) => (
                   <Link
                     key={c.slug}
                     to="/category/$slug"
@@ -79,6 +83,21 @@ export function DesktopMenu() {
                       {c.emoji}
                     </span>
                     <span className="truncate">{pick(lang, c.bn, c.en)}</span>
+                  </Link>
+                ))}
+              </div>
+              <p className="mt-3 px-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                {en ? "Home services" : "হোম সার্ভিস"}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {serviceCats.map((c) => (
+                  <Link
+                    key={c.slug}
+                    to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
+                    search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+                    className="rounded-lg bg-secondary px-2.5 py-1.5 text-[11px] font-semibold text-primary-dark hover:bg-primary/10"
+                  >
+                    {c.emoji} {pick(lang, c.bn, c.en)}
                   </Link>
                 ))}
               </div>
@@ -126,6 +145,8 @@ export function DesktopMenu() {
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
   const { categories } = useCatalog();
+  const productCats = categories.filter((c) => c.kind !== "service");
+  const serviceCats = categories.filter((c) => c.kind === "service");
   const { lang } = useLang();
   const { isAdmin } = useAuth();
   const en = lang === "en";
@@ -209,7 +230,7 @@ export function MobileMenu() {
                 {en ? "Categories" : "ক্যাটাগরি"}
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {categories.map((c) => (
+                {productCats.map((c) => (
                   <Link
                     key={c.slug}
                     to="/category/$slug"
