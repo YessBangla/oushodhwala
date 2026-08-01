@@ -49,7 +49,10 @@ function Checkout() {
   const couponCut = appliedOffer
     ? Math.min(Math.round((subtotal * appliedOffer.discountPct) / 100), appliedOffer.maxDiscount || Infinity)
     : 0;
-  const delivery = deliveryChargeFor(subtotal - couponCut, settings);
+  const expressOn = settings.expressEnabled && express;
+  const expressFee = expressOn ? settings.expressFee : 0;
+  const delivery = deliveryChargeFor(subtotal - couponCut, settings) + expressFee;
+  const effectiveSlot = expressOn ? `জরুরি ডেলিভারি (${settings.expressEta})` : slot;
   const total = Math.max(0, subtotal - couponCut + delivery);
   const payments = ALL_PAYMENTS.filter((m) => settings[m.key]);
   const method: string = payments.some((m) => m.id === payment) ? payment : (payments[0]?.id ?? "cod");
