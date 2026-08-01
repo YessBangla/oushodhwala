@@ -10,6 +10,8 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductReviews } from "@/components/ProductReviews";
 import { RefillReminder } from "@/components/RefillReminder";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
+import { pushRecent } from "@/lib/recent";
 
 import { useStore, toLine } from "@/lib/store";
 import { useLang, pick } from "@/lib/lang";
@@ -88,6 +90,9 @@ function ProductPage() {
   useEffect(() => {
     setData(loaded);
   }, [loaded]);
+  useEffect(() => {
+    pushRecent(data.product.id);
+  }, [data.product.id]);
 
   const { product: p, related, variants, generic } = data;
   const { lang } = useLang();
@@ -355,6 +360,10 @@ function ProductPage() {
           ))}
         </div>
       </section>
+
+      <div className={reading ? "hidden" : ""}>
+        <RecentlyViewed excludeId={p.id} />
+      </div>
     </div>
   );
 }
