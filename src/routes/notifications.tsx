@@ -19,12 +19,28 @@ export const Route = createFileRoute("/notifications")({
   component: Notifications,
 });
 
-const ICON: Record<string, string> = { order: "🚚", offer: "🎟️", lab: "🧪", system: "🔔" };
+const ICON: Record<string, string> = {
+  order: "🚚",
+  offer: "🎟️",
+  lab: "🧪",
+  diagnostic: "🧪",
+  appointment: "🩺",
+  service: "🏠",
+  system: "🔔",
+};
+
+const FILTERS = [
+  { key: "all", bn: "সব", en: "All" },
+  { key: "order", bn: "ডেলিভারি", en: "Delivery" },
+  { key: "appointment", bn: "কনসালটেশন", en: "Consultation" },
+  { key: "service", bn: "হোম সার্ভিস", en: "Home service" },
+] as const;
 
 function Notifications() {
   const t = useT();
   const { user, loading } = useAuth();
   const qc = useQueryClient();
+  const [filter, setFilter] = useState<string>("all");
 
   const { data } = useQuery({
     queryKey: ["my-notifications"],
@@ -39,6 +55,20 @@ function Notifications() {
       return data;
     },
   });
+
+  // রিয়েল-টাইম — স্ট্যাটাস বদলালেই নতুন নোটিফিকেশন চলে আসবে
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel("my-notifications")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () =>
+        qc.invalidateQueries({ queryKey: ["my-notifications"] }),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [user, qc]);
 
   const unread = (data ?? []).filter((n) => !n.read).map((n) => n.id);
 
