@@ -94,7 +94,7 @@ function Checkout() {
         _customer_name: profile?.name || user.email || "গ্রাহক",
         _phone: addr.phone,
         _address: `${addr.label} · ${addr.area} — ${addr.details}${note.trim() ? ` (${note.trim()})` : ""}`,
-        _slot: slot,
+        _slot: effectiveSlot,
         _delivery_fee: delivery,
         _discount: couponCut,
         _payment_method: method,
