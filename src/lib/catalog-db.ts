@@ -68,6 +68,10 @@ export type ShopDoctor = {
   whatsapp: string;
   videoUrl: string;
   online: boolean;
+  workStart: string;
+  workEnd: string;
+  slotMinutes: number;
+  workDays: number[];
 };
 
 export type ShopSettings = {
