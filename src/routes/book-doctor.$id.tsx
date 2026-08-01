@@ -8,7 +8,7 @@ import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { dayKey, nextDays, slotDate, slotTimes, type CallMode } from "@/lib/appointments";
+import { REFUND_POLICY_BN, WEEKDAYS, dayKey, isWorkingDay, nextDays, slotDate, slotTimes, type CallMode } from "@/lib/appointments";
 
 export const Route = createFileRoute("/book-doctor/$id")({
   head: () => ({
