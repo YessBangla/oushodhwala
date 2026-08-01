@@ -12,7 +12,9 @@ import { ImageAudit } from "@/components/ImageAudit";
 import { ImageRevisions } from "@/components/ImageRevisions";
 import { AdminShell, type AdminNavGroup } from "@/components/AdminShell";
 import { Consultations } from "@/components/Consultations";
-import { DeliveryAdmin } from "@/components/DeliveryAdmin";
+import { DeliveryAdmin, RidersAdmin } from "@/components/DeliveryAdmin";
+import { ProductImagesAdmin } from "@/components/ProductImagesAdmin";
+import { AdminHealth } from "@/components/AdminHealth";
 import { DiagnosticsAdmin } from "@/components/DiagnosticsAdmin";
 import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
@@ -45,11 +47,14 @@ const TABS = [
   { id: "doctors", t: "ডাক্তার" },
   { id: "rx", t: "প্রেসক্রিপশন" },
   { id: "delivery", t: "ডেলিভারি" },
+  { id: "riders", t: "ডেলিভারিম্যান" },
   { id: "diagnostics", t: "হোম ডায়াগনস্টিক" },
   { id: "consults", t: "কনসালটেশন" },
   { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "imgaudit", t: "ছবি যাচাই" },
   { id: "imgrev", t: "ছবি রিভিশন" },
+  { id: "imgupload", t: "ছবি আপলোড" },
+  { id: "health", t: "হেলথ ও QA" },
   { id: "customers", t: "গ্রাহক" },
 
 
@@ -65,11 +70,11 @@ const pickTabs = (ids: string[]) =>
 const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ওভারভিউ", items: pickTabs(["dash"]) },
   { label: "বিক্রয়", items: pickTabs(["orders", "inventory"]) },
-  { label: "ডেলিভারি", items: pickTabs(["delivery"]) },
+  { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "doctors", "consults", "rx"]) },
-  { label: "মিডিয়া", items: pickTabs(["gallery", "imgaudit", "imgrev"]) },
-  { label: "সিস্টেম", items: pickTabs(["customers", "settings"]) },
+  { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
+  { label: "সিস্টেম", items: pickTabs(["customers", "health", "settings"]) },
 ];
 
 
@@ -170,10 +175,13 @@ function Admin() {
       {tab === "rx" && <Prescriptions />}
       {tab === "consults" && <Consultations />}
       {tab === "delivery" && <DeliveryAdmin />}
+      {tab === "riders" && <RidersAdmin />}
       {tab === "diagnostics" && <DiagnosticsAdmin />}
       {tab === "gallery" && <MediaGallery />}
       {tab === "imgaudit" && <ImageAudit />}
       {tab === "imgrev" && <ImageRevisions />}
+      {tab === "imgupload" && <ProductImagesAdmin />}
+      {tab === "health" && <AdminHealth onNavigate={(id) => setTab(id as TabId)} />}
       {tab === "customers" && <CustomersAdmin />}
       {tab === "settings" && <Settings />}
     </AdminShell>
