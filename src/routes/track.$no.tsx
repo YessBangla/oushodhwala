@@ -55,7 +55,13 @@ function Track() {
           .order("created_at");
         events = ev ?? [];
       }
-      return { order, delivery, events };
+      const { data: notes } = await supabase
+        .from("notifications")
+        .select("id, title, body, created_at")
+        .eq("order_no", no)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return { order, delivery, events, notifications: notes ?? [] };
     },
   });
 
