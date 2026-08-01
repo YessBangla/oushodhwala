@@ -22,7 +22,7 @@ import {
   ExternalLink,
   LogOut,
   ChevronRight,
-  Bell,
+  
   Users,
   Truck,
   HeartPulse,
