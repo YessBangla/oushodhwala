@@ -2378,6 +2378,92 @@ export type Database = {
         }
         Relationships: []
       }
+      support_conversations: {
+        Row: {
+          agent_active: boolean
+          agent_id: string | null
+          agent_last_seen: string | null
+          agent_name: string
+          created_at: string
+          id: string
+          last_message_at: string
+          status: string
+          title: string
+          unread_for_agent: number
+          unread_for_user: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_active?: boolean
+          agent_id?: string | null
+          agent_last_seen?: string | null
+          agent_name?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          status?: string
+          title?: string
+          unread_for_agent?: number
+          unread_for_user?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_active?: boolean
+          agent_id?: string | null
+          agent_last_seen?: string | null
+          agent_name?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          status?: string
+          title?: string
+          unread_for_agent?: number
+          unread_for_user?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          agent_name: string
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender: string
+          user_id: string
+        }
+        Insert: {
+          agent_name?: string
+          body?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender: string
+          user_id: string
+        }
+        Update: {
+          agent_name?: string
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "support_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -2988,6 +3074,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      my_support_conversation: {
+        Args: never
+        Returns: {
+          agent_active: boolean
+          agent_id: string | null
+          agent_last_seen: string | null
+          agent_name: string
+          created_at: string
+          id: string
+          last_message_at: string
+          status: string
+          title: string
+          unread_for_agent: number
+          unread_for_user: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "support_conversations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       place_order: {
         Args: {
           _address: string
@@ -3152,6 +3262,58 @@ export type Database = {
           _thana?: string
         }
         Returns: boolean
+      }
+      support_add_message: {
+        Args: {
+          _agent_name?: string
+          _body: string
+          _conv: string
+          _sender: string
+        }
+        Returns: {
+          agent_name: string
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "support_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      support_agent_is_live: { Args: { _conv: string }; Returns: boolean }
+      support_mark_read: {
+        Args: { _conv: string; _side: string }
+        Returns: boolean
+      }
+      support_set_agent: {
+        Args: { _active: boolean; _agent_name?: string; _conv: string }
+        Returns: {
+          agent_active: boolean
+          agent_id: string | null
+          agent_last_seen: string | null
+          agent_name: string
+          created_at: string
+          id: string
+          last_message_at: string
+          status: string
+          title: string
+          unread_for_agent: number
+          unread_for_user: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "support_conversations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

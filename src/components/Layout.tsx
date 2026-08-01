@@ -25,6 +25,7 @@ import { SearchBox } from "@/components/SearchBox";
 import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
 import { DeliverToBar } from "@/components/DeliverToBar";
 import { BackToTop } from "@/components/BackToTop";
+import { AskChat } from "@/components/AskChat";
 import { installErrorLogger } from "@/lib/error-log";
 
 
@@ -150,6 +151,8 @@ export function Layout({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-7xl px-4">{children}</main>
 
       <BackToTop />
+      <AskChat />
+
 
       <footer className="mt-12 bg-navy text-navy-foreground">
         <div className="mx-auto max-w-7xl px-4 py-8">
