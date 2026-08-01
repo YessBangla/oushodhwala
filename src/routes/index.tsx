@@ -219,7 +219,7 @@ function Index() {
               <Link
                 key={c.slug}
                 to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
-                search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+                search={c.serviceRoute === "/home-diagnostics" ? {} : { s: c.slug }}
                 className="surface-card flex items-center gap-3 px-3 py-3 transition hover:border-primary"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-xl">

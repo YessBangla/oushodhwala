@@ -96,7 +96,7 @@ export function DesktopMenu() {
                   <Link
                     key={c.slug}
                     to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
-                    search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+                    search={c.serviceRoute === "/home-diagnostics" ? {} : { s: c.slug }}
                     className="rounded-lg bg-secondary px-2.5 py-1.5 text-[11px] font-semibold text-primary-dark hover:bg-primary/10"
                   >
                     {c.emoji} {pick(lang, c.bn, c.en)}
@@ -253,7 +253,7 @@ export function MobileMenu() {
                   <Link
                     key={c.slug}
                     to={c.serviceRoute === "/home-diagnostics" ? "/home-diagnostics" : "/home-services"}
-                    search={c.serviceRoute === "/home-diagnostics" ? undefined : { s: c.slug }}
+                    search={c.serviceRoute === "/home-diagnostics" ? {} : { s: c.slug }}
                     className="flex items-center gap-2 rounded-xl border border-border px-2.5 py-2 text-[11px] font-semibold text-navy"
                   >
                     <span className="text-base">{c.emoji}</span>
