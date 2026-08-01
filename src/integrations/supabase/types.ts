@@ -209,6 +209,48 @@ export type Database = {
         }
         Relationships: []
       }
+      image_audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          field: string
+          from_url: string
+          id: string
+          note: string
+          product_id: string
+          product_name: string
+          revision_id: string | null
+          to_url: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          field?: string
+          from_url?: string
+          id?: string
+          note?: string
+          product_id: string
+          product_name?: string
+          revision_id?: string | null
+          to_url?: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          field?: string
+          from_url?: string
+          id?: string
+          note?: string
+          product_id?: string
+          product_name?: string
+          revision_id?: string | null
+          to_url?: string
+        }
+        Relationships: []
+      }
       image_import_failures: {
         Row: {
           attempts: number
@@ -298,6 +340,60 @@ export type Database = {
           source?: string
           status?: string
           total?: number
+        }
+        Relationships: []
+      }
+      image_revisions: {
+        Row: {
+          after_url: string
+          before_url: string
+          created_at: string
+          field: string
+          id: string
+          method: string
+          note: string
+          product_id: string
+          product_name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          score: number
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          after_url?: string
+          before_url?: string
+          created_at?: string
+          field?: string
+          id?: string
+          method?: string
+          note?: string
+          product_id: string
+          product_name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          after_url?: string
+          before_url?: string
+          created_at?: string
+          field?: string
+          id?: string
+          method?: string
+          note?: string
+          product_id?: string
+          product_name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          source?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
