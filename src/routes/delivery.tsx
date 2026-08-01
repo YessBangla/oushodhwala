@@ -243,15 +243,54 @@ function DeliveryPanel() {
             </p>
 
             {r.status === "arrived" && (
-              <input
-                value={otp[r.id] ?? ""}
-                onChange={(e) => setOtp({ ...otp, [r.id]: e.target.value })}
-                inputMode="numeric"
-                maxLength={4}
-                placeholder={t("গ্রাহকের ৪ ডিজিট ওটিপি", "Customer 4-digit OTP")}
-                className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:border-primary"
-              />
+              <>
+                <input
+                  value={otp[r.id] ?? ""}
+                  onChange={(e) => setOtp({ ...otp, [r.id]: e.target.value })}
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder={t("গ্রাহকের ৪ ডিজিট ওটিপি", "Customer 4-digit OTP")}
+                  className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+
+                <div className="mt-3 rounded-xl border border-dashed border-border p-3">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold text-navy">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                    {t("ডেলিভারির প্রমাণ (ঐচ্ছিক)", "Proof of delivery (optional)")}
+                  </p>
+
+                  <input
+                    value={pod[r.id]?.receiver ?? ""}
+                    onChange={(e) => setPod({ ...pod, [r.id]: { ...pod[r.id], receiver: e.target.value } })}
+                    placeholder={t("যিনি গ্রহণ করেছেন তার নাম", "Receiver's name")}
+                    className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-xs outline-none focus:border-primary"
+                  />
+
+                  <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg bg-muted px-3 py-2 text-[11px] font-semibold">
+                    <Camera className="h-3.5 w-3.5 text-primary" />
+                    {pod[r.id]?.photo?.name
+                      ? pod[r.id]!.photo!.name.slice(0, 28)
+                      : t("ডেলিভারির ছবি তুলুন", "Capture delivery photo")}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => setPod({ ...pod, [r.id]: { ...pod[r.id], photo: e.target.files?.[0] ?? null } })}
+                    />
+                  </label>
+
+                  <div className="mt-2">
+                    <SignaturePad
+                      label={t("গ্রাহকের স্বাক্ষর", "Customer signature")}
+                      clearLabel={t("মুছে ফেলুন", "Clear")}
+                      onChange={(b) => setPod((p) => ({ ...p, [r.id]: { ...p[r.id], sign: b } }))}
+                    />
+                  </div>
+                </div>
+              </>
             )}
+
 
             <div className="mt-2 flex flex-wrap gap-2">
               {(NEXT[r.status] ?? []).map((s) => (
