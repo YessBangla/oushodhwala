@@ -209,7 +209,34 @@ export function useCatalog(): Catalog {
       const bool = (k: string) => map.get(k) !== "false";
       return {
         products: raw.products.map(mapProduct),
-        categories: raw.categories.map((c) => ({ slug: c.slug, bn: c.bn, en: c.en, emoji: c.emoji })),
+        categories: raw.categories.map((c) => {
+          const r = c as typeof c & {
+            kind?: string;
+            home_delivery?: boolean;
+            home_service?: boolean;
+            service_route?: string;
+            description?: string;
+            description_en?: string;
+            eta?: string;
+            eta_en?: string;
+            base_fee?: number | string;
+          };
+          return {
+            slug: c.slug,
+            bn: c.bn,
+            en: c.en,
+            emoji: c.emoji,
+            kind: (r.kind === "service" ? "service" : "product") as "product" | "service",
+            homeDelivery: r.home_delivery ?? true,
+            homeService: r.home_service ?? false,
+            serviceRoute: r.service_route ?? "",
+            desc: r.description ?? "",
+            descEn: r.description_en ?? "",
+            eta: r.eta ?? "",
+            etaEn: r.eta_en ?? "",
+            baseFee: Number(r.base_fee ?? 0),
+          };
+        }),
         offers: raw.offers.map((o) => ({
           id: o.id,
           code: o.code,
