@@ -32,6 +32,8 @@ export function ProductImage({
 }) {
   const [failed, setFailed] = useState(false);
   const show = src && !failed;
+  // কিছু সোর্স ছবির নিচে অন্য কোম্পানির লোগো বসানো থাকে — সেই অংশ ক্রপ করে দেওয়া হয়
+  const cropBrand = !!src && /eessentials|medeasy/i.test(src);
   return (
     <div className={`relative w-full overflow-hidden bg-secondary ${RATIO[ratio]} ${className}`}>
       {show ? (
@@ -43,8 +45,9 @@ export function ProductImage({
           loading={eager ? "eager" : "lazy"}
           decoding="async"
           onError={() => setFailed(true)}
-          className={`absolute inset-0 h-full w-full object-contain p-2 ${imgClassName}`}
+          className={`absolute inset-0 h-full w-full object-contain p-2 ${cropBrand ? "scale-[1.18] origin-top" : ""} ${imgClassName}`}
         />
+
       ) : (
         <span className="absolute inset-0 grid place-items-center text-3xl">{emoji}</span>
       )}
