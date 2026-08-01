@@ -1208,7 +1208,11 @@ function LabTests() {
 
 /* ---------------- doctors ---------------- */
 
-const emptyDoctor = { name: "", spec: "", degree: "", exp: "", fee: 0, emoji: "👨‍⚕️", photo_url: "", phone: "", whatsapp: "", video_url: "", sort_order: 0 };
+const emptyDoctor = {
+  name: "", spec: "", degree: "", exp: "", fee: 0, emoji: "👨‍⚕️", photo_url: "",
+  phone: "", whatsapp: "", video_url: "", sort_order: 0,
+  work_start: "10:00", work_end: "22:00", slot_minutes: 30, work_days: [0, 1, 2, 3, 4, 5, 6] as number[],
+};
 
 function Doctors() {
   const qc = useQueryClient();
@@ -1221,6 +1225,7 @@ function Doctors() {
     },
   });
   const [form, setForm] = useState<typeof emptyDoctor & { id?: string }>({ ...emptyDoctor });
+  const [blackoutFor, setBlackoutFor] = useState("");
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["admin-doctors"] });
@@ -1275,6 +1280,37 @@ function Doctors() {
             className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
           />
         ))}
+        <label className="text-[10px] font-semibold text-muted-foreground">
+          কর্ম শুরু
+          <input type="time" value={form.work_start} onChange={(e) => setForm({ ...form, work_start: e.target.value })}
+            className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none" />
+        </label>
+        <label className="text-[10px] font-semibold text-muted-foreground">
+          কর্ম শেষ
+          <input type="time" value={form.work_end} onChange={(e) => setForm({ ...form, work_end: e.target.value })}
+            className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none" />
+        </label>
+        <label className="text-[10px] font-semibold text-muted-foreground">
+          স্লট (মিনিট)
+          <input value={String(form.slot_minutes)} inputMode="numeric"
+            onChange={(e) => setForm({ ...form, slot_minutes: Number(e.target.value) || 30 })}
+            className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none" />
+        </label>
+        <div className="sm:col-span-3">
+          <p className="text-[10px] font-semibold text-muted-foreground">কর্মদিবস</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {WEEKDAYS.map((w, i) => {
+              const on = form.work_days.includes(i);
+              return (
+                <button key={w} type="button"
+                  onClick={() => setForm({ ...form, work_days: on ? form.work_days.filter((x) => x !== i) : [...form.work_days, i].sort() })}
+                  className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                  {w}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <button
           disabled={!form.name || save.isPending}
           onClick={() => save.mutate()}
@@ -1285,7 +1321,8 @@ function Doctors() {
       </div>
       <div className="mt-3 space-y-2">
         {(data ?? []).map((d) => (
-          <div key={d.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+          <div key={d.id} className="rounded-xl border border-border bg-card p-3">
+            <div className="flex items-center gap-2">
             <span className="text-lg">{d.emoji}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold">{d.name}</p>
@@ -1298,6 +1335,10 @@ function Doctors() {
                   fee: Number(d.fee), emoji: d.emoji, photo_url: d.photo_url,
                   phone: d.phone ?? "", whatsapp: d.whatsapp ?? "", video_url: d.video_url ?? "",
                   sort_order: d.sort_order,
+                  work_start: (d.work_start ?? "10:00").slice(0, 5),
+                  work_end: (d.work_end ?? "22:00").slice(0, 5),
+                  slot_minutes: d.slot_minutes ?? 30,
+                  work_days: (d.work_days as number[] | null) ?? [0, 1, 2, 3, 4, 5, 6],
                 })
               }
               className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
@@ -1305,14 +1346,78 @@ function Doctors() {
               সম্পাদনা
             </button>
             <button
+              onClick={() => setBlackoutFor(blackoutFor === d.id ? "" : d.id)}
+              className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
+            >
+              ছুটি
+            </button>
+            <button
               onClick={() => toggle.mutate({ id: d.id, active: !d.active })}
               className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
             >
               {d.active ? "বন্ধ" : "চালু"}
             </button>
+            </div>
+            {blackoutFor === d.id && <Blackouts doctorId={d.id} />}
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function Blackouts({ doctorId }: { doctorId: string }) {
+  const qc = useQueryClient();
+  const { data = [] } = useQuery({
+    queryKey: ["admin-blackouts", doctorId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("doctor_blackouts").select("*").eq("doctor_id", doctorId).order("day");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [day, setDay] = useState("");
+  const [reason, setReason] = useState("");
+  const invalidate = () => void qc.invalidateQueries({ queryKey: ["admin-blackouts", doctorId] });
+
+  const add = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("doctor_blackouts").insert({ doctor_id: doctorId, day, reason: reason.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("ছুটি যোগ হয়েছে"); setDay(""); setReason(""); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("doctor_blackouts").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="mt-3 rounded-lg border border-dashed border-border p-3">
+      <p className="text-[10px] font-bold text-muted-foreground">ছুটির দিন (ব্ল্যাকআউট)</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <input type="date" value={day} onChange={(e) => setDay(e.target.value)}
+          className="rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] outline-none" />
+        <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={120} placeholder="কারণ"
+          className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[11px] outline-none" />
+        <button disabled={!day || add.isPending} onClick={() => add.mutate()}
+          className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground disabled:opacity-50">যোগ</button>
+      </div>
+      <ul className="mt-2 space-y-1">
+        {data.map((b) => (
+          <li key={b.id} className="flex items-center gap-2 text-[11px]">
+            <span className="font-semibold">{b.day}</span>
+            <span className="text-muted-foreground">{b.reason}</span>
+            <button onClick={() => del.mutate(b.id)} className="ml-auto text-destructive">মুছুন</button>
+          </li>
+        ))}
+        {data.length === 0 && <li className="text-[10px] text-muted-foreground">কোনো ছুটি নেই।</li>}
+      </ul>
     </div>
   );
 }
