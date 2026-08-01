@@ -27,7 +27,7 @@ function url(loc: string, priority: string, changefreq = "weekly") {
 }
 
 /** SEO sitemap — static pages + active categories + top products */
-export const Route = createFileRoute("/api/public/sitemap[.]xml")({
+export const Route = createFileRoute("/api/public/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
