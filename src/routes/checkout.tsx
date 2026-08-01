@@ -306,6 +306,12 @@ function Checkout() {
             <span className="text-muted-foreground">ডেলিভারি</span>
             <span className="font-semibold">{delivery === 0 ? "ফ্রি" : `৳${bn(delivery)}`}</span>
           </div>
+          {expressOn && (
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>এর মধ্যে জরুরি চার্জ</span>
+              <span>৳{bn(expressFee)}</span>
+            </div>
+          )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-sm font-bold">
             <span>সর্বমোট</span>
             <span className="text-primary-dark">৳{bn(total)}</span>
