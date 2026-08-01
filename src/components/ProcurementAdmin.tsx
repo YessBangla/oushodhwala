@@ -197,7 +197,7 @@ export function PurchaseOrdersAdmin() {
       const { error } = await supabase.rpc("admin_create_purchase_order", {
         _supplier_id: supplierId,
         _items: items,
-        _expected: expected || null,
+        _expected: (expected || null) as unknown as string,
         _discount: discount,
         _note: note,
       });
