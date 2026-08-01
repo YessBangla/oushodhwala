@@ -46,6 +46,23 @@ const TABS = [
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
+const pickTabs = (ids: string[]) =>
+  ids.map((id) => {
+    const t = TABS.find((x) => x.id === id)!;
+    return { id: t.id, t: t.t, icon: t.id };
+  });
+
+const NAV_GROUPS: AdminNavGroup[] = [
+  { label: "ওভারভিউ", items: pickTabs(["dash"]) },
+  { label: "বিক্রয়", items: pickTabs(["orders", "inventory"]) },
+  { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
+  { label: "সেবা", items: pickTabs(["lab", "doctors", "rx"]) },
+  { label: "মিডিয়া", items: pickTabs(["gallery", "imgaudit", "imgrev"]) },
+  { label: "সিস্টেম", items: pickTabs(["settings"]) },
+];
+
+
+
 type TabId = (typeof TABS)[number]["id"];
 
 const STATUS: Record<string, string> = {
