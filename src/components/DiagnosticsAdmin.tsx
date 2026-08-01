@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { resolveFileUrl, safeName, uploadFile } from "@/lib/storage";
+
 
 const STATUS: Record<string, string> = {
   requested: "অনুরোধ গৃহীত",
@@ -36,6 +39,8 @@ export function DiagnosticsAdmin() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState("all");
   const [edit, setEdit] = useState<Record<string, { collector: string; report: string }>>({});
+  const [uploading, setUploading] = useState("");
+
 
   const { data: rows = [] } = useQuery({
     queryKey: ["admin-diagnostics"],
@@ -68,6 +73,38 @@ export function DiagnosticsAdmin() {
     toast.success("হালনাগাদ হয়েছে");
     void qc.invalidateQueries({ queryKey: ["admin-diagnostics"] });
   };
+
+  /** রিপোর্ট ফাইল আপলোড → স্টোরেজ পাথ সংরক্ষণ ও স্ট্যাটাস "রিপোর্ট প্রস্তুত" */
+  const uploadReport = async (b: Booking, file: File) => {
+    setUploading(b.id);
+    try {
+      const path = await uploadFile("reports", `${b.booking_no}/${Date.now()}-${safeName(file.name)}`, file, file.type);
+      const { error } = await supabase.rpc("admin_set_diagnostic_status", {
+        _booking_id: b.id,
+        _status: "report_ready",
+        _collector_name: edit[b.id]?.collector ?? "",
+        _collector_phone: "",
+        _report_url: path,
+      });
+      if (error) throw error;
+      toast.success("রিপোর্ট আপলোড হয়েছে ও রোগীকে জানানো হয়েছে");
+      void qc.invalidateQueries({ queryKey: ["admin-diagnostics"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading("");
+    }
+  };
+
+  const openReport = async (b: Booking) => {
+    const url = await resolveFileUrl("reports", b.report_url);
+    if (!url) {
+      toast.error("রিপোর্ট পাওয়া যায়নি");
+      return;
+    }
+    window.open(url, "_blank", "noopener");
+  };
+
 
   const exportCsv = () => {
     const head = ["booking_no", "patient", "phone", "date", "slot", "area", "total", "status"];
@@ -132,6 +169,33 @@ export function DiagnosticsAdmin() {
                 className="rounded-lg border border-border bg-muted px-2 py-1.5 text-xs sm:col-span-2"
               />
             </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground">
+                <Upload className="h-3.5 w-3.5" />
+                {uploading === b.id ? "আপলোড হচ্ছে..." : "রিপোর্ট ফাইল আপলোড (PDF/ছবি)"}
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  className="hidden"
+                  disabled={uploading === b.id}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void uploadReport(b, f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {b.report_url && (
+                <button
+                  onClick={() => void openReport(b)}
+                  className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-[11px] font-semibold"
+                >
+                  <FileText className="h-3.5 w-3.5" /> রিপোর্ট দেখুন
+                </button>
+              )}
+            </div>
+
 
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Object.entries(STATUS).map(([k, v]) => (

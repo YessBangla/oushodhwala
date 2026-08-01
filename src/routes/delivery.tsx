@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, MapPin, RefreshCw, Phone } from "lucide-react";
+import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
+import { SignaturePad } from "@/components/SignaturePad";
+import { uploadFile, safeName } from "@/lib/storage";
+
 
 export const Route = createFileRoute("/delivery")({
   head: () => ({
@@ -46,8 +49,10 @@ function DeliveryPanel() {
   const t = useT();
   const { user, loading } = useAuth();
   const [otp, setOtp] = useState<Record<string, string>>({});
+  const [pod, setPod] = useState<Record<string, { photo?: File | null; sign?: Blob | null; receiver?: string }>>({});
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+
 
   const { data: rider, isLoading: riderLoading } = useQuery({
     queryKey: ["my-rider", user?.id],
@@ -97,11 +102,41 @@ function DeliveryPanel() {
     } catch {
       /* অবস্থান ছাড়াই আপডেট */
     }
+
+    // ডেলিভারির প্রমাণ (ঐচ্ছিক): ছবি ও স্বাক্ষর আপলোড
+    let photoPath = "";
+    let signPath = "";
+    const proof = pod[row.id];
+    if (status === "delivered" && proof) {
+      try {
+        if (proof.photo) {
+          photoPath = await uploadFile(
+            "pod",
+            `${row.order_no}/photo-${Date.now()}-${safeName(proof.photo.name)}`,
+            proof.photo,
+            proof.photo.type,
+          );
+        }
+        if (proof.sign) {
+          signPath = await uploadFile("pod", `${row.order_no}/signature-${Date.now()}.png`, proof.sign, "image/png");
+        }
+      } catch (e) {
+        setBusy("");
+        setErr(
+          t("প্রমাণ আপলোড করা যায়নি: ", "Could not upload proof: ") + ((e as Error).message ?? ""),
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase.rpc("rider_update_delivery", {
       _delivery_id: row.id,
       _status: status,
       _note: "",
       _otp: otp[row.id] ?? "",
+      _pod_photo_url: photoPath,
+      _pod_signature_url: signPath,
+      _pod_receiver_name: proof?.receiver ?? "",
       ...(lat !== null && lng !== null ? { _lat: lat, _lng: lng } : {}),
     });
     setBusy("");
@@ -113,8 +148,10 @@ function DeliveryPanel() {
       );
       return;
     }
+    setPod((p) => ({ ...p, [row.id]: {} }));
     void refetch();
   };
+
 
   if (loading || (user && riderLoading)) {
     return <p className="pt-16 text-center text-sm text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>;
@@ -206,15 +243,54 @@ function DeliveryPanel() {
             </p>
 
             {r.status === "arrived" && (
-              <input
-                value={otp[r.id] ?? ""}
-                onChange={(e) => setOtp({ ...otp, [r.id]: e.target.value })}
-                inputMode="numeric"
-                maxLength={4}
-                placeholder={t("গ্রাহকের ৪ ডিজিট ওটিপি", "Customer 4-digit OTP")}
-                className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:border-primary"
-              />
+              <>
+                <input
+                  value={otp[r.id] ?? ""}
+                  onChange={(e) => setOtp({ ...otp, [r.id]: e.target.value })}
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder={t("গ্রাহকের ৪ ডিজিট ওটিপি", "Customer 4-digit OTP")}
+                  className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+
+                <div className="mt-3 rounded-xl border border-dashed border-border p-3">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold text-navy">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                    {t("ডেলিভারির প্রমাণ (ঐচ্ছিক)", "Proof of delivery (optional)")}
+                  </p>
+
+                  <input
+                    value={pod[r.id]?.receiver ?? ""}
+                    onChange={(e) => setPod({ ...pod, [r.id]: { ...pod[r.id], receiver: e.target.value } })}
+                    placeholder={t("যিনি গ্রহণ করেছেন তার নাম", "Receiver's name")}
+                    className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-xs outline-none focus:border-primary"
+                  />
+
+                  <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg bg-muted px-3 py-2 text-[11px] font-semibold">
+                    <Camera className="h-3.5 w-3.5 text-primary" />
+                    {pod[r.id]?.photo?.name
+                      ? pod[r.id]!.photo!.name.slice(0, 28)
+                      : t("ডেলিভারির ছবি তুলুন", "Capture delivery photo")}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => setPod({ ...pod, [r.id]: { ...pod[r.id], photo: e.target.files?.[0] ?? null } })}
+                    />
+                  </label>
+
+                  <div className="mt-2">
+                    <SignaturePad
+                      label={t("গ্রাহকের স্বাক্ষর", "Customer signature")}
+                      clearLabel={t("মুছে ফেলুন", "Clear")}
+                      onChange={(b) => setPod((p) => ({ ...p, [r.id]: { ...p[r.id], sign: b } }))}
+                    />
+                  </div>
+                </div>
+              </>
             )}
+
 
             <div className="mt-2 flex flex-wrap gap-2">
               {(NEXT[r.status] ?? []).map((s) => (

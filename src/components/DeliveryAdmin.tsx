@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Truck, Bike, Plus, Trash2 } from "lucide-react";
+import { Truck, Bike, Plus, Trash2, Send, Check } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
+import { CHANNEL_LABEL, notifyLink, withAbsoluteLinks, type NotifyChannel } from "@/lib/notify";
 
 type Delivery = {
   id: string;
@@ -15,14 +16,29 @@ type Delivery = {
   otp: string;
   rider_id: string | null;
   last_seen_at: string | null;
+  pod_photo_url: string;
+  pod_signature_url: string;
+  pod_receiver_name: string;
   riders: { name: string; phone: string } | null;
 };
 
 type Rider = { id: string; name: string; phone: string; vehicle: string; zone: string; active: boolean; user_id: string | null };
 
+type Notif = {
+  id: string;
+  order_no: string;
+  channel: string;
+  target: string;
+  status_key: string;
+  body: string;
+  status: string;
+  created_at: string;
+};
+
 export function DeliveryAdmin() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"deliveries" | "riders">("deliveries");
+  const [tab, setTab] = useState<"deliveries" | "riders" | "notifications">("deliveries");
+
 
   const { data: riders = [] } = useQuery({
     queryKey: ["admin-riders"],
@@ -89,7 +105,9 @@ export function DeliveryAdmin() {
         {([
           { id: "deliveries", t: "ডেলিভারি", icon: Truck },
           { id: "riders", t: "ডেলিভারিম্যান", icon: Bike },
+          { id: "notifications", t: "নোটিফিকেশন", icon: Send },
         ] as const).map((x) => (
+
           <button
             key={x.id}
             onClick={() => setTab(x.id)}
@@ -148,7 +166,13 @@ export function DeliveryAdmin() {
                         <span className="text-[10px] text-muted-foreground">—</span>
                       )}
                       {d?.last_seen_at && <span className="block text-[10px] text-muted-foreground">{fmtTime(String(d.last_seen_at))}</span>}
+                      {(d?.pod_photo_url || d?.pod_signature_url) && (
+                        <span className="mt-0.5 block text-[10px] font-semibold text-primary">
+                          ✓ প্রমাণ সংরক্ষিত{d?.pod_receiver_name ? ` · ${d.pod_receiver_name}` : ""}
+                        </span>
+                      )}
                     </td>
+
                     <td className="px-3 py-2 font-mono text-[11px]">{d?.otp ?? "—"}</td>
                     <td className="px-3 py-2">
                       {d && (
@@ -182,9 +206,104 @@ export function DeliveryAdmin() {
       )}
 
       {tab === "riders" && <Riders riders={riders} />}
+      {tab === "notifications" && <NotificationQueue />}
     </div>
   );
 }
+
+function NotificationQueue() {
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<"queued" | "sent" | "all">("queued");
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["admin-delivery-notifications"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("delivery_notifications")
+        .select("id, order_no, channel, target, status_key, body, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as Notif[];
+    },
+  });
+
+  const list = rows.filter((r) => filter === "all" || r.status === filter);
+
+  const markSent = async (id: string) => {
+    const { error } = await supabase
+      .from("delivery_notifications")
+      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    void qc.invalidateQueries({ queryKey: ["admin-delivery-notifications"] });
+  };
+
+  const send = (n: Notif) => {
+    const url = notifyLink(n.channel as NotifyChannel, n.target, withAbsoluteLinks(n.body));
+    window.open(url, "_blank", "noopener");
+    void markSent(n.id);
+  };
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {(["queued", "sent", "all"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === f ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+          >
+            {f === "queued" ? "পাঠানো বাকি" : f === "sent" ? "পাঠানো হয়েছে" : "সব"} ({bn(rows.filter((r) => f === "all" || r.status === f).length)})
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {list.map((n) => (
+          <div key={n.id} className="rounded-xl border border-border bg-card p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm">{CHANNEL_LABEL[n.channel as NotifyChannel]?.emoji ?? "🔔"}</span>
+              <span className="text-xs font-bold">#{n.order_no}</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
+                {CHANNEL_LABEL[n.channel as NotifyChannel]?.bn ?? n.channel}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {DELIVERY_STATUS[n.status_key]?.bn ?? n.status_key} · {n.target || "—"} · {fmtTime(n.created_at)}
+              </span>
+              <span className="ml-auto flex gap-1.5">
+                {n.status === "queued" ? (
+                  <>
+                    <button
+                      onClick={() => send(n)}
+                      disabled={!n.target}
+                      className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground disabled:opacity-50"
+                    >
+                      <Send className="h-3 w-3" /> পাঠান
+                    </button>
+                    <button onClick={() => void markSent(n.id)} className="rounded-lg bg-muted px-2.5 py-1.5 text-[11px] font-semibold">
+                      সম্পন্ন চিহ্নিত
+                    </button>
+                  </>
+                ) : (
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-primary">
+                    <Check className="h-3 w-3" /> পাঠানো হয়েছে
+                  </span>
+                )}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">{n.body}</p>
+          </div>
+        ))}
+        {list.length === 0 && <p className="py-8 text-center text-xs text-muted-foreground">কোনো বার্তা নেই।</p>}
+      </div>
+    </div>
+  );
+}
+
 
 function Riders({ riders }: { riders: Rider[] }) {
   const qc = useQueryClient();

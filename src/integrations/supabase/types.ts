@@ -345,6 +345,10 @@ export type Database = {
           order_no: string
           otp: string
           picked_at: string | null
+          pod_at: string | null
+          pod_photo_url: string
+          pod_receiver_name: string
+          pod_signature_url: string
           rider_id: string | null
           status: string
           updated_at: string
@@ -364,6 +368,10 @@ export type Database = {
           order_no?: string
           otp?: string
           picked_at?: string | null
+          pod_at?: string | null
+          pod_photo_url?: string
+          pod_receiver_name?: string
+          pod_signature_url?: string
           rider_id?: string | null
           status?: string
           updated_at?: string
@@ -383,6 +391,10 @@ export type Database = {
           order_no?: string
           otp?: string
           picked_at?: string | null
+          pod_at?: string | null
+          pod_photo_url?: string
+          pod_receiver_name?: string
+          pod_signature_url?: string
           rider_id?: string | null
           status?: string
           updated_at?: string
@@ -439,6 +451,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "delivery_events_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_notifications: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          delivery_id: string
+          id: string
+          order_no: string
+          sent_at: string | null
+          status: string
+          status_key: string
+          target: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          channel: string
+          created_at?: string
+          delivery_id: string
+          id?: string
+          order_no?: string
+          sent_at?: string | null
+          status?: string
+          status_key?: string
+          target?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          delivery_id?: string
+          id?: string
+          order_no?: string
+          sent_at?: string | null
+          status?: string
+          status_key?: string
+          target?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_notifications_delivery_id_fkey"
             columns: ["delivery_id"]
             isOneToOne: false
             referencedRelation: "deliveries"
@@ -1570,6 +1632,10 @@ export type Database = {
           order_no: string
           otp: string
           picked_at: string | null
+          pod_at: string | null
+          pod_photo_url: string
+          pod_receiver_name: string
+          pod_signature_url: string
           rider_id: string | null
           status: string
           updated_at: string
@@ -1889,41 +1955,88 @@ export type Database = {
         Args: { _within_hours?: number }
         Returns: number
       }
-      rider_update_delivery: {
-        Args: {
-          _delivery_id: string
-          _lat?: number
-          _lng?: number
-          _note?: string
-          _otp?: string
-          _status: string
-        }
-        Returns: {
-          assigned_at: string | null
-          created_at: string
-          delivered_at: string | null
-          eta_minutes: number
-          id: string
-          last_lat: number | null
-          last_lng: number | null
-          last_seen_at: string | null
-          note: string
-          order_id: string
-          order_no: string
-          otp: string
-          picked_at: string | null
-          rider_id: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "deliveries"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      rider_update_delivery:
+        | {
+            Args: {
+              _delivery_id: string
+              _lat?: number
+              _lng?: number
+              _note?: string
+              _otp?: string
+              _status: string
+            }
+            Returns: {
+              assigned_at: string | null
+              created_at: string
+              delivered_at: string | null
+              eta_minutes: number
+              id: string
+              last_lat: number | null
+              last_lng: number | null
+              last_seen_at: string | null
+              note: string
+              order_id: string
+              order_no: string
+              otp: string
+              picked_at: string | null
+              pod_at: string | null
+              pod_photo_url: string
+              pod_receiver_name: string
+              pod_signature_url: string
+              rider_id: string | null
+              status: string
+              updated_at: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "deliveries"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _delivery_id: string
+              _lat?: number
+              _lng?: number
+              _note?: string
+              _otp?: string
+              _pod_photo_url?: string
+              _pod_receiver_name?: string
+              _pod_signature_url?: string
+              _status: string
+            }
+            Returns: {
+              assigned_at: string | null
+              created_at: string
+              delivered_at: string | null
+              eta_minutes: number
+              id: string
+              last_lat: number | null
+              last_lng: number | null
+              last_seen_at: string | null
+              note: string
+              order_id: string
+              order_no: string
+              otp: string
+              picked_at: string | null
+              pod_at: string | null
+              pod_photo_url: string
+              pod_receiver_name: string
+              pod_signature_url: string
+              rider_id: string | null
+              status: string
+              updated_at: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "deliveries"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
     }
     Enums: {
       app_role: "admin" | "user"

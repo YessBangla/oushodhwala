@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Truck, Phone, ShieldCheck } from "lucide-react";
+import { Truck, Phone, ShieldCheck, Share2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { DELIVERY_FLOW, DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
+import { resolveFileUrl } from "@/lib/storage";
+
 
 export const Route = createFileRoute("/track/$no")({
   head: () => ({
@@ -55,6 +57,23 @@ function Track() {
       return { order, delivery, events };
     },
   });
+
+  const d = data?.delivery as unknown as
+    | { id: string; pod_photo_url?: string; pod_signature_url?: string; pod_receiver_name?: string; pod_at?: string | null }
+    | null
+    | undefined;
+
+  // ডেলিভারির প্রমাণ — প্রাইভেট ফাইলের সাইনড লিংক
+  const { data: proof } = useQuery({
+    queryKey: ["pod", d?.id, d?.pod_photo_url, d?.pod_signature_url],
+    enabled: !!(d?.pod_photo_url || d?.pod_signature_url),
+    queryFn: async () => ({
+      photo: await resolveFileUrl("pod", d?.pod_photo_url),
+      sign: await resolveFileUrl("pod", d?.pod_signature_url),
+    }),
+  });
+
+
 
   // রিয়েল-টাইম আপডেট
   useEffect(() => {
@@ -107,6 +126,17 @@ function Track() {
       <p className="text-xs text-muted-foreground">
         #{order.order_no} · {t.money(Number(order.total))} · {order.address}
       </p>
+      <a
+        href={`https://wa.me/?text=${encodeURIComponent(
+          `${t("অর্ডার", "Order")} #${order.order_no} — ${typeof window !== "undefined" ? window.location.href : ""}`,
+        )}`}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-[11px] font-semibold"
+      >
+        <Share2 className="h-3.5 w-3.5 text-primary" /> {t("ট্র্যাকিং লিংক শেয়ার করুন", "Share tracking link")}
+      </a>
+
 
       {!delivery && (
         <div className="mt-4 rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground">
@@ -182,8 +212,37 @@ function Track() {
               );
             })}
           </ol>
+
+          {(proof?.photo || proof?.sign || d?.pod_receiver_name) && (
+            <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-navy">
+                <ShieldCheck className="h-4 w-4 text-primary" /> {t("ডেলিভারির প্রমাণ", "Proof of delivery")}
+              </p>
+              {d?.pod_receiver_name && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {t("গ্রহণ করেছেন", "Received by")}: <span className="font-semibold">{d.pod_receiver_name}</span>
+                  {d.pod_at ? ` · ${fmtTime(d.pod_at, t.en)}` : ""}
+                </p>
+              )}
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {proof?.photo && (
+                  <a href={proof.photo} target="_blank" rel="noreferrer">
+                    <img src={proof.photo} alt={t("ডেলিভারির ছবি", "Delivery photo")} className="w-full rounded-xl border border-border" />
+                  </a>
+                )}
+                {proof?.sign && (
+                  <img
+                    src={proof.sign}
+                    alt={t("গ্রাহকের স্বাক্ষর", "Customer signature")}
+                    className="w-full rounded-xl border border-border bg-white"
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
+
 
       <Link to="/orders" className="mt-6 inline-block text-xs font-semibold text-primary">
         ← {t("আমার সব অর্ডার", "All my orders")}

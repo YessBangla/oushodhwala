@@ -103,7 +103,73 @@ const DICT: Record<string, string> = {
   "ফিমক্সিল": "fimoxyl",
   "হিস্টাসিন": "histacin",
   "এইস": "ace",
+  "এইচ": "h",
+  "ম্যাক্সপ্রো": "maxpro",
+  "লোসেকটিল": "losectil",
+  "সার্জেল": "sergel",
+  "ফিনিক্স": "finix",
+  "প্যানটোনিক্স": "pantonix",
+  "এক্সিয়াম": "exium",
+  "ওরস্যালাইন": "orsaline",
+  "রিকোনিল": "riconil",
+  "ফ্লুক্লক্স": "flucloxacillin",
+  "মেট্রিল": "metryl",
+  "টাফনিল": "tufnil",
+  "ডাইজিন": "digene",
+  "ইনসেপ্টা": "incepta",
+  "স্কয়ার": "square",
+  "বেক্সিমকো": "beximco",
+  "রেনাটা": "renata",
+  "অপসোনিন": "opsonin",
+  "একমি": "acme",
+  "একমী": "acme",
+  "হেলথকেয়ার": "healthcare",
+  "রেডিয়েন্ট": "radiant",
+  "এসকেএফ": "skf",
+  "ড্রপস": "drops",
+  "সাসপেনশন": "suspension",
+  "অয়েন্টমেন্ট": "ointment",
+  "জেল": "gel",
+  "শ্যাম্পু": "shampoo",
+  "সাবান": "soap",
+  "ডায়াপার": "diaper",
+  "গ্লুকোমিটার": "glucometer",
+  "স্ট্রিপ": "strip",
+  "নেবুলাইজার": "nebulizer",
+  "অক্সিমিটার": "oximeter",
+  "গজ": "gauze",
+  "ব্যান্ডেজ": "bandage",
+  "সিরিঞ্জ": "syringe",
 };
+
+/** বানানের সাধারণ বিকল্প রূপ (ph/f, z/j, k/c ইত্যাদি) */
+const ALTS: [RegExp, string][] = [
+  [/f/g, "ph"],
+  [/ph/g, "f"],
+  [/j/g, "z"],
+  [/z/g, "j"],
+  [/k/g, "c"],
+  [/c(?!h)/g, "k"],
+  [/sh/g, "s"],
+  [/v/g, "b"],
+  [/oi/g, "oy"],
+  [/ou/g, "ow"],
+  [/ee/g, "i"],
+  [/oo/g, "u"],
+  [/y$/g, "i"],
+];
+
+function altForms(s: string): string[] {
+  const out = new Set<string>();
+  for (const [re, to] of ALTS) {
+    if (re.test(s)) out.add(s.replace(re, to));
+    re.lastIndex = 0;
+  }
+  // শেষের অতিরিক্ত 'a' বাদ
+  if (/[a]$/.test(s) && s.length > 4) out.add(s.slice(0, -1));
+  return [...out];
+}
+
 
 export function hasBengali(s: string) {
   return /[\u0980-\u09FF]/.test(s);
@@ -130,7 +196,21 @@ function translitWord(word: string, implicitA: boolean) {
       out += OTHER[c];
       continue;
     }
-    if (c === HASANTA) continue;
+    if (c === HASANTA) {
+      const nxt = ch[i + 1];
+      // য-ফলা ও ব-ফলা উচ্চারণে বাদ যায় (প্যারাসিটামল → paracetamol)
+      if (nxt === "য" || nxt === "ব" || nxt === "য়") {
+        i++;
+        continue;
+      }
+      // র-ফলা → r
+      if (nxt === "র") {
+        out += "r";
+        i++;
+        continue;
+      }
+      continue;
+    }
     if (CONS[c] !== undefined) {
       out += CONS[c];
       const nxt = ch[i + 1];
@@ -144,29 +224,50 @@ function translitWord(word: string, implicitA: boolean) {
   return out;
 }
 
+/** শব্দটিকে অভিধান/ধ্বনি অনুযায়ী রোমান রূপে আনে */
+function wordForms(w: string): string[] {
+  const direct = DICT[w];
+  if (direct) return [direct];
+  const base = translitWord(w, false);
+  const withA = translitWord(w, true);
+  // অভিধানে আংশিক মিল (যেমন "প্যারাসিটামলের")
+  const partial = Object.keys(DICT).find((k) => k.length >= 4 && w.startsWith(k));
+  const out = new Set<string>();
+  if (partial) out.add(DICT[partial]!);
+  out.add(base);
+  if (withA !== base) out.add(withA);
+  return [...out];
+}
+
 /** বাংলা টার্ম → সম্ভাব্য ইংরেজি রূপগুলোর তালিকা (সার্চে OR হিসেবে ব্যবহার করা হয়) */
 export function romanizeVariants(term: string): string[] {
   const words = term.split(/\s+/).filter(Boolean);
   if (!words.length) return [];
-  const dictMapped = words.map((w) => DICT[w] ?? null);
+  const perWord = words.map(wordForms);
   const out = new Set<string>();
 
-  if (dictMapped.some(Boolean)) {
-    out.add(words.map((w, i) => dictMapped[i] ?? translitWord(w, false)).join(" "));
+  // প্রতিটি শব্দের প্রথম রূপ নিয়ে প্রধান বাক্য
+  out.add(perWord.map((f) => f[0]!).join(" "));
+  // দ্বিতীয় রূপগুলো (থাকলে)
+  if (perWord.some((f) => f.length > 1)) {
+    out.add(perWord.map((f) => f[1] ?? f[0]!).join(" "));
   }
-  out.add(words.map((w) => translitWord(w, false)).join(" "));
-  out.add(words.map((w) => translitWord(w, true)).join(" "));
+  // এক-শব্দের টার্মে বানানের বিকল্প রূপ
+  if (words.length === 1) {
+    for (const f of perWord[0]!) for (const a of altForms(f)) out.add(a);
+  }
 
   return [...out].map((s) => s.trim()).filter((s) => s.length >= 2 && !hasBengali(s));
 }
 
-/** মূল টার্ম + রোমান রূপ — সর্বোচ্চ ৪টি */
+/** মূল টার্ম + রোমান রূপ — সর্বোচ্চ ৬টি */
 export function expandQuery(term: string): string[] {
   const t = term.trim();
   if (!t) return [];
   if (!hasBengali(t)) return [t];
-  return [t, ...romanizeVariants(t)].slice(0, 4);
+  return [...new Set([t, ...romanizeVariants(t)])].slice(0, 6);
 }
+
 
 /** ক্লায়েন্ট-সাইড ফিল্টারের জন্য: haystack গুলোর কোনোটিতে টার্ম আছে কিনা */
 export function matchesQuery(term: string, ...haystacks: (string | null | undefined)[]) {

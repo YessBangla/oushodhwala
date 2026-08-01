@@ -30,7 +30,9 @@ export function SearchBox({ className = "" }: { className?: string }) {
   const [active, setActive] = useState(-1);
   const [recent, setRecent] = useState<string[]>([]);
   const boxRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => setRecent(readRecent()), []);
 
@@ -96,10 +98,32 @@ export function SearchBox({ className = "" }: { className?: string }) {
     navigate({ to: "/product/$id", params: { id } });
   };
 
+  // ফলাফল বদলালে সক্রিয় নির্বাচন রিসেট
+  useEffect(() => setActive(-1), [debounced]);
+
+  // সক্রিয় আইটেম সবসময় দৃশ্যমান রাখা
+  useEffect(() => {
+    if (active < 0) return;
+    listRef.current?.querySelector<HTMLElement>(`[data-idx="${active}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       setOpen(false);
+      setActive(-1);
       return;
+    }
+    if (e.key === "Tab") {
+      setOpen(false);
+      return;
+    }
+    if (e.key === "Enter") {
+      if (active >= 0 && rows[active]) {
+        e.preventDefault();
+        const r = rows[active]!;
+        goProduct(r.id, r.name);
+      }
+      return; // অন্যথায় ফর্ম সাবমিট → পূর্ণ সার্চ
     }
     if (!rows.length) return;
     if (e.key === "ArrowDown") {
@@ -108,13 +132,17 @@ export function SearchBox({ className = "" }: { className?: string }) {
       setActive((a) => (a + 1) % rows.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setOpen(true);
       setActive((a) => (a <= 0 ? rows.length - 1 : a - 1));
-    } else if (e.key === "Enter" && active >= 0) {
+    } else if (e.key === "Home") {
       e.preventDefault();
-      const r = rows[active]!;
-      goProduct(r.id, r.name);
+      setActive(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActive(rows.length - 1);
     }
   };
+
 
   return (
     <div ref={boxRef} className={`relative ${className}`}>
@@ -140,7 +168,9 @@ export function SearchBox({ className = "" }: { className?: string }) {
           role="combobox"
           aria-expanded={open}
           aria-controls="search-suggestions"
+          aria-activedescendant={active >= 0 ? `search-opt-${active}` : undefined}
           aria-autocomplete="list"
+
           className="w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           placeholder={en ? "Search medicine, brand or generic..." : "ঔষধ, ব্র্যান্ড বা জেনেরিক খুঁজুন..."}
           aria-label={en ? "Search" : "সার্চ"}
@@ -170,6 +200,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
 
       {open && (
         <div
+          ref={listRef}
           id="search-suggestions"
           role="listbox"
           className="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elevated)]"
@@ -180,11 +211,14 @@ export function SearchBox({ className = "" }: { className?: string }) {
                 {rows.map((r, i) => (
                   <button
                     key={r.id}
+                    id={`search-opt-${i}`}
+                    data-idx={i}
                     role="option"
                     aria-selected={i === active}
                     onMouseEnter={() => setActive(i)}
                     onClick={() => goProduct(r.id, r.name)}
                     className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${
+
                       i === active ? "bg-secondary" : ""
                     }`}
                   >
