@@ -103,7 +103,73 @@ const DICT: Record<string, string> = {
   "ফিমক্সিল": "fimoxyl",
   "হিস্টাসিন": "histacin",
   "এইস": "ace",
+  "এইচ": "h",
+  "ম্যাক্সপ্রো": "maxpro",
+  "লোসেকটিল": "losectil",
+  "সার্জেল": "sergel",
+  "ফিনিক্স": "finix",
+  "প্যানটোনিক্স": "pantonix",
+  "এক্সিয়াম": "exium",
+  "ওরস্যালাইন": "orsaline",
+  "রিকোনিল": "riconil",
+  "ফ্লুক্লক্স": "flucloxacillin",
+  "মেট্রিল": "metryl",
+  "টাফনিল": "tufnil",
+  "ডাইজিন": "digene",
+  "ইনসেপ্টা": "incepta",
+  "স্কয়ার": "square",
+  "বেক্সিমকো": "beximco",
+  "রেনাটা": "renata",
+  "অপসোনিন": "opsonin",
+  "একমি": "acme",
+  "একমী": "acme",
+  "হেলথকেয়ার": "healthcare",
+  "রেডিয়েন্ট": "radiant",
+  "এসকেএফ": "skf",
+  "ড্রপস": "drops",
+  "সাসপেনশন": "suspension",
+  "অয়েন্টমেন্ট": "ointment",
+  "জেল": "gel",
+  "শ্যাম্পু": "shampoo",
+  "সাবান": "soap",
+  "ডায়াপার": "diaper",
+  "গ্লুকোমিটার": "glucometer",
+  "স্ট্রিপ": "strip",
+  "নেবুলাইজার": "nebulizer",
+  "অক্সিমিটার": "oximeter",
+  "গজ": "gauze",
+  "ব্যান্ডেজ": "bandage",
+  "সিরিঞ্জ": "syringe",
 };
+
+/** বানানের সাধারণ বিকল্প রূপ (ph/f, z/j, k/c ইত্যাদি) */
+const ALTS: [RegExp, string][] = [
+  [/f/g, "ph"],
+  [/ph/g, "f"],
+  [/j/g, "z"],
+  [/z/g, "j"],
+  [/k/g, "c"],
+  [/c(?!h)/g, "k"],
+  [/sh/g, "s"],
+  [/v/g, "b"],
+  [/oi/g, "oy"],
+  [/ou/g, "ow"],
+  [/ee/g, "i"],
+  [/oo/g, "u"],
+  [/y$/g, "i"],
+];
+
+function altForms(s: string): string[] {
+  const out = new Set<string>();
+  for (const [re, to] of ALTS) {
+    if (re.test(s)) out.add(s.replace(re, to));
+    re.lastIndex = 0;
+  }
+  // শেষের অতিরিক্ত 'a' বাদ
+  if (/[a]$/.test(s) && s.length > 4) out.add(s.slice(0, -1));
+  return [...out];
+}
+
 
 export function hasBengali(s: string) {
   return /[\u0980-\u09FF]/.test(s);
