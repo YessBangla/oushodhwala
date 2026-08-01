@@ -193,7 +193,11 @@ export function matchDistrict(text: string): District | undefined {
   return DISTRICTS.find((d) => s.includes(d.en.toLowerCase()) || text.includes(d.bn));
 }
 
-export function matchThana(district: District, text: string, zoneEn?: string): { zone?: Zone; thana?: Thana } {
+export function matchThana(
+  district: District,
+  text: string,
+  zoneEn?: string,
+): { zone: Zone | undefined; thana: Thana | undefined } {
   const s = (text || "").toLowerCase();
   if (district.zones) {
     for (const z of district.zones) {
@@ -201,8 +205,8 @@ export function matchThana(district: District, text: string, zoneEn?: string): {
       const th = z.thanas.find((x) => s.includes(x.en.toLowerCase()) || text.includes(x.bn));
       if (th) return { zone: z, thana: th };
     }
-    return {};
+    return { zone: undefined, thana: undefined };
   }
   const th = (district.thanas ?? []).find((x) => s.includes(x.en.toLowerCase()) || text.includes(x.bn));
-  return { thana: th };
+  return { zone: undefined, thana: th };
 }
