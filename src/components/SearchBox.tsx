@@ -200,6 +200,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
 
       {open && (
         <div
+          ref={listRef}
           id="search-suggestions"
           role="listbox"
           className="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elevated)]"
@@ -210,11 +211,14 @@ export function SearchBox({ className = "" }: { className?: string }) {
                 {rows.map((r, i) => (
                   <button
                     key={r.id}
+                    id={`search-opt-${i}`}
+                    data-idx={i}
                     role="option"
                     aria-selected={i === active}
                     onMouseEnter={() => setActive(i)}
                     onClick={() => goProduct(r.id, r.name)}
                     className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${
+
                       i === active ? "bg-secondary" : ""
                     }`}
                   >
