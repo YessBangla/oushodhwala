@@ -14,6 +14,7 @@ import { AdminShell, type AdminNavGroup } from "@/components/AdminShell";
 import { Consultations } from "@/components/Consultations";
 import { DeliveryAdmin } from "@/components/DeliveryAdmin";
 import { DiagnosticsAdmin } from "@/components/DiagnosticsAdmin";
+import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 
 
