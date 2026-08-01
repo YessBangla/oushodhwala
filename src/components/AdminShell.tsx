@@ -28,6 +28,8 @@ import {
   Activity,
   Bike,
   Wallet,
+  RotateCcw,
+  Star,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -54,6 +56,8 @@ const ICONS: Record<string, typeof LayoutDashboard> = {
   health: Activity,
   customers: Users,
   accounts: Wallet,
+  returns: RotateCcw,
+  reviews: Star,
 };
 
 export function AdminShell({
