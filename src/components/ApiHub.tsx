@@ -214,16 +214,17 @@ export function ApiHub() {
 
   async function runOne(ep: Endpoint) {
     setBusyId(ep.id);
+    const target = resolveUrl(ep.url, baseUrl);
     try {
       const r = await test({
         data: {
-          url: ep.url,
+          url: target,
           method: ep.method,
           headers: ep.headers ?? {},
           body: ep.sample_body || "",
         },
       });
-      setResult({ ...r, name: ep.name });
+      setResult({ ...r, name: `${ep.name} · ${envDef.t}` });
       await supabase
         .from("api_endpoints")
         .update({
@@ -236,9 +237,10 @@ export function ApiHub() {
       const { data: u } = await supabase.auth.getUser();
       await supabase.from("api_test_logs").insert({
         endpoint_id: ep.id,
-        name: ep.name,
+        name: `${ep.name} [${envDef.t}]`,
         method: ep.method,
-        url: ep.url,
+        url: target,
+
         status_code: r.status,
         ok: r.ok,
         duration_ms: r.ms,
