@@ -183,12 +183,15 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </footer>
 
-      <Link
-        to="/prescription"
-        className="fixed bottom-20 right-4 z-30 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-elevated)]"
-      >
-        <Upload className="h-4 w-4" /> {t("প্রেসক্রিপশন", "Prescription")}
-      </Link>
+      {!hideFab && (
+        <Link
+          to="/prescription"
+          aria-label={t("প্রেসক্রিপশন আপলোড", "Upload prescription")}
+          className="fixed bottom-24 right-4 z-20 flex items-center gap-2 rounded-full bg-primary p-3.5 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-elevated)] sm:px-4 sm:py-3 lg:bottom-6"
+        >
+          <Upload className="h-4 w-4" /> <span className="hidden sm:inline">{t("প্রেসক্রিপশন", "Prescription")}</span>
+        </Link>
+      )}
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card lg:hidden">
         <div className="mx-auto flex max-w-6xl items-center justify-around px-2 py-2">
