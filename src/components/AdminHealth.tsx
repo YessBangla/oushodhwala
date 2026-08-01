@@ -27,7 +27,10 @@ export function AdminHealth({ onNavigate }: { onNavigate?: (tab: string) => void
   useEffect(() => {
     installClientErrorCapture();
     setErrors(getClientErrors());
-    return subscribeClientErrors(() => setErrors(getClientErrors()));
+    const off = subscribeClientErrors(() => setErrors(getClientErrors()));
+    return () => {
+      off();
+    };
   }, []);
 
   const health = useQuery({
