@@ -38,10 +38,13 @@ async function signedUrl(path: string) {
 async function uploadForProduct(productId: string, file: File, field: "image_url" | "medicine_image_url" = "image_url") {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${productId}/${field === "image_url" ? "box" : "medicine"}-${Date.now()}.${ext}`;
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined });
+  const { error: upErr } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
   if (upErr) throw upErr;
   const url = await signedUrl(path);
-  const { error } = await supabase.from("products").update({ [field]: url }).eq("id", productId);
+  const patch = field === "image_url" ? { image_url: url } : { medicine_image_url: url };
+  const { error } = await supabase.from("products").update(patch).eq("id", productId);
   if (error) throw error;
   return url;
 }
