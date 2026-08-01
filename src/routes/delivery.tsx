@@ -143,9 +143,10 @@ function DeliveryPanel() {
           });
         });
       },
-      () => {
+      (e) => {
         setSharing(false);
-        setErr("LOCATION_DENIED");
+        if (e.code === e.PERMISSION_DENIED) setPerm("denied");
+        else setErr(t("অবস্থান পাওয়া যায়নি। জিপিএস চালু আছে কিনা দেখুন।", "Could not get your location. Check that GPS is on."));
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 },
     );
