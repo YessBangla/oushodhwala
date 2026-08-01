@@ -344,6 +344,8 @@ function Inventory() {
 
   return (
     <div>
+      <AddProduct />
+
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <input
           value={q}
@@ -359,6 +361,7 @@ function Inventory() {
           {bn(companies.length)} কোম্পানি · {bn(list.length)} ঔষধ
         </span>
       </div>
+
 
       {companies.length === 0 && <p className="text-xs text-muted-foreground">কিছু পাওয়া যায়নি।</p>}
 
@@ -404,6 +407,154 @@ function Inventory() {
     </div>
   );
 }
+
+function AddProduct() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({
+    name: "",
+    en: "",
+    brand: "",
+    manufacturer: "",
+    generic: "",
+    strength: "",
+    form: "ট্যাবলেট",
+    pack: "",
+    price: "",
+    mrp: "",
+    category: "medicine",
+    emoji: "💊",
+    stock: "50",
+    low: "10",
+    rx: false,
+    image_url: "",
+  });
+  const set = (k: keyof typeof f, v: string | boolean) => setF((s) => ({ ...s, [k]: v }));
+
+  const { data: cats } = useQuery({
+    queryKey: ["admin-categories-min"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("slug, bn").order("sort_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const name = f.name.trim();
+      if (!name) throw new Error("পণ্যের নাম দিন");
+      const price = Number(f.price) || 0;
+      if (price <= 0) throw new Error("সঠিক দাম দিন");
+      const id =
+        (f.en.trim() || name)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
+          .slice(0, 40) || "prod";
+      const { error } = await supabase.from("products").insert({
+        id: `${id}-${Math.random().toString(36).slice(2, 7)}`,
+        name,
+        en: f.en.trim(),
+        brand: f.brand.trim(),
+        manufacturer: f.manufacturer.trim(),
+        generic: f.generic.trim(),
+        strength: f.strength.trim(),
+        base_name: name.replace(/\s+\S*\d+\S*$/, "").trim(),
+        form: f.form.trim(),
+        pack: f.pack.trim(),
+        price,
+        mrp: Number(f.mrp) || price,
+        category: f.category,
+        emoji: f.emoji || "💊",
+        rx: f.rx,
+        stock: Number(f.stock) || 0,
+        low_stock_threshold: Number(f.low) || 0,
+        image_url: f.image_url.trim(),
+        active: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("নতুন পণ্য যুক্ত হয়েছে");
+      setF((s) => ({ ...s, name: "", en: "", generic: "", strength: "", pack: "", price: "", mrp: "", image_url: "" }));
+      void qc.invalidateQueries({ queryKey: ["admin-products"] });
+      void qc.invalidateQueries({ queryKey: catalogQueryKey });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const field = (k: keyof typeof f, label: string, extra?: { numeric?: boolean }) => (
+    <label className="text-[10px] font-semibold text-muted-foreground">
+      {label}
+      <input
+        value={String(f[k])}
+        onChange={(e) => set(k, e.target.value)}
+        inputMode={extra?.numeric ? "numeric" : undefined}
+        className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none"
+      />
+    </label>
+  );
+
+  return (
+    <section className="mb-3 overflow-hidden rounded-xl border border-border bg-card">
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2 px-3 py-2.5 text-left">
+        <span className="text-xs">{open ? "▾" : "▸"}</span>
+        <span className="flex-1 text-sm font-bold">➕ নতুন পণ্য যোগ করুন</span>
+        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">নতুন</span>
+      </button>
+      {open && (
+        <div className="border-t border-border p-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {field("name", "নাম (বাংলা) *")}
+            {field("en", "নাম (English)")}
+            {field("generic", "জেনেরিক")}
+            {field("strength", "মাত্রা (যেমন 500mg)")}
+            {field("brand", "ব্র্যান্ড")}
+            {field("manufacturer", "কোম্পানি")}
+            {field("form", "ধরন (ট্যাবলেট/সিরাপ)")}
+            {field("pack", "প্যাক (যেমন ১০ ট্যাবলেট)")}
+            {field("price", "বিক্রয় মূল্য ৳ *", { numeric: true })}
+            {field("mrp", "MRP ৳", { numeric: true })}
+            {field("stock", "স্টক", { numeric: true })}
+            {field("low", "কম স্টক সীমা", { numeric: true })}
+            <label className="text-[10px] font-semibold text-muted-foreground">
+              ক্যাটাগরি
+              <select
+                value={f.category}
+                onChange={(e) => set("category", e.target.value)}
+                className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none"
+              >
+                {(cats ?? []).map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.bn}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {field("emoji", "ইমোজি")}
+            {field("image_url", "ছবির লিংক")}
+            <label className="flex items-end gap-2 pb-1 text-[11px] font-semibold">
+              <input type="checkbox" checked={f.rx} onChange={(e) => set("rx", e.target.checked)} />
+              প্রেসক্রিপশন লাগবে
+            </label>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              disabled={create.isPending}
+              onClick={() => create.mutate()}
+              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {create.isPending ? "সেভ হচ্ছে..." : "পণ্য সেভ করুন"}
+            </button>
+            <span className="text-[10px] text-muted-foreground">সেভ করার পর ইনভেন্টরি ও স্টোরে সাথে সাথে দেখা যাবে।</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 
 function StockRow({ p, onSave }: { p: InvProduct; onSave: (stock: number, low: number) => void }) {
   const [stock, setStock] = useState(String(p.stock));
