@@ -23,14 +23,78 @@ export const STATUS_LABEL: Record<string, string> = {
   cancelled: "বাতিল",
 };
 
-/** 10:00 → 21:30, 30 minute slots */
-export function slotTimes(): string[] {
+export const REFUND_LABEL: Record<string, string> = {
+  none: "—",
+  not_applicable: "প্রযোজ্য নয়",
+  not_eligible: "রিফান্ড প্রযোজ্য নয়",
+  pending: "রিফান্ড প্রক্রিয়াধীন",
+  processing: "রিফান্ড চলছে",
+  refunded: "রিফান্ড সম্পন্ন",
+};
+
+export const CHANNEL_LABEL: Record<string, string> = {
+  whatsapp: "হোয়াটসঅ্যাপ",
+  sms: "এসএমএস",
+  email: "ইমেইল",
+  app: "অ্যাপ নোটিফিকেশন",
+};
+
+export const WEEKDAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহঃ", "শুক্র", "শনি"];
+
+export const REFUND_POLICY_BN =
+  "বাতিলের নীতিমালা: সেশনের ২৪ ঘণ্টার বেশি আগে বাতিল করলে সম্পূর্ণ ফি ফেরত, ৬–২৪ ঘণ্টা আগে বাতিলে ৫০% ফেরত, ৬ ঘণ্টার কম সময়ে বাতিলে ফেরত প্রযোজ্য নয়। ক্যাশ পেমেন্টে কিছু কাটা হয় না।";
+
+export function refundPreview(fee: number, scheduledAt: string, paid: boolean) {
+  const hours = (new Date(scheduledAt).getTime() - Date.now()) / 3600000;
+  if (!paid) return { amount: 0, text: "কোনো পেমেন্ট নেওয়া হয়নি — রিফান্ড প্রযোজ্য নয়।" };
+  if (hours >= 24) return { amount: Math.round(fee), text: "সম্পূর্ণ ফি (১০০%) ফেরত পাবেন।" };
+  if (hours >= 6) return { amount: Math.round(fee * 0.5), text: "৫০% ফি ফেরত পাবেন।" };
+  return { amount: 0, text: "৬ ঘণ্টার কম সময় বাকি — নীতিমালা অনুযায়ী রিফান্ড প্রযোজ্য নয়।" };
+}
+
+export type DoctorAvailability = {
+  workStart: string;
+  workEnd: string;
+  slotMinutes: number;
+  workDays: number[];
+};
+
+function toMinutes(v: string) {
+  const [h, m] = (v || "0:0").split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+/** Slots generated from the doctor's own working hours + slot duration */
+export function slotTimes(av?: Partial<DoctorAvailability>): string[] {
+  const start = toMinutes(av?.workStart || "10:00");
+  const end = toMinutes(av?.workEnd || "22:00");
+  const step = Math.max(5, Number(av?.slotMinutes) || 30);
   const out: string[] = [];
-  for (let h = 10; h <= 21; h++) {
-    out.push(`${String(h).padStart(2, "0")}:00`);
-    out.push(`${String(h).padStart(2, "0")}:30`);
+  for (let m = start; m + step <= end; m += step) {
+    out.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
   }
   return out;
+}
+
+export function isWorkingDay(d: Date, av?: Partial<DoctorAvailability>) {
+  const days = av?.workDays ?? [0, 1, 2, 3, 4, 5, 6];
+  return days.includes(d.getDay());
+}
+
+export function toCsv(rows: Record<string, unknown>[]) {
+  if (rows.length === 0) return "";
+  const cols = Object.keys(rows[0]!);
+  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  return [cols.join(","), ...rows.map((r) => cols.map((c) => esc(r[c])).join(","))].join("\n");
+}
+
+export function downloadCsv(name: string, rows: Record<string, unknown>[]) {
+  const blob = new Blob([`\uFEFF${toCsv(rows)}`], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 export function nextDays(count = 14): Date[] {
