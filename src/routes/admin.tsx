@@ -11,6 +11,8 @@ import { MediaGallery, MediaPickerModal } from "@/components/MediaGallery";
 import { ImageAudit } from "@/components/ImageAudit";
 import { ImageRevisions } from "@/components/ImageRevisions";
 import { AdminShell, type AdminNavGroup } from "@/components/AdminShell";
+import { Consultations } from "@/components/Consultations";
+import { WEEKDAYS } from "@/lib/appointments";
 
 
 
@@ -39,6 +41,7 @@ const TABS = [
   { id: "lab", t: "ল্যাব টেস্ট" },
   { id: "doctors", t: "ডাক্তার" },
   { id: "rx", t: "প্রেসক্রিপশন" },
+  { id: "consults", t: "কনসালটেশন" },
   { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "imgaudit", t: "ছবি যাচাই" },
   { id: "imgrev", t: "ছবি রিভিশন" },
@@ -57,7 +60,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ওভারভিউ", items: pickTabs(["dash"]) },
   { label: "বিক্রয়", items: pickTabs(["orders", "inventory"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
-  { label: "সেবা", items: pickTabs(["lab", "doctors", "rx"]) },
+  { label: "সেবা", items: pickTabs(["lab", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgaudit", "imgrev"]) },
   { label: "সিস্টেম", items: pickTabs(["settings"]) },
 ];
@@ -158,6 +161,7 @@ function Admin() {
       {tab === "lab" && <LabTests />}
       {tab === "doctors" && <Doctors />}
       {tab === "rx" && <Prescriptions />}
+      {tab === "consults" && <Consultations />}
       {tab === "gallery" && <MediaGallery />}
       {tab === "imgaudit" && <ImageAudit />}
       {tab === "imgrev" && <ImageRevisions />}

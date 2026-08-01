@@ -12,7 +12,6 @@ import {
   STATUS_LABEL,
   downloadCsv,
   fmtDateTime,
-  toCsv,
   type CallMode,
 } from "@/lib/appointments";
 
@@ -44,7 +43,7 @@ export function Consultations() {
 
   const refund = useMutation({
     mutationFn: async ({ id, st }: { id: string; st: string }) => {
-      const { error } = await supabase.rpc("admin_set_refund_status", { _appointment_id: id, _refund_status: st });
+      const { error } = await supabase.rpc("admin_set_refund_status", { _appointment_id: id, _status: st });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -69,14 +68,19 @@ export function Consultations() {
   const exportCsv = () => {
     downloadCsv(
       "consultations.csv",
-      toCsv(
-        ["ইনভয়েস", "তারিখ", "ডাক্তার", "রোগী", "মোবাইল", "মাধ্যম", "ফি", "স্ট্যাটাস", "পেমেন্ট", "রিফান্ড", "রিফান্ড টাকা"],
-        rows.map((a) => [
-          a.invoice_no, fmtDateTime(a.scheduled_at), a.doctor_name, a.patient_name, a.phone,
-          MODE_LABEL[(a.mode as CallMode) ?? "video"].bn, a.fee, STATUS_LABEL[a.status] ?? a.status,
-          a.payment_status, REFUND_LABEL[a.refund_status] ?? a.refund_status, a.refund_amount,
-        ]),
-      ),
+      rows.map((a) => ({
+        ইনভয়েস: a.invoice_no,
+        তারিখ: fmtDateTime(a.scheduled_at),
+        ডাক্তার: a.doctor_name,
+        রোগী: a.patient_name,
+        মোবাইল: a.phone,
+        মাধ্যম: MODE_LABEL[(a.mode as CallMode) ?? "video"].bn,
+        ফি: a.fee,
+        স্ট্যাটাস: STATUS_LABEL[a.status] ?? a.status,
+        পেমেন্ট: a.payment_status,
+        রিফান্ড: REFUND_LABEL[a.refund_status] ?? a.refund_status,
+        "রিফান্ড টাকা": a.refund_amount,
+      })),
     );
   };
 
