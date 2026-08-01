@@ -333,15 +333,22 @@ function HomeDiagnostics() {
                   {b.collector_name ? ` · ${t("কালেক্টর", "Collector")}: ${b.collector_name}` : ""}
                 </p>
                 {b.report_url && (
-                  <a
-                    href={b.report_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-block rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
-                  >
-                    {t("রিপোর্ট দেখুন", "View report")}
-                  </a>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => void openReport(b.report_url, false)}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
+                    >
+                      {t("রিপোর্ট দেখুন", "View report")}
+                    </button>
+                    <button
+                      onClick={() => void openReport(b.report_url, true, `${b.booking_no}-report`)}
+                      className="rounded-lg bg-muted px-3 py-1.5 text-[11px] font-semibold"
+                    >
+                      {t("ডাউনলোড", "Download")}
+                    </button>
+                  </div>
                 )}
+
               </li>
             ))}
           </ul>
