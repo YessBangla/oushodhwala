@@ -19,6 +19,7 @@ import {
   FileText,
   User,
   Home as HomeIcon,
+  Microscope,
 } from "lucide-react";
 import { useCatalog } from "@/lib/catalog-db";
 import { useLang, pick } from "@/lib/lang";
@@ -30,9 +31,10 @@ function useItems() {
   const { lang } = useLang();
   const en = lang === "en";
   const items: Item[] = [
+    { t: en ? "Home" : "হোম", to: "/", icon: HomeIcon },
     { t: en ? "Store" : "স্টোর", to: "/products", icon: Store, search: { q: "", category: "all", sort: "popular" } },
     { t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test", icon: FlaskConical },
-    { t: en ? "Home Diagnostics" : "বাসায় ডায়াগনস্টিক", to: "/home-diagnostics", icon: HomeIcon },
+    { t: en ? "Home Diagnostics" : "বাসায় ডায়াগনস্টিক", to: "/home-diagnostics", icon: Microscope },
     { t: en ? "Home Services" : "হোম সার্ভিস", to: "/home-services", icon: HeartHandshake },
     { t: en ? "Doctors" : "ডাক্তার", to: "/doctor-consultation", icon: Stethoscope },
     { t: en ? "Prescription" : "প্রেসক্রিপশন", to: "/prescription", icon: Upload },
@@ -112,7 +114,7 @@ export function DesktopMenu() {
         </div>
 
         {items.map((m) => {
-          const active = pathname.startsWith(m.to);
+          const active = m.to === "/" ? pathname === "/" : pathname.startsWith(m.to);
           const cls = `flex items-center gap-1.5 border-b-2 px-3 py-3 ${
             active ? "border-primary text-primary" : "border-transparent text-navy/80 hover:text-primary"
           }`;

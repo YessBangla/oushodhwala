@@ -117,7 +117,7 @@ export function DeliverToBar() {
       </button>
 
       {open && (
-        <div className="border-t border-border bg-card px-4 py-3">
+        <div className="max-h-[70vh] overflow-y-auto overscroll-contain border-t border-border bg-card px-4 py-3 pb-28 lg:max-h-none lg:pb-3">
           <p className="text-[11px] font-bold text-navy">{t("ডেলিভারি ঠিকানা", "Delivery address")}</p>
           <ul className="mt-2 space-y-1.5">
             {addresses.map((a) => (

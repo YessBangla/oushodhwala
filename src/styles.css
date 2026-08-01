@@ -183,3 +183,26 @@
   background-image: var(--gradient-brand);
 }
 
+
+/* মোবাইলে ফর্ম পূরণ সহজ করতে — ১৬px ফন্ট (iOS জুম বন্ধ) ও বড় ট্যাপ-এরিয়া */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+    line-height: 1.4;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select {
+    min-height: 44px;
+  }
+
+  textarea {
+    min-height: 84px;
+  }
+
+  select {
+    background-position: right 0.6rem center;
+  }
+}
