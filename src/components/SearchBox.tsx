@@ -138,8 +138,28 @@ export function SearchBox({ className = "" }: { className?: string }) {
     navigate({ to: "/product/$id", params: { id } });
   };
 
+  const goService = (slug: string, route: string, term: string) => {
+    saveTerm(term);
+    setOpen(false);
+    setActive(-1);
+    if (route === "/home-diagnostics") void navigate({ to: "/home-diagnostics" });
+    else void navigate({ to: "/home-services", search: { s: slug } });
+  };
+
+  const total = rows.length + services.length;
+  const openOption = (i: number) => {
+    if (i < rows.length) {
+      const r = rows[i]!;
+      goProduct(r.id, r.name);
+    } else {
+      const s = services[i - rows.length]!;
+      goService(s.slug, s.serviceRoute, s.bn);
+    }
+  };
+
   // ফলাফল বদলালে সক্রিয় নির্বাচন রিসেট
-  useEffect(() => setActive(-1), [debounced]);
+  useEffect(() => setActive(-1), [debounced, scope]);
+
 
   // সক্রিয় আইটেম সবসময় দৃশ্যমান রাখা
   useEffect(() => {
