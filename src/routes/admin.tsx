@@ -20,6 +20,7 @@ import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { ServiceRequestsAdmin } from "@/components/ServiceRequestsAdmin";
 import { AccountsAdmin } from "@/components/AccountsAdmin";
 import { SuppliersAdmin, PurchaseOrdersAdmin, BatchesAdmin } from "@/components/ProcurementAdmin";
+import { SystemMonitor, ErpAudit, ErpReports, ErpRoles } from "@/components/SystemMonitor";
 import { ReturnsAdmin, ReviewsAdmin } from "@/components/ModerationAdmin";
 import { CampaignsAdmin } from "@/components/CampaignsAdmin";
 import { ReportsAdmin } from "@/components/ReportsAdmin";
