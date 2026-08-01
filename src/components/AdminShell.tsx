@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Search,
   Bell,
+  Truck,
+  HeartPulse,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -40,6 +42,8 @@ const ICONS: Record<string, typeof LayoutDashboard> = {
   imgaudit: ScanSearch,
   imgrev: History,
   settings: SettingsIcon,
+  delivery: Truck,
+  diagnostics: HeartPulse,
 };
 
 export function AdminShell({

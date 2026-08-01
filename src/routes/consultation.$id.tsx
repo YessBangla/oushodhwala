@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Phone, MessageCircle, Video, Paperclip, Send, Mic, FileText, Star, Printer, XCircle, ClipboardList } from "lucide-react";
 
 import { bn } from "@/data/catalog";
+import { useT } from "@/lib/i18n";
 import { useCatalog } from "@/lib/catalog-db";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +14,7 @@ import {
   PAYMENT_LABEL,
   REFUND_LABEL,
   REFUND_POLICY_BN,
+  REFUND_POLICY_EN,
   STATUS_LABEL,
   fmtDateTime,
   fmtTime,
@@ -45,6 +47,7 @@ function ConsultationRoom() {
   const { user } = useAuth();
   const { doctors, settings } = useCatalog();
   const qc = useQueryClient();
+  const t = useT();
 
   const { data: appt, isLoading } = useQuery({
     queryKey: ["appointment", id],
@@ -98,17 +101,17 @@ function ConsultationRoom() {
   if (!user) {
     return (
       <div className="pt-16 text-center text-sm">
-        <p className="text-muted-foreground">কনসালটেশন দেখতে লগইন করুন।</p>
-        <Link to="/auth" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">লগইন</Link>
+        <p className="text-muted-foreground">{t("কনসালটেশন দেখতে লগইন করুন।", "Log in to view the consultation.")}</p>
+        <Link to="/auth" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">{t("লগইন", "Log in")}</Link>
       </div>
     );
   }
-  if (isLoading) return <p className="pt-16 text-center text-sm text-muted-foreground">লোড হচ্ছে...</p>;
+  if (isLoading) return <p className="pt-16 text-center text-sm text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>;
   if (!appt) {
     return (
       <div className="pt-16 text-center text-sm text-muted-foreground">
-        অ্যাপয়েন্টমেন্ট পাওয়া যায়নি।{" "}
-        <Link to="/appointments" className="font-semibold text-primary underline">আমার অ্যাপয়েন্টমেন্ট</Link>
+        {t("অ্যাপয়েন্টমেন্ট পাওয়া যায়নি।", "Appointment not found.")}{" "}
+        <Link to="/appointments" className="font-semibold text-primary underline">{t("আমার অ্যাপয়েন্টমেন্ট", "My appointments")}</Link>
       </div>
     );
   }
@@ -118,7 +121,9 @@ function ConsultationRoom() {
   const phone = telNumber(doctor?.phone || settings.supportPhone || "");
   const wa = waNumber(doctor?.whatsapp || doctor?.phone || settings.supportPhone || "");
   const waText = encodeURIComponent(
-    `আসসালামু আলাইকুম, আমি ঔষধওয়ালা থেকে ${appt.patient_name}। ${appt.doctor_name} এর সাথে ${fmtDateTime(appt.scheduled_at)} সময়ে অ্যাপয়েন্টমেন্ট (ইনভয়েস #${appt.invoice_no})।`,
+    t.en
+      ? `Hello, I am ${appt.patient_name} from Oushodhwala. I have an appointment with ${appt.doctor_name} at ${fmtDateTime(appt.scheduled_at)} (invoice #${appt.invoice_no}).`
+      : `আসসালামু আলাইকুম, আমি ঔষধওয়ালা থেকে ${appt.patient_name}। ${appt.doctor_name} এর সাথে ${fmtDateTime(appt.scheduled_at)} সময়ে অ্যাপয়েন্টমেন্ট (ইনভয়েস #${appt.invoice_no})।`,
   );
   const video = (appt.join_url || doctor?.videoUrl) ?? "";
   const started = new Date(appt.scheduled_at).getTime() - 10 * 60000 <= Date.now();
@@ -126,7 +131,7 @@ function ConsultationRoom() {
   return (
     <div className="pt-4 pb-10">
       <Link to="/appointments" className="text-[11px] font-semibold text-muted-foreground hover:text-primary">
-        ← আমার অ্যাপয়েন্টমেন্ট
+        ← {t("আমার অ্যাপয়েন্টমেন্ট", "My appointments")}
       </Link>
 
       <section className="mt-3 rounded-2xl border border-border bg-card p-4">
@@ -137,22 +142,22 @@ function ConsultationRoom() {
             <p className="text-[11px] text-muted-foreground">{appt.doctor_spec}</p>
           </div>
           <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
-            {STATUS_LABEL[appt.status] ?? appt.status}
+            {t(STATUS_LABEL[appt.status]?.bn ?? appt.status, STATUS_LABEL[appt.status]?.en ?? appt.status)}
           </span>
         </div>
         <p className="mt-2 text-xs font-semibold">
-          🗓️ {fmtDateTime(appt.scheduled_at)} · {MODE_LABEL[mode].emoji} {MODE_LABEL[mode].bn}
+          🗓️ {fmtDateTime(appt.scheduled_at)} · {MODE_LABEL[mode].emoji} {t(MODE_LABEL[mode].bn, MODE_LABEL[mode].en)}
         </p>
-        {appt.note && <p className="mt-1 text-[11px] text-muted-foreground">সমস্যা: {appt.note}</p>}
+        {appt.note && <p className="mt-1 text-[11px] text-muted-foreground">{t("সমস্যা", "Issue")}: {appt.note}</p>}
 
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <CallBtn href={phone ? `tel:${phone}` : ""} icon={Phone} t="ফোন" active={started} />
-          <CallBtn href={wa ? `https://wa.me/${wa}?text=${waText}` : ""} icon={MessageCircle} t="হোয়াটসঅ্যাপ" active={started} external />
-          <CallBtn href={video} icon={Video} t="ভিডিও কল" active={started} external />
+          <CallBtn href={phone ? `tel:${phone}` : ""} icon={Phone} t={t("ফোন", "Phone")} active={started} />
+          <CallBtn href={wa ? `https://wa.me/${wa}?text=${waText}` : ""} icon={MessageCircle} t={t("হোয়াটসঅ্যাপ", "WhatsApp")} active={started} external />
+          <CallBtn href={video} icon={Video} t={t("ভিডিও কল", "Video call")} active={started} external />
         </div>
         {!started && (
           <p className="mt-2 text-[10px] text-muted-foreground">
-            নির্ধারিত সময়ের ১০ মিনিট আগে কল বাটনগুলো সক্রিয় হবে।
+            {t("নির্ধারিত সময়ের ১০ মিনিট আগে কল বাটনগুলো সক্রিয় হবে।", "Call buttons activate 10 minutes before the scheduled time.")}
           </p>
         )}
       </section>
@@ -178,8 +183,9 @@ function CancelBox({
   appt: { id: string; status: string; fee: number; scheduled_at: string; payment_status: string; refund_status: string; refund_amount: number; cancel_reason: string };
   qc: ReturnType<typeof useQueryClient>;
 }) {
+  const t = useT();
   const [reason, setReason] = useState("");
-  const preview = refundPreview(Number(appt.fee), appt.scheduled_at, appt.payment_status === "paid");
+  const preview = refundPreview(Number(appt.fee), appt.scheduled_at, appt.payment_status === "paid", t.en);
 
   const cancel = useMutation({
     mutationFn: async () => {
@@ -187,7 +193,7 @@ function CancelBox({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("অ্যাপয়েন্টমেন্ট বাতিল হয়েছে");
+      toast.success(t("অ্যাপয়েন্টমেন্ট বাতিল হয়েছে", "Appointment cancelled"));
       void qc.invalidateQueries({ queryKey: ["appointment", appt.id] });
       void qc.invalidateQueries({ queryKey: ["my-appointments"] });
     },
@@ -197,11 +203,11 @@ function CancelBox({
   if (appt.status === "cancelled") {
     return (
       <section className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-xs">
-        <h2 className="text-sm font-bold text-destructive">অ্যাপয়েন্টমেন্ট বাতিল</h2>
-        {appt.cancel_reason && <p className="mt-1 text-muted-foreground">কারণ: {appt.cancel_reason}</p>}
+        <h2 className="text-sm font-bold text-destructive">{t("অ্যাপয়েন্টমেন্ট বাতিল", "Appointment cancelled")}</h2>
+        {appt.cancel_reason && <p className="mt-1 text-muted-foreground">{t("কারণ", "Reason")}: {appt.cancel_reason}</p>}
         <p className="mt-1 font-semibold">
-          রিফান্ড: {REFUND_LABEL[appt.refund_status] ?? appt.refund_status}
-          {Number(appt.refund_amount) > 0 ? ` · ৳${bn(Number(appt.refund_amount))}` : ""}
+          {t("রিফান্ড", "Refund")}: {t(REFUND_LABEL[appt.refund_status]?.bn ?? appt.refund_status, REFUND_LABEL[appt.refund_status]?.en ?? appt.refund_status)}
+          {Number(appt.refund_amount) > 0 ? ` · ${t.money(Number(appt.refund_amount))}` : ""}
         </p>
       </section>
     );
@@ -210,16 +216,16 @@ function CancelBox({
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-4">
-      <h2 className="flex items-center gap-2 text-sm font-bold"><XCircle className="h-4 w-4 text-destructive" /> অ্যাপয়েন্টমেন্ট বাতিল করুন</h2>
-      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{REFUND_POLICY_BN}</p>
+      <h2 className="flex items-center gap-2 text-sm font-bold"><XCircle className="h-4 w-4 text-destructive" /> {t("অ্যাপয়েন্টমেন্ট বাতিল করুন", "Cancel appointment")}</h2>
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{t(REFUND_POLICY_BN, REFUND_POLICY_EN)}</p>
       <p className="mt-2 rounded-lg bg-secondary p-2.5 text-[11px] font-semibold">
-        এখন বাতিল করলে: {preview.text} {preview.amount > 0 ? `(৳${bn(preview.amount)})` : ""}
+        {t("এখন বাতিল করলে", "If you cancel now")}: {preview.text} {preview.amount > 0 ? `(${t.money(preview.amount)})` : ""}
       </p>
-      <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder="বাতিলের কারণ (ঐচ্ছিক)"
+      <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder={t("বাতিলের কারণ (ঐচ্ছিক)", "Reason for cancellation (optional)")}
         className="mt-2 w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
       <button onClick={() => cancel.mutate()} disabled={cancel.isPending}
         className="mt-2 w-full rounded-lg border border-destructive py-2 text-xs font-bold text-destructive disabled:opacity-50">
-        {cancel.isPending ? "বাতিল হচ্ছে..." : "বাতিল নিশ্চিত করুন"}
+        {cancel.isPending ? t("বাতিল হচ্ছে...", "Cancelling...") : t("বাতিল নিশ্চিত করুন", "Confirm cancellation")}
       </button>
     </section>
   );
@@ -245,6 +251,7 @@ function RxBox({
   const [followUp, setFollowUp] = useState("");
   const [items, setItems] = useState<RxItem[]>([{ name: "", dose: "", duration: "" }]);
   const [loaded, setLoaded] = useState(false);
+  const t = useT();
 
   if (rx && !loaded) {
     setLoaded(true);
@@ -258,7 +265,7 @@ function RxBox({
   const save = useMutation({
     mutationFn: async () => {
       const clean = items.filter((i) => i.name.trim()).map((i) => ({ name: i.name.trim(), dose: i.dose.trim(), duration: i.duration.trim() }));
-      if (clean.length === 0 && !diagnosis.trim() && !advice.trim()) throw new Error("অন্তত একটি ঔষধ বা পরামর্শ লিখুন");
+      if (clean.length === 0 && !diagnosis.trim() && !advice.trim()) throw new Error(t("অন্তত একটি ঔষধ বা পরামর্শ লিখুন", "Add at least one medicine or advice"));
       const payload = {
         appointment_id: appointmentId,
         user_id: userId,
@@ -275,7 +282,7 @@ function RxBox({
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("প্রেসক্রিপশন সংরক্ষণ হয়েছে");
+      toast.success(t("প্রেসক্রিপশন সংরক্ষণ হয়েছে", "Prescription saved"));
       void qc.invalidateQueries({ queryKey: ["consult-rx", appointmentId] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -284,58 +291,61 @@ function RxBox({
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center">
-        <h2 className="flex items-center gap-2 text-sm font-bold"><ClipboardList className="h-4 w-4 text-primary" /> প্রেসক্রিপশন</h2>
+        <h2 className="flex items-center gap-2 text-sm font-bold"><ClipboardList className="h-4 w-4 text-primary" /> {t("প্রেসক্রিপশন", "Prescription")}</h2>
         {rx && (
           <Link to="/rx/$id" params={{ id: appointmentId }}
             className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
-            <Printer className="h-3 w-3" /> প্রিন্ট / PDF
+            <Printer className="h-3 w-3" /> {t("প্রিন্ট / PDF", "Print / PDF")}
           </Link>
         )}
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        কল শেষে ডাক্তারের দেওয়া ঔষধ ও পরামর্শ এখানে লিখে রাখুন — প্রিন্টযোগ্য প্রেসক্রিপশন তৈরি হবে ও একাউন্টে সংরক্ষিত থাকবে।
+        {t(
+          "কল শেষে ডাক্তারের দেওয়া ঔষধ ও পরামর্শ এখানে লিখে রাখুন — প্রিন্টযোগ্য প্রেসক্রিপশন তৈরি হবে ও একাউন্টে সংরক্ষিত থাকবে।",
+          "After the call, write down the medicines and advice given by the doctor — a printable prescription will be created and saved to the account."
+        )}
       </p>
 
       {!open && !rx && (
         <button onClick={() => setOpen(true)} className="mt-3 w-full rounded-lg bg-secondary py-2 text-xs font-bold text-primary-dark">
-          প্রেসক্রিপশন তৈরি করুন
+          {t("প্রেসক্রিপশন তৈরি করুন", "Create prescription")}
         </button>
       )}
 
       {(open || rx) && (
         <div className="mt-3 space-y-2">
           <textarea value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} rows={2} maxLength={1000}
-            placeholder="রোগ নির্ণয় / Diagnosis"
+            placeholder={t("রোগ নির্ণয় / Diagnosis", "Diagnosis")}
             className="w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
 
           {items.map((it, i) => (
             <div key={i} className="grid grid-cols-3 gap-2">
-              <input value={it.name} maxLength={120} placeholder="ঔষধের নাম"
+              <input value={it.name} maxLength={120} placeholder={t("ঔষধের নাম", "Medicine name")}
                 onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
                 className="rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
-              <input value={it.dose} maxLength={60} placeholder="মাত্রা (১+০+১)"
+              <input value={it.dose} maxLength={60} placeholder={t("মাত্রা (১+০+১)", "Dose (1+0+1)")}
                 onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, dose: e.target.value } : x)))}
                 className="rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
-              <input value={it.duration} maxLength={60} placeholder="সময়কাল (৭ দিন)"
+              <input value={it.duration} maxLength={60} placeholder={t("সময়কাল (৭ দিন)", "Duration (7 days)")}
                 onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, duration: e.target.value } : x)))}
                 className="rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
             </div>
           ))}
           <button onClick={() => setItems([...items, { name: "", dose: "", duration: "" }])}
-            className="text-[11px] font-semibold text-primary underline">+ আরেকটি ঔষধ</button>
+            className="text-[11px] font-semibold text-primary underline">+ {t("আরেকটি ঔষধ", "Another medicine")}</button>
 
           <textarea value={advice} onChange={(e) => setAdvice(e.target.value)} rows={2} maxLength={1000}
-            placeholder="পরামর্শ / Advice"
+            placeholder={t("পরামর্শ / Advice", "Advice")}
             className="w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
           <label className="block text-[11px] font-semibold text-muted-foreground">
-            ফলো-আপ তারিখ
+            {t("ফলো-আপ তারিখ", "Follow-up date")}
             <input type="date" value={followUp} onChange={(e) => setFollowUp(e.target.value)}
               className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
           </label>
 
           <button onClick={() => save.mutate()} disabled={save.isPending}
             className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50">
-            {save.isPending ? "সংরক্ষণ হচ্ছে..." : rx ? "প্রেসক্রিপশন হালনাগাদ করুন" : "প্রেসক্রিপশন সংরক্ষণ করুন"}
+            {save.isPending ? t("সংরক্ষণ হচ্ছে...", "Saving...") : rx ? t("প্রেসক্রিপশন হালনাগাদ করুন", "Update prescription") : t("প্রেসক্রিপশন সংরক্ষণ করুন", "Save prescription")}
           </button>
         </div>
       )}
@@ -373,30 +383,32 @@ type Appt = {
 };
 
 function Invoice({ appt }: { appt: Appt }) {
+  const t = useT();
+  const payLabel = PAYMENT_LABEL[appt.payment_method];
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-4 print:border-0">
       <div className="flex items-center">
-        <h2 className="text-sm font-bold">ইনভয়েস / রসিদ</h2>
+        <h2 className="text-sm font-bold">{t("ইনভয়েস / রসিদ", "Invoice / Receipt")}</h2>
         <button
           onClick={() => window.print()}
           className="ml-auto flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[10px] font-semibold hover:border-primary hover:text-primary print:hidden"
         >
-          <Printer className="h-3 w-3" /> প্রিন্ট
+          <Printer className="h-3 w-3" /> {t("প্রিন্ট", "Print")}
         </button>
       </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">ঔষধওয়ালা — ডাক্তার কনসালটেশন</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">{t("ঔষধওয়ালা — ডাক্তার কনসালটেশন", "Oushodhwala — Doctor consultation")}</p>
       <dl className="mt-3 space-y-1 text-xs">
-        <IRow t="ইনভয়েস নং" v={`#${appt.invoice_no}`} />
-        <IRow t="তারিখ" v={fmtDateTime(appt.created_at)} />
-        <IRow t="রোগী" v={`${appt.patient_name} · ${appt.phone}`} />
-        <IRow t="ডাক্তার" v={appt.doctor_name} />
-        <IRow t="সেশন" v={`${fmtDateTime(appt.scheduled_at)} (${fmtTime(appt.scheduled_at)})`} />
-        <IRow t="পেমেন্ট" v={`${PAYMENT_LABEL[appt.payment_method] ?? appt.payment_method}${appt.payment_ref ? ` · ${appt.payment_ref}` : ""}`} />
-        <IRow t="অবস্থা" v={appt.payment_status === "paid" ? "পরিশোধিত ✅" : "বাকি"} />
+        <IRow t={t("ইনভয়েস নং", "Invoice no.")} v={`#${appt.invoice_no}`} />
+        <IRow t={t("তারিখ", "Date")} v={fmtDateTime(appt.created_at)} />
+        <IRow t={t("রোগী", "Patient")} v={`${appt.patient_name} · ${appt.phone}`} />
+        <IRow t={t("ডাক্তার", "Doctor")} v={appt.doctor_name} />
+        <IRow t={t("সেশন", "Session")} v={`${fmtDateTime(appt.scheduled_at)} (${fmtTime(appt.scheduled_at)})`} />
+        <IRow t={t("পেমেন্ট", "Payment")} v={`${t(payLabel?.bn ?? appt.payment_method, payLabel?.en ?? appt.payment_method)}${appt.payment_ref ? ` · ${appt.payment_ref}` : ""}`} />
+        <IRow t={t("অবস্থা", "Status")} v={appt.payment_status === "paid" ? t("পরিশোধিত ✅", "Paid ✅") : t("বাকি", "Due")} />
       </dl>
       <div className="mt-2 flex items-center border-t border-border pt-2">
-        <span className="text-xs font-bold">মোট</span>
-        <span className="ml-auto font-display text-lg font-extrabold text-primary">৳{bn(Number(appt.fee))}</span>
+        <span className="text-xs font-bold">{t("মোট", "Total")}</span>
+        <span className="ml-auto font-display text-lg font-extrabold text-primary">{t.money(Number(appt.fee))}</span>
       </div>
     </section>
   );
@@ -416,6 +428,7 @@ type Msg = { id: string; body: string; sender: string; file_url: string; file_na
 function ChatBox({
   appointmentId, userId, messages, qc,
 }: { appointmentId: string; userId: string; messages: Msg[]; qc: ReturnType<typeof useQueryClient> }) {
+  const t = useT();
   const [text, setText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -428,7 +441,7 @@ function ChatBox({
         file_url = up.path;
         file_name = up.name;
       }
-      if (!file && !text.trim()) throw new Error("বার্তা লিখুন");
+      if (!file && !text.trim()) throw new Error(t("বার্তা লিখুন", "Write a message"));
       const { error } = await supabase.from("consultation_messages").insert({
         appointment_id: appointmentId,
         user_id: userId,
@@ -448,36 +461,36 @@ function ChatBox({
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-4">
-      <h2 className="text-sm font-bold">কল চলাকালীন চ্যাট ও ফাইল শেয়ার</h2>
-      <p className="text-[11px] text-muted-foreground">প্রেসক্রিপশন, রিপোর্ট বা ছবি সরাসরি পাঠান।</p>
+      <h2 className="text-sm font-bold">{t("কল চলাকালীন চ্যাট ও ফাইল শেয়ার", "Chat & file share during the call")}</h2>
+      <p className="text-[11px] text-muted-foreground">{t("প্রেসক্রিপশন, রিপোর্ট বা ছবি সরাসরি পাঠান।", "Send prescriptions, reports, or photos directly.")}</p>
 
       <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
-        {messages.length === 0 && <p className="text-[11px] text-muted-foreground">এখনো কোনো বার্তা নেই।</p>}
+        {messages.length === 0 && <p className="text-[11px] text-muted-foreground">{t("এখনো কোনো বার্তা নেই।", "No messages yet.")}</p>}
         {messages.map((m) => (
           <div key={m.id} className={`rounded-xl p-2.5 text-xs ${m.sender === "patient" ? "ml-8 bg-primary/10" : "mr-8 bg-secondary"}`}>
             {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
             {m.file_url && (
               <button onClick={() => void openConsultFile(m.file_url).catch((e: Error) => toast.error(e.message))}
                 className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-primary underline">
-                <FileText className="h-3 w-3" /> {m.file_name || "ফাইল"}
+                <FileText className="h-3 w-3" /> {m.file_name || t("ফাইল", "File")}
               </button>
             )}
-            <p className="mt-1 text-[9px] text-muted-foreground">{new Date(m.created_at).toLocaleString("bn-BD")}</p>
+            <p className="mt-1 text-[9px] text-muted-foreground">{new Date(m.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <button onClick={() => fileRef.current?.click()} className="rounded-lg border border-border p-2 text-muted-foreground hover:text-primary" aria-label="ফাইল যুক্ত করুন">
+        <button onClick={() => fileRef.current?.click()} className="rounded-lg border border-border p-2 text-muted-foreground hover:text-primary" aria-label={t("ফাইল যুক্ত করুন", "Attach file")}>
           <Paperclip className="h-4 w-4" />
         </button>
         <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) send.mutate(f); e.target.value = ""; }} />
-        <input value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} placeholder="বার্তা লিখুন..."
+        <input value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} placeholder={t("বার্তা লিখুন...", "Write a message...")}
           onKeyDown={(e) => { if (e.key === "Enter") send.mutate(undefined); }}
           className="flex-1 rounded-lg border border-border bg-background p-2.5 text-xs outline-none" />
         <button onClick={() => send.mutate(undefined)} disabled={send.isPending}
-          className="rounded-lg bg-primary p-2.5 text-primary-foreground disabled:opacity-50" aria-label="পাঠান">
+          className="rounded-lg bg-primary p-2.5 text-primary-foreground disabled:opacity-50" aria-label={t("পাঠান", "Send")}>
           <Send className="h-4 w-4" />
         </button>
       </div>
@@ -490,6 +503,7 @@ type Media = { id: string; kind: string; url: string; name: string; transcript: 
 function MediaBox({
   appointmentId, userId, media, qc,
 }: { appointmentId: string; userId: string; media: Media[]; qc: ReturnType<typeof useQueryClient> }) {
+  const t = useT();
   const recRef = useRef<HTMLInputElement>(null);
   const [transcript, setTranscript] = useState("");
 
@@ -502,21 +516,21 @@ function MediaBox({
         url = up.path;
         name = up.name;
       } else if (!transcript.trim()) {
-        throw new Error("ট্রান্সক্রিপ্ট লিখুন বা রেকর্ডিং ফাইল দিন");
+        throw new Error(t("ট্রান্সক্রিপ্ট লিখুন বা রেকর্ডিং ফাইল দিন", "Write a transcript or provide a recording file"));
       }
       const { error } = await supabase.from("consultation_media").insert({
         appointment_id: appointmentId,
         user_id: userId,
         kind: file ? "recording" : "transcript",
         url,
-        name: name || "টেক্সট ট্রান্সক্রিপ্ট",
+        name: name || t("টেক্সট ট্রান্সক্রিপ্ট", "Text transcript"),
         transcript: file ? "" : transcript.trim(),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       setTranscript("");
-      toast.success("সংরক্ষণ হয়েছে — একাউন্ট থেকে যেকোনো সময় দেখতে পারবেন");
+      toast.success(t("সংরক্ষণ হয়েছে — একাউন্ট থেকে যেকোনো সময় দেখতে পারবেন", "Saved — you can view it anytime from your account"));
       void qc.invalidateQueries({ queryKey: ["consult-media", appointmentId] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -532,26 +546,26 @@ function MediaBox({
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-4">
-      <h2 className="text-sm font-bold">কল রেকর্ডিং ও ট্রান্সক্রিপ্ট</h2>
+      <h2 className="text-sm font-bold">{t("কল রেকর্ডিং ও ট্রান্সক্রিপ্ট", "Call recording & transcript")}</h2>
       <p className="text-[11px] text-muted-foreground">
-        হোয়াটসঅ্যাপ বা ভিডিও কলের রেকর্ডিং আপলোড করুন অথবা কথোপকথনের সারাংশ লিখে রাখুন।
+        {t("হোয়াটসঅ্যাপ বা ভিডিও কলের রেকর্ডিং আপলোড করুন অথবা কথোপকথনের সারাংশ লিখে রাখুন।", "Upload a WhatsApp or video call recording, or write a summary of the conversation.")}
       </p>
 
       <div className="mt-3 flex gap-2">
         <button onClick={() => recRef.current?.click()}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 py-3 text-[11px] font-semibold">
-          <Mic className="h-4 w-4 text-primary" /> রেকর্ডিং আপলোড (অডিও/ভিডিও)
+          <Mic className="h-4 w-4 text-primary" /> {t("রেকর্ডিং আপলোড (অডিও/ভিডিও)", "Upload recording (audio/video)")}
         </button>
         <input ref={recRef} type="file" accept="audio/*,video/*" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) save.mutate(f); e.target.value = ""; }} />
       </div>
 
       <textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} rows={3} maxLength={5000}
-        placeholder="ট্রান্সক্রিপ্ট / ডাক্তারের পরামর্শের সারাংশ..."
+        placeholder={t("ট্রান্সক্রিপ্ট / ডাক্তারের পরামর্শের সারাংশ...", "Transcript / summary of the doctor's advice...")}
         className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs outline-none" />
       <button onClick={() => save.mutate(undefined)} disabled={save.isPending}
         className="mt-2 w-full rounded-lg bg-secondary py-2 text-xs font-bold text-primary-dark disabled:opacity-50">
-        {save.isPending ? "সংরক্ষণ হচ্ছে..." : "ট্রান্সক্রিপ্ট সংরক্ষণ করুন"}
+        {save.isPending ? t("সংরক্ষণ হচ্ছে...", "Saving...") : t("ট্রান্সক্রিপ্ট সংরক্ষণ করুন", "Save transcript")}
       </button>
 
       <ul className="mt-3 space-y-2">
@@ -562,12 +576,12 @@ function MediaBox({
               <span className="truncate font-semibold">{m.name}</span>
               {m.url && (
                 <button onClick={() => void openConsultFile(m.url).catch((e: Error) => toast.error(e.message))}
-                  className="ml-auto shrink-0 text-[11px] font-semibold text-primary underline">খুলুন</button>
+                  className="ml-auto shrink-0 text-[11px] font-semibold text-primary underline">{t("খুলুন", "Open")}</button>
               )}
-              <button onClick={() => del.mutate(m.id)} className={`shrink-0 text-muted-foreground ${m.url ? "ml-2" : "ml-auto"}`} aria-label="মুছুন">✕</button>
+              <button onClick={() => del.mutate(m.id)} className={`shrink-0 text-muted-foreground ${m.url ? "ml-2" : "ml-auto"}`} aria-label={t("মুছুন", "Delete")}>✕</button>
             </div>
             {m.transcript && <p className="mt-1 whitespace-pre-wrap text-[11px] text-muted-foreground">{m.transcript}</p>}
-            <p className="mt-1 text-[9px] text-muted-foreground">{new Date(m.created_at).toLocaleString("bn-BD")}</p>
+            <p className="mt-1 text-[9px] text-muted-foreground">{new Date(m.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")}</p>
           </li>
         ))}
       </ul>
@@ -582,6 +596,7 @@ function ReviewBox({
   review: { rating: number; comment: string } | null | undefined;
   qc: ReturnType<typeof useQueryClient>;
 }) {
+  const t = useT();
   const [rating, setRating] = useState(review?.rating ?? 5);
   const [comment, setComment] = useState(review?.comment ?? "");
 
@@ -602,7 +617,7 @@ function ReviewBox({
       await supabase.from("appointments").update({ status: "completed" }).eq("id", appointmentId);
     },
     onSuccess: () => {
-      toast.success("আপনার মতামতের জন্য ধন্যবাদ");
+      toast.success(t("আপনার মতামতের জন্য ধন্যবাদ", "Thanks for your feedback"));
       void qc.invalidateQueries({ queryKey: ["consult-review", appointmentId] });
       void qc.invalidateQueries({ queryKey: ["appointment", appointmentId] });
       void qc.invalidateQueries({ queryKey: ["doctor-reviews"] });
@@ -612,21 +627,21 @@ function ReviewBox({
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-4">
-      <h2 className="text-sm font-bold">কল শেষে ডাক্তারকে রেটিং দিন</h2>
+      <h2 className="text-sm font-bold">{t("কল শেষে ডাক্তারকে রেটিং দিন", "Rate the doctor after the call")}</h2>
       <div className="mt-2 flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} onClick={() => setRating(n)} aria-label={`${n} স্টার`}>
+          <button key={n} onClick={() => setRating(n)} aria-label={t(`${n} স্টার`, `${n} star`)}>
             <Star className={`h-6 w-6 ${n <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
           </button>
         ))}
-        <span className="ml-2 self-center text-xs font-semibold">{bn(rating)}/৫</span>
+        <span className="ml-2 self-center text-xs font-semibold">{t.n(rating)}/{t.n(5)}</span>
       </div>
       <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} maxLength={1000}
-        placeholder="আপনার অভিজ্ঞতা লিখুন (ঐচ্ছিক)"
+        placeholder={t("আপনার অভিজ্ঞতা লিখুন (ঐচ্ছিক)", "Write your experience (optional)")}
         className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs outline-none" />
       <button onClick={() => save.mutate()} disabled={save.isPending}
         className="mt-2 w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50">
-        {save.isPending ? "জমা হচ্ছে..." : review ? "মতামত হালনাগাদ করুন" : "মতামত জমা দিন"}
+        {save.isPending ? t("জমা হচ্ছে...", "Submitting...") : review ? t("মতামত হালনাগাদ করুন", "Update feedback") : t("মতামত জমা দিন", "Submit feedback")}
       </button>
     </section>
   );

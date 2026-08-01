@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/offers")({
   head: () => ({
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/offers")({
 });
 
 function Offers() {
+  const t = useT();
   const { products, offers } = useCatalog();
   const deals = [...products]
     .map((p) => ({ p, off: (p.mrp - p.price) / p.mrp }))
@@ -24,7 +25,7 @@ function Offers() {
 
   return (
     <div className="pt-4">
-      <h1 className="text-base font-bold">অফার ও ক্যাম্পেইন</h1>
+      <h1 className="text-base font-bold">{t("অফার ও ক্যাম্পেইন", "Offers & campaigns")}</h1>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {offers.map((c) => (
@@ -39,12 +40,12 @@ function Offers() {
         ))}
       </div>
 
-      <h2 className="mt-6 text-sm font-bold">সর্বোচ্চ ছাড়ের পণ্য</h2>
+      <h2 className="mt-6 text-sm font-bold">{t("সর্বোচ্চ ছাড়ের পণ্য", "Top discounted products")}</h2>
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {deals.map(({ p, off }) => (
           <div key={p.id}>
             <ProductCard p={p} />
-            <p className="mt-1 text-center text-[10px] font-semibold text-sale">সাশ্রয় ৳{bn(p.mrp - p.price)} ({bn(Math.round(off * 100))}%)</p>
+            <p className="mt-1 text-center text-[10px] font-semibold text-sale">{t(`সাশ্রয় ${t.money(p.mrp - p.price)} (${t.n(Math.round(off * 100))}%)`, `Save ${t.money(p.mrp - p.price)} (${t.n(Math.round(off * 100))}%)`)}</p>
           </div>
         ))}
       </div>

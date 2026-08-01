@@ -3,9 +3,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Phone, MessageCircle, Video, Star, CalendarDays } from "lucide-react";
 
-import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/doctor-consultation")({
   head: () => ({
@@ -31,8 +31,10 @@ function waNumber(v: string) {
 }
 
 function Consultation() {
+  const t = useT();
   const { doctors, settings } = useCatalog();
-  const [spec, setSpec] = useState("সব");
+  const ALL = t("সব", "All");
+  const [spec, setSpec] = useState(ALL);
 
   const { data: reviews = [] } = useQuery({
     queryKey: ["doctor-reviews"],
@@ -54,14 +56,14 @@ function Consultation() {
     return { avg, count: rs.length, latest: rs[0] };
   };
 
-  const specs = ["সব", ...Array.from(new Set(doctors.map((d) => d.spec).filter(Boolean)))];
-  const list = doctors.filter((d) => spec === "সব" || d.spec === spec);
+  const specs = [ALL, ...Array.from(new Set(doctors.map((d) => d.spec).filter(Boolean)))];
+  const list = doctors.filter((d) => spec === ALL || d.spec === spec);
 
   return (
     <div className="pt-4">
-      <h1 className="font-display text-lg font-extrabold">ডাক্তার পরামর্শ</h1>
+      <h1 className="font-display text-lg font-extrabold">{t("ডাক্তার পরামর্শ", "Doctor Consultation")}</h1>
       <p className="text-xs text-muted-foreground">
-        ভেরিফায়েড ডাক্তারের সাথে সরাসরি ফোন, হোয়াটসঅ্যাপ বা ভিডিও কলে কথা বলুন
+        {t("ভেরিফায়েড ডাক্তারের সাথে সরাসরি ফোন, হোয়াটসঅ্যাপ বা ভিডিও কলে কথা বলুন", "Talk directly with verified doctors via phone, WhatsApp or video call")}
       </p>
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -79,11 +81,11 @@ function Consultation() {
       </div>
 
       <p className="mt-3 rounded-lg bg-secondary p-3 text-[11px] font-semibold text-primary-dark">
-        📅 কল শুরুর আগে তারিখ ও সময় বেছে নিয়ে অ্যাপয়েন্টমেন্ট বুক করুন — পেমেন্টের পর ইনভয়েস, চ্যাট ও রেকর্ডিং সংরক্ষণের সুবিধা পাবেন।{" "}
-        <Link to="/appointments" className="underline">আমার অ্যাপয়েন্টমেন্ট</Link>
+        📅 {t("কল শুরুর আগে তারিখ ও সময় বেছে নিয়ে অ্যাপয়েন্টমেন্ট বুক করুন — পেমেন্টের পর ইনভয়েস, চ্যাট ও রেকর্ডিং সংরক্ষণের সুবিধা পাবেন।", "Book an appointment by choosing a date and time before the call — after payment you get an invoice, chat and saved recording.")}{" "}
+        <Link to="/appointments" className="underline">{t("আমার অ্যাপয়েন্টমেন্ট", "My appointments")}</Link>
       </p>
 
-      {list.length === 0 && <p className="mt-4 text-xs text-muted-foreground">এই মুহূর্তে কোনো ডাক্তার নেই।</p>}
+      {list.length === 0 && <p className="mt-4 text-xs text-muted-foreground">{t("এই মুহূর্তে কোনো ডাক্তার নেই।", "No doctors available right now.")}</p>}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((d) => {
@@ -91,7 +93,9 @@ function Consultation() {
           const wa = waNumber(d.whatsapp || d.phone || settings.supportPhone || "");
           const video = d.videoUrl;
           const rating = ratingOf(d.id);
-          const waText = encodeURIComponent(`আসসালামু আলাইকুম, আমি ঔষধওয়ালা থেকে ${d.name} এর সাথে পরামর্শ নিতে চাই।`);
+          const waText = encodeURIComponent(
+            t(`আসসালামু আলাইকুম, আমি ঔষধওয়ালা থেকে ${d.name} এর সাথে পরামর্শ নিতে চাই।`, `Hello, I would like to consult with ${d.name} via Oushodhwala.`),
+          );
           return (
             <article key={d.id} className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
               <div className="flex items-center gap-3">
@@ -109,23 +113,23 @@ function Consultation() {
                     d.online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {d.online ? "● অনলাইন" : "অফলাইন"}
+                  {d.online ? t("● অনলাইন", "● Online") : t("অফলাইন", "Offline")}
                 </span>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">{d.degree}</p>
-              <p className="text-[11px] text-muted-foreground">অভিজ্ঞতা: {d.exp}</p>
+              <p className="text-[11px] text-muted-foreground">{t("অভিজ্ঞতা:", "Experience:")} {d.exp}</p>
               {rating ? (
                 <div className="mt-1">
                   <p className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
                     <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    {bn(Number(rating.avg.toFixed(1)))} <span className="text-muted-foreground">({bn(rating.count)} রিভিউ)</span>
+                    {t.n(Number(rating.avg.toFixed(1)))} <span className="text-muted-foreground">({t.n(rating.count)} {t("রিভিউ", "reviews")})</span>
                   </p>
                   {rating.latest?.comment && (
                     <p className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground">“{rating.latest.comment}”</p>
                   )}
                 </div>
               ) : (
-                <p className="mt-1 text-[10px] text-muted-foreground">এখনো কোনো রিভিউ নেই</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">{t("এখনো কোনো রিভিউ নেই", "No reviews yet")}</p>
               )}
 
               <div className="mt-3 grid grid-cols-3 gap-2">
@@ -136,7 +140,7 @@ function Consultation() {
                     phone ? "hover:border-primary hover:text-primary" : "pointer-events-none opacity-40"
                   }`}
                 >
-                  <Phone className="h-4 w-4" /> ফোন
+                  <Phone className="h-4 w-4" /> {t("ফোন", "Phone")}
                 </a>
                 <a
                   href={wa ? `https://wa.me/${wa}?text=${waText}` : undefined}
@@ -147,7 +151,7 @@ function Consultation() {
                     wa ? "hover:border-primary hover:text-primary" : "pointer-events-none opacity-40"
                   }`}
                 >
-                  <MessageCircle className="h-4 w-4" /> হোয়াটসঅ্যাপ
+                  <MessageCircle className="h-4 w-4" /> {t("হোয়াটসঅ্যাপ", "WhatsApp")}
                 </a>
                 <a
                   href={video || undefined}
@@ -158,18 +162,18 @@ function Consultation() {
                     video ? "hover:border-primary hover:text-primary" : "pointer-events-none opacity-40"
                   }`}
                 >
-                  <Video className="h-4 w-4" /> ভিডিও কল
+                  <Video className="h-4 w-4" /> {t("ভিডিও কল", "Video call")}
                 </a>
               </div>
 
               <div className="mt-3 flex items-center">
-                <span className="font-display text-base font-extrabold text-primary">৳{bn(d.fee)}</span>
+                <span className="font-display text-base font-extrabold text-primary">{t.money(d.fee)}</span>
                 <Link
                   to="/book-doctor/$id"
                   params={{ id: d.id }}
                   className="ml-auto flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground transition hover:bg-primary-dark"
                 >
-                  <CalendarDays className="h-3.5 w-3.5" /> সময় নিয়ে বুক করুন
+                  <CalendarDays className="h-3.5 w-3.5" /> {t("সময় নিয়ে বুক করুন", "Book with a time slot")}
                 </Link>
               </div>
             </article>
@@ -179,4 +183,3 @@ function Consultation() {
     </div>
   );
 }
-

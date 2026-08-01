@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
+import { useT } from "@/lib/i18n";
+import { useLang, pick } from "@/lib/lang";
 
 export const Route = createFileRoute("/categories")({
   head: () => ({
@@ -15,10 +16,12 @@ export const Route = createFileRoute("/categories")({
 });
 
 function Categories() {
+  const t = useT();
+  const { lang } = useLang();
   const { products, categories } = useCatalog();
   return (
     <div className="pt-4">
-      <h1 className="mb-3 text-base font-bold">সব ক্যাটাগরি</h1>
+      <h1 className="mb-3 text-base font-bold">{t("সব ক্যাটাগরি", "All categories")}</h1>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {categories.map((c) => (
           <Link
@@ -29,9 +32,9 @@ function Categories() {
           >
             <span className="grid h-10 w-10 place-items-center rounded-lg bg-secondary text-lg">{c.emoji}</span>
             <span className="min-w-0">
-              <span className="block truncate text-xs font-bold">{c.bn}</span>
+              <span className="block truncate text-xs font-bold">{pick(lang, c.bn, c.en)}</span>
               <span className="block text-[10px] text-muted-foreground">
-                {bn(products.filter((p) => p.category === c.slug).length)} টি পণ্য
+                {t(`${t.n(products.filter((p) => p.category === c.slug).length)} টি পণ্য`, `${t.n(products.filter((p) => p.category === c.slug).length)} products`)}
               </span>
             </span>
           </Link>

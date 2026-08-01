@@ -10,46 +10,49 @@ export const MODE_LABEL: Record<CallMode, { bn: string; en: string; emoji: strin
   video: { bn: "ভিডিও কল", en: "Video call", emoji: "🎥" },
 };
 
-export const PAYMENT_LABEL: Record<string, string> = {
-  cod: "ক্যাশ (কল শেষে)",
-  bkash: "bKash",
-  nagad: "Nagad",
-  card: "কার্ড",
+export const PAYMENT_LABEL: Record<string, { bn: string; en: string }> = {
+  cod: { bn: "ক্যাশ (কল শেষে)", en: "Cash (after call)" },
+  bkash: { bn: "bKash", en: "bKash" },
+  nagad: { bn: "Nagad", en: "Nagad" },
+  card: { bn: "কার্ড", en: "Card" },
 };
 
-export const STATUS_LABEL: Record<string, string> = {
-  confirmed: "নিশ্চিত",
-  completed: "সম্পন্ন",
-  cancelled: "বাতিল",
+export const STATUS_LABEL: Record<string, { bn: string; en: string }> = {
+  confirmed: { bn: "নিশ্চিত", en: "Confirmed" },
+  completed: { bn: "সম্পন্ন", en: "Completed" },
+  cancelled: { bn: "বাতিল", en: "Cancelled" },
 };
 
-export const REFUND_LABEL: Record<string, string> = {
-  none: "—",
-  not_applicable: "প্রযোজ্য নয়",
-  not_eligible: "রিফান্ড প্রযোজ্য নয়",
-  pending: "রিফান্ড প্রক্রিয়াধীন",
-  processing: "রিফান্ড চলছে",
-  refunded: "রিফান্ড সম্পন্ন",
+export const REFUND_LABEL: Record<string, { bn: string; en: string }> = {
+  none: { bn: "—", en: "—" },
+  not_applicable: { bn: "প্রযোজ্য নয়", en: "Not applicable" },
+  not_eligible: { bn: "রিফান্ড প্রযোজ্য নয়", en: "Not eligible for refund" },
+  pending: { bn: "রিফান্ড প্রক্রিয়াধীন", en: "Refund pending" },
+  processing: { bn: "রিফান্ড চলছে", en: "Refund processing" },
+  refunded: { bn: "রিফান্ড সম্পন্ন", en: "Refunded" },
 };
 
-export const CHANNEL_LABEL: Record<string, string> = {
-  whatsapp: "হোয়াটসঅ্যাপ",
-  sms: "এসএমএস",
-  email: "ইমেইল",
-  app: "অ্যাপ নোটিফিকেশন",
+export const CHANNEL_LABEL: Record<string, { bn: string; en: string }> = {
+  whatsapp: { bn: "হোয়াটসঅ্যাপ", en: "WhatsApp" },
+  sms: { bn: "এসএমএস", en: "SMS" },
+  email: { bn: "ইমেইল", en: "Email" },
+  app: { bn: "অ্যাপ নোটিফিকেশন", en: "App notification" },
 };
 
 export const WEEKDAYS = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহঃ", "শুক্র", "শনি"];
+export const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export const REFUND_POLICY_BN =
   "বাতিলের নীতিমালা: সেশনের ২৪ ঘণ্টার বেশি আগে বাতিল করলে সম্পূর্ণ ফি ফেরত, ৬–২৪ ঘণ্টা আগে বাতিলে ৫০% ফেরত, ৬ ঘণ্টার কম সময়ে বাতিলে ফেরত প্রযোজ্য নয়। ক্যাশ পেমেন্টে কিছু কাটা হয় না।";
+export const REFUND_POLICY_EN =
+  "Cancellation policy: cancel more than 24 hours before the session for a full refund, 6–24 hours before for a 50% refund, less than 6 hours before for no refund. Nothing is deducted for cash payments.";
 
-export function refundPreview(fee: number, scheduledAt: string, paid: boolean) {
+export function refundPreview(fee: number, scheduledAt: string, paid: boolean, en = false) {
   const hours = (new Date(scheduledAt).getTime() - Date.now()) / 3600000;
-  if (!paid) return { amount: 0, text: "কোনো পেমেন্ট নেওয়া হয়নি — রিফান্ড প্রযোজ্য নয়।" };
-  if (hours >= 24) return { amount: Math.round(fee), text: "সম্পূর্ণ ফি (১০০%) ফেরত পাবেন।" };
-  if (hours >= 6) return { amount: Math.round(fee * 0.5), text: "৫০% ফি ফেরত পাবেন।" };
-  return { amount: 0, text: "৬ ঘণ্টার কম সময় বাকি — নীতিমালা অনুযায়ী রিফান্ড প্রযোজ্য নয়।" };
+  if (!paid) return { amount: 0, text: en ? "No payment was taken — refund not applicable." : "কোনো পেমেন্ট নেওয়া হয়নি — রিফান্ড প্রযোজ্য নয়।" };
+  if (hours >= 24) return { amount: Math.round(fee), text: en ? "You will get a full refund (100%)." : "সম্পূর্ণ ফি (১০০%) ফেরত পাবেন।" };
+  if (hours >= 6) return { amount: Math.round(fee * 0.5), text: en ? "You will get a 50% refund." : "৫০% ফি ফেরত পাবেন।" };
+  return { amount: 0, text: en ? "Less than 6 hours left — no refund applicable per policy." : "৬ ঘণ্টার কম সময় বাকি — নীতিমালা অনুযায়ী রিফান্ড প্রযোজ্য নয়।" };
 }
 
 export type DoctorAvailability = {

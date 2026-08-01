@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { expandQuery } from "@/lib/bn-search";
 
 function publicClient() {
   const url = process.env["SUPABASE_URL"] ?? "";
@@ -49,7 +50,16 @@ export const searchProducts = createServerFn({ method: "GET" })
     if (data.rx) q = q.eq("rx", true);
     if (data.maxPrice) q = q.lte("price", data.maxPrice);
     const term = (data.q ?? "").trim().replace(/[%,()]/g, " ");
-    if (term) q = q.or(`name.ilike.%${term}%,en.ilike.%${term}%,brand.ilike.%${term}%,generic.ilike.%${term}%`);
+    if (term) {
+      const variants = expandQuery(term);
+      const ors = variants.flatMap((v) => [
+        `name.ilike.%${v}%`,
+        `en.ilike.%${v}%`,
+        `brand.ilike.%${v}%`,
+        `generic.ilike.%${v}%`,
+      ]);
+      q = q.or(ors.join(","));
+    }
     if (data.sort === "low") q = q.order("price", { ascending: true });
     else if (data.sort === "high") q = q.order("price", { ascending: false });
     else if (data.sort === "rating") q = q.order("rating", { ascending: false });

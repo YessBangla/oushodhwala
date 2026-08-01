@@ -14,10 +14,11 @@ import {
 } from "lucide-react";
 import bannerMedicine from "@/assets/banner-medicine.jpg";
 import bannerPharmacist from "@/assets/banner-pharmacist.jpg";
-import { labTests, bn } from "@/data/catalog";
+import { labTests } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionTitle } from "@/components/Layout";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const t = useT();
   const { products, categories, settings } = useCatalog();
   const popular = products.filter((p) => p.category === "medicine").slice(0, 8);
   const deals = [...products].sort((a, b) => (b.mrp - b.price) / b.mrp - (a.mrp - a.price) / a.mrp).slice(0, 8);
@@ -58,13 +60,16 @@ function Index() {
           />
           <div className="relative max-w-xl">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-semibold">
-              <ShieldCheck className="h-3.5 w-3.5" /> DGDA অনুমোদিত সোর্স · ১০০% অরিজিনাল
+              <ShieldCheck className="h-3.5 w-3.5" /> {t("DGDA অনুমোদিত সোর্স · ১০০% অরিজিনাল", "DGDA-approved source · 100% authentic")}
             </span>
             <h1 className="mt-4 font-display text-3xl font-extrabold leading-tight lg:text-5xl">
-              বাংলাদেশের বিশ্বস্ত <br className="hidden sm:block" /> অনলাইন ফার্মেসি
+              {t("বাংলাদেশের বিশ্বস্ত", "Bangladesh's most trusted")} <br className="hidden sm:block" /> {t("অনলাইন ফার্মেসি", "online pharmacy")}
             </h1>
             <p className="mt-3 max-w-md text-sm opacity-90 lg:text-base">
-              ২৫,০০০+ ঔষধ, স্বাস্থ্য পণ্য ও ডিভাইস — ফার্মাসিস্ট যাচাইকৃত। ঢাকায় ২ ঘণ্টায়, সারাদেশে ২৪–৭২ ঘণ্টায় ডেলিভারি।
+              {t(
+                "২৫,০০০+ ঔষধ, স্বাস্থ্য পণ্য ও ডিভাইস — ফার্মাসিস্ট যাচাইকৃত। ঢাকায় ২ ঘণ্টায়, সারাদেশে ২৪–৭২ ঘণ্টায় ডেলিভারি।",
+                "25,000+ medicines, health products & devices — pharmacist verified. Delivery in 2 hours in Dhaka, 24–72 hours nationwide."
+              )}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
@@ -72,20 +77,20 @@ function Index() {
                 search={{ q: "", category: "all", sort: "popular" }}
                 className="inline-flex items-center gap-2 rounded-xl bg-primary-foreground px-5 py-3 text-sm font-bold text-primary"
               >
-                ঔষধ অর্ডার করুন <ArrowRight className="h-4 w-4" />
+                {t("ঔষধ অর্ডার করুন", "Order medicine")} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/prescription"
                 className="inline-flex items-center gap-2 rounded-xl border border-primary-foreground/40 px-5 py-3 text-sm font-semibold"
               >
-                <Upload className="h-4 w-4" /> প্রেসক্রিপশন আপলোড
+                <Upload className="h-4 w-4" /> {t("প্রেসক্রিপশন আপলোড", "Upload prescription")}
               </Link>
             </div>
             <dl className="mt-8 grid max-w-md grid-cols-3 gap-3 text-center">
               {[
-                { k: "২৫,০০০+", v: "ঔষধ" },
-                { k: "২ ঘণ্টা", v: "ঢাকায় ডেলিভারি" },
-                { k: "২৪/৭", v: "ফার্মাসিস্ট" },
+                { k: t.n(25000) + "+", v: t("ঔষধ", "Medicines") },
+                { k: t("২ ঘণ্টা", "2 hours"), v: t("ঢাকায় ডেলিভারি", "Delivery in Dhaka") },
+                { k: "24/7", v: t("ফার্মাসিস্ট", "Pharmacist") },
               ].map((s) => (
                 <div key={s.v} className="rounded-xl bg-primary-foreground/12 px-2 py-3">
                   <dt className="font-display text-lg font-extrabold">{s.k}</dt>
@@ -100,9 +105,9 @@ function Index() {
           <div className="surface-card flex flex-col justify-between gap-3 border-sale/40 p-5">
             <div>
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-sale/10 text-xl">🚑</span>
-              <p className="mt-3 font-display text-base font-bold text-navy">জরুরি ডেলিভারি — {settings.expressEta}</p>
+              <p className="mt-3 font-display text-base font-bold text-navy">{t("জরুরি ডেলিভারি", "Express delivery")} — {settings.expressEta}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                ইমার্জেন্সি ঔষধ ও অক্সিজেন অগ্রাধিকারে পৌঁছে দেওয়া হয়।
+                {t("ইমার্জেন্সি ঔষধ ও অক্সিজেন অগ্রাধিকারে পৌঁছে দেওয়া হয়।", "Emergency medicine and oxygen delivered on priority.")}
               </p>
             </div>
             <a
@@ -115,8 +120,8 @@ function Index() {
         ) : (
           <div className="surface-card p-5">
             <Headphones className="h-6 w-6 text-primary" />
-            <p className="mt-3 font-display text-base font-bold text-navy">ফার্মাসিস্ট সাপোর্ট</p>
-            <p className="mt-1 text-xs text-muted-foreground">প্রতিদিন সকাল ৮টা – রাত ১১টা</p>
+            <p className="mt-3 font-display text-base font-bold text-navy">{t("ফার্মাসিস্ট সাপোর্ট", "Pharmacist support")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("প্রতিদিন সকাল ৮টা – রাত ১১টা", "Every day 8 AM – 11 PM")}</p>
           </div>
         )}
 
@@ -124,8 +129,8 @@ function Index() {
           <Link to="/lab-test" className="surface-card flex flex-col justify-between p-4 transition hover:border-primary">
             <FlaskConical className="h-6 w-6 text-primary" />
             <span className="mt-4">
-              <span className="block font-display text-sm font-bold text-navy">ল্যাব টেস্ট</span>
-              <span className="block text-[10px] text-muted-foreground">ঘরে বসে স্যাম্পল</span>
+              <span className="block font-display text-sm font-bold text-navy">{t("ল্যাব টেস্ট", "Lab test")}</span>
+              <span className="block text-[10px] text-muted-foreground">{t("ঘরে বসে স্যাম্পল", "Sample collection at home")}</span>
             </span>
           </Link>
           <Link
@@ -134,8 +139,8 @@ function Index() {
           >
             <Stethoscope className="h-6 w-6 text-primary" />
             <span className="mt-4">
-              <span className="block font-display text-sm font-bold text-navy">ডাক্তার পরামর্শ</span>
-              <span className="block text-[10px] text-muted-foreground">অনলাইনে ভিডিও কল</span>
+              <span className="block font-display text-sm font-bold text-navy">{t("ডাক্তার পরামর্শ", "Doctor consultation")}</span>
+              <span className="block text-[10px] text-muted-foreground">{t("অনলাইনে ভিডিও কল", "Online video call")}</span>
             </span>
           </Link>
         </div>
@@ -144,17 +149,17 @@ function Index() {
       {/* ── Trust strip ────────────────────────────── */}
       <section className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { icon: ShieldCheck, t: "১০০% অরিজিনাল", s: "সরাসরি কোম্পানি সোর্স" },
-          { icon: Truck, t: "দ্রুত ডেলিভারি", s: "ঢাকায় ২ ঘণ্টা" },
-          { icon: BadgePercent, t: "সেরা দামে", s: "১৫% পর্যন্ত ছাড়" },
-          { icon: Clock, t: "২৪/৭ সাপোর্ট", s: "লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট" },
-        ].map(({ icon: Icon, t, s }) => (
-          <div key={t} className="surface-card flex items-center gap-3 p-3.5">
+          { icon: ShieldCheck, t: t("১০০% অরিজিনাল", "100% authentic"), s: t("সরাসরি কোম্পানি সোর্স", "Direct from company source") },
+          { icon: Truck, t: t("দ্রুত ডেলিভারি", "Fast delivery"), s: t("ঢাকায় ২ ঘণ্টা", "2 hours in Dhaka") },
+          { icon: BadgePercent, t: t("সেরা দামে", "Best price"), s: t("১৫% পর্যন্ত ছাড়", "Up to 15% off") },
+          { icon: Clock, t: t("২৪/৭ সাপোর্ট", "24/7 support"), s: t("লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট", "Licensed pharmacists") },
+        ].map(({ icon: Icon, t: tt, s }) => (
+          <div key={tt} className="surface-card flex items-center gap-3 p-3.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary">
               <Icon className="h-5 w-5 text-primary" />
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-xs font-bold text-navy">{t}</span>
+              <span className="block truncate text-xs font-bold text-navy">{tt}</span>
               <span className="block truncate text-[10px] text-muted-foreground">{s}</span>
             </span>
           </div>
@@ -168,21 +173,21 @@ function Index() {
             <Upload className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <p className="font-display text-sm font-bold text-navy">প্রেসক্রিপশন আপলোড করুন</p>
-            <p className="text-xs text-muted-foreground">ছবি দিন — ফার্মাসিস্ট ঔষধ সাজিয়ে অর্ডার নিশ্চিত করবেন</p>
+            <p className="font-display text-sm font-bold text-navy">{t("প্রেসক্রিপশন আপলোড করুন", "Upload your prescription")}</p>
+            <p className="text-xs text-muted-foreground">{t("ছবি দিন — ফার্মাসিস্ট ঔষধ সাজিয়ে অর্ডার নিশ্চিত করবেন", "Send a photo — a pharmacist will prepare and confirm your order")}</p>
           </div>
           <Link
             to="/prescription"
             className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground sm:ml-auto"
           >
-            আপলোড
+            {t("আপলোড", "Upload")}
           </Link>
         </div>
       </section>
 
       {/* ── Categories ─────────────────────────────── */}
       <section className="pt-8">
-        <SectionTitle title="ক্যাটাগরি" to="/categories" />
+        <SectionTitle title={t("ক্যাটাগরি", "Categories")} to="/categories" label={t("সব দেখুন", "See all")} />
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
           {categories.slice(0, 8).map((c) => (
             <Link
@@ -201,7 +206,7 @@ function Index() {
 
       {/* ── Popular ────────────────────────────────── */}
       <section className="pt-8">
-        <SectionTitle title="জনপ্রিয় ঔষধ" to="/category/medicine" />
+        <SectionTitle title={t("জনপ্রিয় ঔষধ", "Popular medicines")} to="/category/medicine" label={t("সব দেখুন", "See all")} />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {popular.map((p) => (
             <ProductCard key={p.id} p={p} />
@@ -213,33 +218,33 @@ function Index() {
       <section className="pt-8">
         <div className="grid gap-3 lg:grid-cols-3">
           <div className="relative overflow-hidden rounded-2xl bg-navy p-6 text-navy-foreground lg:col-span-2">
-            <p className="text-xs font-semibold text-primary">সব ঔষধে</p>
-            <p className="mt-1 font-display text-3xl font-extrabold">১৫% পর্যন্ত ছাড়</p>
-            <p className="mt-1 text-xs opacity-75">নিয়মিত ঔষধে সাবস্ক্রিপশন করলে বাড়তি সাশ্রয়।</p>
+            <p className="text-xs font-semibold text-primary">{t("সব ঔষধে", "On all medicines")}</p>
+            <p className="mt-1 font-display text-3xl font-extrabold">{t("১৫% পর্যন্ত ছাড়", "Up to 15% off")}</p>
+            <p className="mt-1 text-xs opacity-75">{t("নিয়মিত ঔষধে সাবস্ক্রিপশন করলে বাড়তি সাশ্রয়।", "Subscribe to regular medicines for extra savings.")}</p>
             <Link
               to="/offers"
               className="mt-4 inline-flex w-fit items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground"
             >
-              অফার দেখুন <ArrowRight className="h-3.5 w-3.5" />
+              {t("অফার দেখুন", "See offers")} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <div className="relative overflow-hidden rounded-2xl">
             <img
               src={bannerPharmacist}
-              alt="ফার্মাসিস্টের পরামর্শ"
+              alt={t("ফার্মাসিস্টের পরামর্শ", "Pharmacist consultation")}
               width={800}
               height={600}
               loading="lazy"
               className="h-full min-h-40 w-full object-cover"
             />
             <div className="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-navy/85 to-transparent p-4 text-navy-foreground">
-              <p className="font-display text-sm font-bold">ফার্মাসিস্টের ফ্রি পরামর্শ</p>
-              <p className="text-[11px] opacity-80">প্রতিদিন সকাল ৮টা – রাত ১১টা</p>
+              <p className="font-display text-sm font-bold">{t("ফার্মাসিস্টের ফ্রি পরামর্শ", "Free pharmacist consultation")}</p>
+              <p className="text-[11px] opacity-80">{t("প্রতিদিন সকাল ৮টা – রাত ১১টা", "Every day 8 AM – 11 PM")}</p>
               <a
                 href="tel:16700"
                 className="mt-2 flex w-fit items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
               >
-                <Phone className="h-3.5 w-3.5" /> কল করুন
+                <Phone className="h-3.5 w-3.5" /> {t("কল করুন", "Call now")}
               </a>
             </div>
           </div>
@@ -248,7 +253,7 @@ function Index() {
 
       {/* ── Deals ──────────────────────────────────── */}
       <section className="pt-8">
-        <SectionTitle title="সেরা ডিসকাউন্ট" to="/offers" />
+        <SectionTitle title={t("সেরা ডিসকাউন্ট", "Best discounts")} to="/offers" label={t("সব দেখুন", "See all")} />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {deals.map((p) => (
             <ProductCard key={p.id} p={p} />
@@ -258,16 +263,16 @@ function Index() {
 
       {/* ── Lab tests ──────────────────────────────── */}
       <section className="pt-8">
-        <SectionTitle title="জনপ্রিয় ল্যাব টেস্ট" to="/lab-test" />
+        <SectionTitle title={t("জনপ্রিয় ল্যাব টেস্ট", "Popular lab tests")} to="/lab-test" label={t("সব দেখুন", "See all")} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {labTests.slice(0, 4).map((t) => (
-            <Link key={t.id} to="/lab-test" className="surface-card flex items-center gap-3 p-3.5 transition hover:border-primary">
+          {labTests.slice(0, 4).map((lt) => (
+            <Link key={lt.id} to="/lab-test" className="surface-card flex items-center gap-3 p-3.5 transition hover:border-primary">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary">🧪</span>
               <span className="min-w-0">
-                <span className="block truncate text-xs font-bold text-navy">{t.bn}</span>
-                <span className="block truncate text-[10px] text-muted-foreground">{t.en}</span>
+                <span className="block truncate text-xs font-bold text-navy">{lt.bn}</span>
+                <span className="block truncate text-[10px] text-muted-foreground">{lt.en}</span>
               </span>
-              <span className="ml-auto shrink-0 font-display text-sm font-extrabold text-primary">৳{bn(t.price)}</span>
+              <span className="ml-auto shrink-0 font-display text-sm font-extrabold text-primary">{t.money(lt.price)}</span>
             </Link>
           ))}
         </div>
@@ -275,12 +280,12 @@ function Index() {
 
       {/* ── Reviews ────────────────────────────────── */}
       <section className="pt-8">
-        <SectionTitle title="গ্রাহকের মতামত" />
+        <SectionTitle title={t("গ্রাহকের মতামত", "Customer reviews")} />
         <div className="grid gap-3 sm:grid-cols-3">
           {[
-            { n: "রিফাত হাসান", r: "সময়মতো ডেলিভারি পেয়েছি, দামও কম।" },
-            { n: "নুসরাত জাহান", r: "প্রেসক্রিপশন আপলোড করেই অর্ডার — খুব সহজ।" },
-            { n: "তানভীর আহমেদ", r: "জরুরি ঔষধ এক ঘণ্টার মধ্যেই হাতে পেয়েছি।" },
+            { n: t("রিফাত হাসান", "Rifat Hasan"), r: t("সময়মতো ডেলিভারি পেয়েছি, দামও কম।", "Got timely delivery and low prices.") },
+            { n: t("নুসরাত জাহান", "Nusrat Jahan"), r: t("প্রেসক্রিপশন আপলোড করেই অর্ডার — খুব সহজ।", "Just uploaded my prescription to order — very easy.") },
+            { n: t("তানভীর আহমেদ", "Tanvir Ahmed"), r: t("জরুরি ঔষধ এক ঘণ্টার মধ্যেই হাতে পেয়েছি।", "Got emergency medicine within an hour.") },
           ].map((c) => (
             <div key={c.n} className="surface-card p-4">
               <div className="flex items-center gap-1">
