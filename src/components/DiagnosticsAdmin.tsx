@@ -39,6 +39,8 @@ export function DiagnosticsAdmin() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState("all");
   const [edit, setEdit] = useState<Record<string, { collector: string; report: string }>>({});
+  const [uploading, setUploading] = useState("");
+
 
   const { data: rows = [] } = useQuery({
     queryKey: ["admin-diagnostics"],
