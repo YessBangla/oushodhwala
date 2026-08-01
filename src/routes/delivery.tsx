@@ -102,11 +102,41 @@ function DeliveryPanel() {
     } catch {
       /* অবস্থান ছাড়াই আপডেট */
     }
+
+    // ডেলিভারির প্রমাণ (ঐচ্ছিক): ছবি ও স্বাক্ষর আপলোড
+    let photoPath = "";
+    let signPath = "";
+    const proof = pod[row.id];
+    if (status === "delivered" && proof) {
+      try {
+        if (proof.photo) {
+          photoPath = await uploadFile(
+            "pod",
+            `${row.order_no}/photo-${Date.now()}-${safeName(proof.photo.name)}`,
+            proof.photo,
+            proof.photo.type,
+          );
+        }
+        if (proof.sign) {
+          signPath = await uploadFile("pod", `${row.order_no}/signature-${Date.now()}.png`, proof.sign, "image/png");
+        }
+      } catch (e) {
+        setBusy("");
+        setErr(
+          t("প্রমাণ আপলোড করা যায়নি: ", "Could not upload proof: ") + ((e as Error).message ?? ""),
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase.rpc("rider_update_delivery", {
       _delivery_id: row.id,
       _status: status,
       _note: "",
       _otp: otp[row.id] ?? "",
+      _pod_photo_url: photoPath,
+      _pod_signature_url: signPath,
+      _pod_receiver_name: proof?.receiver ?? "",
       ...(lat !== null && lng !== null ? { _lat: lat, _lng: lng } : {}),
     });
     setBusy("");
@@ -118,8 +148,10 @@ function DeliveryPanel() {
       );
       return;
     }
+    setPod((p) => ({ ...p, [row.id]: {} }));
     void refetch();
   };
+
 
   if (loading || (user && riderLoading)) {
     return <p className="pt-16 text-center text-sm text-muted-foreground">{t("লোড হচ্ছে...", "Loading...")}</p>;
