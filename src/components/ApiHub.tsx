@@ -285,6 +285,57 @@ export function ApiHub() {
         ))}
       </div>
 
+      {/* এনভায়রনমেন্ট সুইচ */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="mr-2 text-sm font-extrabold">এনভায়রনমেন্ট</h3>
+          <div className="flex rounded-lg bg-muted p-0.5">
+            {ENVS.map((e) => (
+              <button
+                key={e.id}
+                onClick={() => {
+                  setEnv(e.id);
+                  setBaseDraft(null);
+                }}
+                className={`rounded-md px-3 py-1.5 text-xs font-bold ${
+                  env === e.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {e.t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            className="h-11 min-w-[240px] flex-1 rounded-lg border border-border bg-background px-3 font-mono text-sm"
+            placeholder="বেস URL (https://...)"
+            value={baseDraft ?? baseUrl}
+            onChange={(ev) => setBaseDraft(ev.target.value)}
+          />
+          <button
+            className="h-11 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            disabled={saveBase.isPending || baseDraft === null || baseDraft.trim() === baseUrl}
+            onClick={() => saveBase.mutate(baseDraft ?? baseUrl)}
+          >
+            সংরক্ষণ
+          </button>
+          {baseDraft !== null && (
+            <button
+              className="h-11 rounded-lg border border-border px-4 text-sm font-bold"
+              onClick={() => setBaseDraft(null)}
+            >
+              বাতিল
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          রিলেটিভ পাথ (যেমন <span className="font-mono">/api/public/health</span>) এই বেস URL দিয়ে টেস্ট হবে; সম্পূর্ণ
+          URL থাকলে তা অপরিবর্তিত থাকবে।
+        </p>
+      </div>
+
+
       {/* ফর্ম */}
       <div className="rounded-xl border border-border bg-card p-4">
         <h3 className="mb-3 text-sm font-extrabold">{editId ? "API সম্পাদনা" : "নতুন API যুক্ত করুন"}</h3>
