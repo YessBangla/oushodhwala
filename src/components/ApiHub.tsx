@@ -492,7 +492,10 @@ export function ApiHub() {
                     {!ep.active && <span className="text-[10px] text-muted-foreground">(নিষ্ক্রিয়)</span>}
                     <StatusPill ok={ep.last_ok} status={ep.last_status} />
                   </div>
-                  <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">{ep.url}</p>
+                  <p className="mt-0.5 break-all font-mono text-[11px] text-muted-foreground">
+                    {resolveUrl(ep.url, baseUrl)}
+                  </p>
+
                   <p className="text-[11px] text-muted-foreground">
                     {ep.note} · সর্বশেষ: {fmt(ep.last_tested_at)}
                     {ep.last_ms ? ` · ${ep.last_ms}ms` : ""}
