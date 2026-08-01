@@ -13,7 +13,7 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
   const low = !soldOut && stock <= (p.lowStock ?? 0);
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-elevated)]">
       <Link to="/product/$id" params={{ id: p.id }} className="relative block shrink-0 overflow-hidden">
         <ProductImage src={p.image} alt={p.name} emoji={p.emoji} ratio="card" />
 
