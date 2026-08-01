@@ -60,6 +60,15 @@ function BookDoctor() {
   from.setHours(0, 0, 0, 0);
   const to = new Date(from.getTime() + 86400000);
 
+  const { data: blackouts = [] } = useQuery({
+    queryKey: ["doctor-blackouts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("doctor_blackouts").select("day,reason").eq("doctor_id", id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: taken = [] } = useQuery({
     queryKey: ["taken-slots", id, dayKey(day)],
     queryFn: async () => {
@@ -72,6 +81,10 @@ function BookDoctor() {
       return (data ?? []).map((r: { scheduled_at: string }) => new Date(r.scheduled_at).getTime());
     },
   });
+
+  const blackoutDays = new Set(blackouts.map((b) => b.day));
+  const blackoutReason = blackouts.find((b) => b.day === dayKey(day))?.reason ?? "";
+
 
   const book = useMutation({
     mutationFn: async () => {
