@@ -13,7 +13,7 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
   const low = !soldOut && stock <= (p.lowStock ?? 0);
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-elevated)]">
       <Link to="/product/$id" params={{ id: p.id }} className="relative block shrink-0 overflow-hidden">
         <ProductImage src={p.image} alt={p.name} emoji={p.emoji} ratio="card" />
 
@@ -34,9 +34,13 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
           </span>
         )}
       </Link>
-      <div className="flex flex-1 flex-col p-2.5">
+      <div className="flex flex-1 flex-col p-3">
         <div className="flex items-start gap-1">
-          <Link to="/product/$id" params={{ id: p.id }} className="line-clamp-2 text-xs font-semibold leading-snug">
+          <Link
+            to="/product/$id"
+            params={{ id: p.id }}
+            className="line-clamp-2 min-w-0 text-xs font-bold leading-snug text-navy"
+          >
             {p.name}
           </Link>
           <button onClick={() => toggleWish(p.id)} aria-label="উইশলিস্ট" className="ml-auto shrink-0">
@@ -45,22 +49,23 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
             />
           </button>
         </div>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
+        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
           {p.form} · {p.pack}
         </p>
-        <div className="mt-1.5 flex items-baseline gap-1.5">
-          <span className="text-sm font-bold text-primary-dark">৳{bn(p.price)}</span>
+        <div className="mt-2 flex items-baseline gap-1.5">
+          <span className="font-display text-base font-extrabold text-primary">৳{bn(p.price)}</span>
           {p.mrp > p.price && (
             <span className="text-[10px] text-muted-foreground line-through">৳{bn(p.mrp)}</span>
           )}
         </div>
+
         {low && <p className="mt-1 text-[10px] font-semibold text-sale">মাত্র {bn(stock)} টি বাকি</p>}
         {soldOut ? (
           <button disabled className="mt-2 rounded-lg bg-muted py-1.5 text-[11px] font-semibold text-muted-foreground">
             স্টক শেষ
           </button>
         ) : line ? (
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+          <div className="mt-2 flex items-center justify-between rounded-xl bg-primary px-2 py-1.5 text-primary-foreground">
             <button onClick={() => setQty(p.id, line.qty - 1)} aria-label="কমান">
               <Minus className="h-3.5 w-3.5" />
             </button>
@@ -77,7 +82,7 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
         ) : (
           <button
             onClick={() => add(toLine(p))}
-            className="mt-2 rounded-lg bg-primary py-1.5 text-[11px] font-semibold text-primary-foreground"
+            className="mt-2 rounded-xl bg-primary py-2 text-[11px] font-bold text-primary-foreground transition hover:bg-primary-dark"
           >
             কার্টে যোগ করুন
           </button>
