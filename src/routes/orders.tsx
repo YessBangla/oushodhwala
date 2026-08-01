@@ -202,7 +202,35 @@ function Orders() {
                 >
                   {t("আবার অর্ডার করুন", "Reorder")}
                 </button>
+                <button
+                  onClick={() => {
+                    const ok = printInvoice(
+                      {
+                        order_no: o.order_no,
+                        created_at: o.created_at,
+                        customer_name: o.customer_name,
+                        phone: o.phone,
+                        address: o.address,
+                        slot: o.slot,
+                        subtotal: Number(o.subtotal),
+                        delivery_fee: Number(o.delivery_fee),
+                        discount: Number(o.discount),
+                        total: Number(o.total),
+                        payment_method: o.payment_method,
+                        payment_status: o.payment_status,
+                        payment_ref: o.payment_ref,
+                        items: o.order_items.map((l) => ({ name: l.name, qty: l.qty, price: Number(l.price) })),
+                      },
+                      { en: t.en, money: t.money, n: t.n },
+                    );
+                    if (!ok) setMsg({ id: o.id, text: t("পপআপ ব্লক করা আছে — অনুমতি দিন।", "Popup blocked — please allow popups.") });
+                  }}
+                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+                >
+                  🧾 {t("রশিদ / ইনভয়েস", "Invoice")}
+                </button>
                 {!cancelled && (
+
                   <Link
                     to="/track/$no"
                     params={{ no: o.order_no }}
