@@ -55,7 +55,7 @@ export const runApiTest = createServerFn({ method: "POST" })
       const res = await fetch(url, {
         method,
         headers,
-        body: method === "GET" || method === "HEAD" ? undefined : (data.body || undefined),
+        body: method === "GET" || method === "HEAD" ? null : (data.body || null),
         signal: controller.signal,
       });
       clearTimeout(timer);
