@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2 } from "lucide-react";
+import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2, Navigation } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +52,8 @@ function DeliveryPanel() {
   const [pod, setPod] = useState<Record<string, { photo?: File | null; sign?: Blob | null; receiver?: string }>>({});
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [lastPing, setLastPing] = useState<string>("");
 
 
   const { data: rider, isLoading: riderLoading } = useQuery({
