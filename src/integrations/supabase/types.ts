@@ -14,6 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_endpoints: {
+        Row: {
+          active: boolean
+          auth_kind: string
+          created_at: string
+          grp: string
+          headers: Json
+          id: string
+          last_ms: number | null
+          last_ok: boolean | null
+          last_status: number | null
+          last_tested_at: string | null
+          method: string
+          name: string
+          note: string
+          sample_body: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          auth_kind?: string
+          created_at?: string
+          grp?: string
+          headers?: Json
+          id?: string
+          last_ms?: number | null
+          last_ok?: boolean | null
+          last_status?: number | null
+          last_tested_at?: string | null
+          method?: string
+          name: string
+          note?: string
+          sample_body?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          auth_kind?: string
+          created_at?: string
+          grp?: string
+          headers?: Json
+          id?: string
+          last_ms?: number | null
+          last_ok?: boolean | null
+          last_status?: number | null
+          last_tested_at?: string | null
+          method?: string
+          name?: string
+          note?: string
+          sample_body?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      api_test_logs: {
+        Row: {
+          actor: string | null
+          created_at: string
+          duration_ms: number
+          endpoint_id: string | null
+          error: string
+          id: string
+          method: string
+          name: string
+          ok: boolean
+          response_excerpt: string
+          status_code: number | null
+          url: string
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          duration_ms?: number
+          endpoint_id?: string | null
+          error?: string
+          id?: string
+          method?: string
+          name?: string
+          ok?: boolean
+          response_excerpt?: string
+          status_code?: number | null
+          url?: string
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          duration_ms?: number
+          endpoint_id?: string | null
+          error?: string
+          id?: string
+          method?: string
+          name?: string
+          ok?: boolean
+          response_excerpt?: string
+          status_code?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_test_logs_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "api_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           key: string
