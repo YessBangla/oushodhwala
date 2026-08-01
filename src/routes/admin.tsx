@@ -173,6 +173,7 @@ function Admin() {
       {tab === "gallery" && <MediaGallery />}
       {tab === "imgaudit" && <ImageAudit />}
       {tab === "imgrev" && <ImageRevisions />}
+      {tab === "customers" && <CustomersAdmin />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
