@@ -105,7 +105,9 @@ export function DeliveryAdmin() {
         {([
           { id: "deliveries", t: "ডেলিভারি", icon: Truck },
           { id: "riders", t: "ডেলিভারিম্যান", icon: Bike },
+          { id: "notifications", t: "নোটিফিকেশন", icon: Send },
         ] as const).map((x) => (
+
           <button
             key={x.id}
             onClick={() => setTab(x.id)}
