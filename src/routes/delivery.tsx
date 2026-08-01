@@ -265,25 +265,72 @@ function DeliveryPanel() {
         </button>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
-        <button
-          onClick={() => setSharing((v) => !v)}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold ${
-            sharing ? "bg-primary text-primary-foreground" : "bg-muted text-navy"
-          }`}
-        >
-          <Navigation className={`h-3.5 w-3.5 ${sharing ? "animate-pulse" : ""}`} />
-          {sharing ? t("লাইভ লোকেশন চালু", "Live location on") : t("লাইভ লোকেশন চালু করুন", "Start live location")}
-        </button>
-        <p className="text-[10px] text-muted-foreground">
-          {sharing
-            ? t("গ্রাহক আপনার অবস্থান ম্যাপে দেখতে পাচ্ছেন।", "Customers can see your position on the map.")
-            : t("চালু করলে গ্রাহক রিয়েল-টাইমে আপনাকে ট্র্যাক করতে পারবেন।", "Turn on so customers can track you in real time.")}
-        </p>
-        {lastPing && (
-          <span className="ml-auto text-[10px] font-semibold text-primary">
-            {t("সর্বশেষ পাঠানো", "Last sent")}: {fmtTime(lastPing, t.en)}
+      <div className="mt-3 rounded-2xl border border-border bg-card p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setSharing((v) => !v)}
+            disabled={perm === "denied" || perm === "unsupported"}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold disabled:opacity-50 ${
+              sharing ? "bg-primary text-primary-foreground" : "bg-muted text-navy"
+            }`}
+          >
+            <Navigation className={`h-3.5 w-3.5 ${sharing ? "animate-pulse" : ""}`} />
+            {sharing ? t("লাইভ লোকেশন চালু", "Live location on") : t("লাইভ লোকেশন চালু করুন", "Start live location")}
+          </button>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              perm === "granted"
+                ? "bg-secondary text-primary-dark"
+                : perm === "denied" || perm === "unsupported"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {perm === "granted"
+              ? t("লোকেশন অনুমতি: দেওয়া আছে", "Location: allowed")
+              : perm === "denied"
+                ? t("লোকেশন অনুমতি: ব্লক করা", "Location: blocked")
+                : perm === "unsupported"
+                  ? t("এই ডিভাইসে জিপিএস নেই", "GPS not supported")
+                  : t("লোকেশন অনুমতি: চাওয়া হবে", "Location: will ask")}
           </span>
+          <p className="text-[10px] text-muted-foreground">
+            {sharing
+              ? t("গ্রাহক আপনার অবস্থান ম্যাপে দেখতে পাচ্ছেন।", "Customers can see your position on the map.")
+              : t("চালু করলে গ্রাহক রিয়েল-টাইমে আপনাকে ট্র্যাক করতে পারবেন।", "Turn on so customers can track you in real time.")}
+          </p>
+          {lastPing && (
+            <span className="ml-auto text-[10px] font-semibold text-primary">
+              {t("সর্বশেষ পাঠানো", "Last sent")}: {fmtTime(lastPing, t.en)}
+            </span>
+          )}
+        </div>
+
+        {(perm === "denied" || perm === "unsupported") && (
+          <div className="mt-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-[10px] leading-relaxed text-muted-foreground">
+            <p className="text-[11px] font-bold text-destructive">
+              {t("লোকেশন অ্যাক্সেস বন্ধ আছে — লাইভ ট্র্যাকিং কাজ করবে না।", "Location access is off — live tracking won't work.")}
+            </p>
+            <p className="mt-1 font-semibold text-navy">{t("যেভাবে অনুমতি দেবেন:", "How to allow it:")}</p>
+            <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+              <li>{t("ব্রাউজারের অ্যাড্রেস বারের 🔒 আইকনে ট্যাপ করুন।", "Tap the 🔒 icon in the browser address bar.")}</li>
+              <li>{t("“Location / অবস্থান” অপশনটি Allow করুন।", "Set “Location” to Allow.")}</li>
+              <li>{t("ফোনের Settings → Location (GPS) চালু আছে কিনা দেখুন।", "Check phone Settings → Location (GPS) is turned on.")}</li>
+              <li>{t("এরপর পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।", "Then refresh this page and try again.")}</li>
+            </ol>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-bold text-primary-foreground"
+            >
+              {t("অনুমতি দিয়েছি — রিফ্রেশ", "I allowed it — refresh")}
+            </button>
+            <p className="mt-2">
+              {t(
+                "অনুমতি ছাড়া অর্ডার স্ট্যাটাস (পিকআপ/অন দ্য ওয়ে/ডেলিভার্ড) আপডেট করা যাবে, শুধু ম্যাপে অবস্থান দেখাবে না।",
+                "Without permission you can still update order status (picked/on the way/delivered) — only the map position is hidden.",
+              )}
+            </p>
+          </div>
         )}
       </div>
 
