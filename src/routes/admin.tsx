@@ -291,10 +291,25 @@ function Orders() {
 
 /* ---------------- inventory ---------------- */
 
+type InvProduct = {
+  id: string;
+  name: string;
+  emoji: string;
+  stock: number;
+  low_stock_threshold: number;
+  brand?: string | null;
+  manufacturer?: string | null;
+  generic?: string | null;
+  strength?: string | null;
+  form?: string | null;
+};
+
 function Inventory() {
   const qc = useQueryClient();
   const { data, isLoading } = useProducts();
   const [onlyLow, setOnlyLow] = useState(false);
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState<Record<string, boolean>>({});
 
   const save = useMutation({
     mutationFn: async ({ id, stock, low }: { id: string; stock: number; low: number }) => {
@@ -310,38 +325,99 @@ function Inventory() {
   });
 
   if (isLoading) return <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>;
-  const list = (data ?? []).filter((p) => !onlyLow || p.stock <= p.low_stock_threshold);
+
+  const term = q.trim().toLowerCase();
+  const list = ((data ?? []) as InvProduct[]).filter((p) => {
+    if (onlyLow && p.stock > p.low_stock_threshold) return false;
+    if (!term) return true;
+    return [p.name, p.brand, p.manufacturer, p.generic].some((v) => (v ?? "").toLowerCase().includes(term));
+  });
+
+  const groups = new Map<string, InvProduct[]>();
+  for (const p of list) {
+    const company = (p.manufacturer || p.brand || "").trim() || "অন্যান্য কোম্পানি";
+    const arr = groups.get(company);
+    if (arr) arr.push(p);
+    else groups.set(company, [p]);
+  }
+  const companies = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], "bn"));
 
   return (
     <div>
-      <label className="mb-2 flex items-center gap-2 text-xs font-semibold">
-        <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
-        শুধু কম স্টকের পণ্য
-      </label>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="কোম্পানি, ঔষধ বা জেনেরিক খুঁজুন"
+          className="min-w-[200px] flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none"
+        />
+        <label className="flex items-center gap-2 text-xs font-semibold">
+          <input type="checkbox" checked={onlyLow} onChange={(e) => setOnlyLow(e.target.checked)} />
+          শুধু কম স্টকের পণ্য
+        </label>
+        <span className="text-[11px] text-muted-foreground">
+          {bn(companies.length)} কোম্পানি · {bn(list.length)} ঔষধ
+        </span>
+      </div>
+
+      {companies.length === 0 && <p className="text-xs text-muted-foreground">কিছু পাওয়া যায়নি।</p>}
+
       <div className="space-y-2">
-        {list.map((p) => (
-          <StockRow key={p.id} p={p} onSave={(stock, low) => save.mutate({ id: p.id, stock, low })} />
-        ))}
+        {companies.map(([company, items]) => {
+          const lowCount = items.filter((p) => p.stock <= p.low_stock_threshold).length;
+          const expanded = open[company] ?? Boolean(term);
+          const generics = [...new Set(items.map((p) => (p.generic ?? "").trim()).filter(Boolean))];
+          return (
+            <section key={company} className="overflow-hidden rounded-xl border border-border bg-card">
+              <button
+                onClick={() => setOpen((s) => ({ ...s, [company]: !expanded }))}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+              >
+                <span className="text-xs">{expanded ? "▾" : "▸"}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{company}</span>
+                  <span className="block truncate text-[10px] text-muted-foreground">
+                    {bn(generics.length)} জেনেরিক · {generics.slice(0, 3).join(", ")}
+                    {generics.length > 3 ? "…" : ""}
+                  </span>
+                </span>
+                {lowCount > 0 && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-sale">
+                    {bn(lowCount)} কম স্টক
+                  </span>
+                )}
+                <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold">
+                  {bn(items.length)} ঔষধ
+                </span>
+              </button>
+              {expanded && (
+                <div className="space-y-2 border-t border-border bg-background/40 p-2">
+                  {items.map((p) => (
+                    <StockRow key={p.id} p={p} onSave={(stock, low) => save.mutate({ id: p.id, stock, low })} />
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function StockRow({
-  p,
-  onSave,
-}: {
-  p: { id: string; name: string; emoji: string; stock: number; low_stock_threshold: number };
-  onSave: (stock: number, low: number) => void;
-}) {
+function StockRow({ p, onSave }: { p: InvProduct; onSave: (stock: number, low: number) => void }) {
   const [stock, setStock] = useState(String(p.stock));
   const [low, setLow] = useState(String(p.low_stock_threshold));
   const critical = p.stock <= p.low_stock_threshold;
+  const meta = [p.generic, p.strength, p.form].map((v) => (v ?? "").trim()).filter(Boolean).join(" · ");
 
   return (
     <div className={`flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 ${critical ? "border-sale" : "border-border"}`}>
       <span className="text-lg">{p.emoji}</span>
-      <p className="min-w-0 flex-1 truncate text-xs font-semibold">{p.name}</p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold">{p.name}</p>
+        {meta && <p className="truncate text-[10px] text-muted-foreground">{meta}</p>}
+      </div>
       {p.stock <= 0 && <span className="rounded-full bg-sale px-2 py-0.5 text-[10px] font-bold text-sale-foreground">স্টক শেষ</span>}
       {p.stock > 0 && critical && <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-sale">কম স্টক</span>}
       <label className="text-[10px] text-muted-foreground">
@@ -371,6 +447,7 @@ function StockRow({
     </div>
   );
 }
+
 
 /* ---------------- products ---------------- */
 
