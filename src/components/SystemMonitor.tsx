@@ -107,7 +107,7 @@ export function SystemMonitor() {
   const s = stats ?? {};
   const pct = uptime.total ? Math.round((uptime.ok / uptime.total) * 100) : 100;
   const sessionMin = Math.max(1, Math.round((Date.now() - started.current) / 60000));
-  const errors24 = Number(s.errors_24h ?? 0);
+  const errors24 = Number(s['errors_24h'] ?? 0);
 
   return (
     <div className="space-y-4">
@@ -129,7 +129,7 @@ export function SystemMonitor() {
           মেয়াদ ও কম স্টক সতর্কতা চালান
         </button>
         <span className="text-xs text-muted-foreground">
-          সার্ভার সময়: {s.server_time ? new Date(String(s.server_time)).toLocaleString("bn-BD") : "—"}
+          সার্ভার সময়: {s['server_time'] ? new Date(String(s['server_time'])).toLocaleString("bn-BD") : "—"}
         </span>
       </div>
 
@@ -149,23 +149,23 @@ export function SystemMonitor() {
       <div>
         <p className="mb-2 text-sm font-bold">ডাটাবেজ ও ব্যবসায়িক স্বাস্থ্য</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Kpi label="মোট পণ্য" value={bn(Number(s.products ?? 0))} />
-          <Kpi label="সক্রিয় পণ্য" value={bn(Number(s.products_active ?? 0))} />
-          <Kpi label="ছবি নেই" value={bn(Number(s.products_no_image ?? 0))} tone={Number(s.products_no_image) ? "text-accent-foreground" : ""} />
-          <Kpi label="কম স্টক" value={bn(Number(s.low_stock ?? 0))} tone={Number(s.low_stock) ? "text-sale" : "text-primary"} />
-          <Kpi label="স্টক আউট" value={bn(Number(s.out_of_stock ?? 0))} tone={Number(s.out_of_stock) ? "text-sale" : ""} />
-          <Kpi label="মোট অর্ডার" value={bn(Number(s.orders ?? 0))} />
-          <Kpi label="আজকের অর্ডার" value={bn(Number(s.orders_today ?? 0))} />
-          <Kpi label="চলমান অর্ডার" value={bn(Number(s.orders_pending ?? 0))} />
-          <Kpi label="৩০ দিনের আয়" value={money(Number(s.revenue_30d ?? 0))} tone="text-primary" />
-          <Kpi label="গ্রাহক" value={bn(Number(s.customers ?? 0))} />
-          <Kpi label="সক্রিয় রাইডার" value={bn(Number(s.riders_active ?? 0))} />
-          <Kpi label="চলমান ডেলিভারি" value={bn(Number(s.deliveries_open ?? 0))} />
-          <Kpi label="সাপ্লায়ার" value={bn(Number(s.suppliers ?? 0))} />
-          <Kpi label="খোলা ক্রয় আদেশ" value={bn(Number(s.po_open ?? 0))} />
-          <Kpi label="৬০ দিনে মেয়াদোত্তীর্ণ হবে" value={bn(Number(s.expiring_60d ?? 0))} tone={Number(s.expiring_60d) ? "text-sale" : ""} />
-          <Kpi label="মেয়াদোত্তীর্ণ ব্যাচ" value={bn(Number(s.expired ?? 0))} tone={Number(s.expired) ? "text-sale" : "text-primary"} />
-          <Kpi label="ডাটাবেজ সাইজ" value={String(s.db_size ?? "—")} />
+          <Kpi label="মোট পণ্য" value={bn(Number(s['products'] ?? 0))} />
+          <Kpi label="সক্রিয় পণ্য" value={bn(Number(s['products_active'] ?? 0))} />
+          <Kpi label="ছবি নেই" value={bn(Number(s['products_no_image'] ?? 0))} tone={Number(s['products_no_image']) ? "text-accent-foreground" : ""} />
+          <Kpi label="কম স্টক" value={bn(Number(s['low_stock'] ?? 0))} tone={Number(s['low_stock']) ? "text-sale" : "text-primary"} />
+          <Kpi label="স্টক আউট" value={bn(Number(s['out_of_stock'] ?? 0))} tone={Number(s['out_of_stock']) ? "text-sale" : ""} />
+          <Kpi label="মোট অর্ডার" value={bn(Number(s['orders'] ?? 0))} />
+          <Kpi label="আজকের অর্ডার" value={bn(Number(s['orders_today'] ?? 0))} />
+          <Kpi label="চলমান অর্ডার" value={bn(Number(s['orders_pending'] ?? 0))} />
+          <Kpi label="৩০ দিনের আয়" value={money(Number(s['revenue_30d'] ?? 0))} tone="text-primary" />
+          <Kpi label="গ্রাহক" value={bn(Number(s['customers'] ?? 0))} />
+          <Kpi label="সক্রিয় রাইডার" value={bn(Number(s['riders_active'] ?? 0))} />
+          <Kpi label="চলমান ডেলিভারি" value={bn(Number(s['deliveries_open'] ?? 0))} />
+          <Kpi label="সাপ্লায়ার" value={bn(Number(s['suppliers'] ?? 0))} />
+          <Kpi label="খোলা ক্রয় আদেশ" value={bn(Number(s['po_open'] ?? 0))} />
+          <Kpi label="৬০ দিনে মেয়াদোত্তীর্ণ হবে" value={bn(Number(s['expiring_60d'] ?? 0))} tone={Number(s['expiring_60d']) ? "text-sale" : ""} />
+          <Kpi label="মেয়াদোত্তীর্ণ ব্যাচ" value={bn(Number(s['expired'] ?? 0))} tone={Number(s['expired']) ? "text-sale" : "text-primary"} />
+          <Kpi label="ডাটাবেজ সাইজ" value={String(s['db_size'] ?? "—")} />
           <Kpi label="২৪ ঘণ্টায় এরর" value={bn(errors24)} tone={errors24 ? "text-sale" : "text-primary"} />
         </div>
       </div>
