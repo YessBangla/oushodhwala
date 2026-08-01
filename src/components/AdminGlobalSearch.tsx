@@ -89,10 +89,11 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
     <div ref={box} className="relative mx-auto hidden w-full max-w-md md:block">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <input
+        ref={input}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => hits.length > 0 && setOpen(true)}
-        placeholder="অর্ডার, প্রোডাক্ট, কাস্টমার খুঁজুন…"
+        placeholder="অর্ডার, প্রোডাক্ট, কাস্টমার খুঁজুন…  (Ctrl+K)"
         className="h-9 w-full rounded-full border border-border bg-secondary/60 pl-9 pr-8 text-xs outline-none focus:border-primary focus:bg-card"
       />
       {busy ? (
