@@ -174,15 +174,18 @@ function Track() {
                 {t("ডেলিভারি ওটিপি", "Delivery OTP")}: <span className="font-display text-base">{delivery.otp}</span>
               </p>
             )}
-            {delivery.last_lat && delivery.last_lng && (
-              <a
-                className="mt-2 inline-block text-[11px] font-semibold text-primary"
-                target="_blank"
-                rel="noreferrer"
-                href={`https://www.google.com/maps?q=${delivery.last_lat},${delivery.last_lng}`}
-              >
-                {t("ম্যাপে অবস্থান দেখুন", "See location on map")} →
-              </a>
+            {delivery.last_lat != null && delivery.last_lng != null ? (
+              <LiveMap
+                riderLat={Number(delivery.last_lat)}
+                riderLng={Number(delivery.last_lng)}
+                destLat={order.lat != null ? Number(order.lat) : null}
+                destLng={order.lng != null ? Number(order.lng) : null}
+                lastSeen={delivery.last_seen_at}
+              />
+            ) : (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {t("ডেলিভারিম্যান লোকেশন শেয়ার করলে লাইভ ম্যাপ দেখা যাবে।", "The live map appears once the rider starts sharing location.")}
+              </p>
             )}
           </div>
 
