@@ -75,6 +75,10 @@ export type ShopSettings = {
   bkash: boolean;
   nagad: boolean;
   card: boolean;
+  expressEnabled: boolean;
+  expressFee: number;
+  expressEta: string;
+  emergencyPhone: string;
 };
 
 export type Catalog = {
