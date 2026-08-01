@@ -11,6 +11,7 @@ import { ProductImage } from "@/components/ProductImage";
 import { ProductReviews } from "@/components/ProductReviews";
 import { RefillReminder } from "@/components/RefillReminder";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
+import { ShareButton } from "@/components/ShareButton";
 import { pushRecent } from "@/lib/recent";
 
 import { useStore, toLine } from "@/lib/store";
@@ -280,6 +281,10 @@ function ProductPage() {
             <button onClick={() => toggleWish(p.id)} className="rounded-lg border border-border p-2.5" aria-label="উইশলিস্ট">
               <Heart className={`h-4 w-4 ${wishlist.includes(p.id) ? "fill-current text-sale" : ""}`} />
             </button>
+          </div>
+
+          <div className="mt-3">
+            <ShareButton title={isEn ? p.en || p.name : p.name} text={`${isEn ? p.en || p.name : p.name} — Oushodhwala`} />
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
