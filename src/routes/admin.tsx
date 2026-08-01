@@ -1208,7 +1208,7 @@ function LabTests() {
 
 /* ---------------- doctors ---------------- */
 
-const emptyDoctor = { name: "", spec: "", degree: "", exp: "", fee: 0, emoji: "👨‍⚕️", photo_url: "", sort_order: 0 };
+const emptyDoctor = { name: "", spec: "", degree: "", exp: "", fee: 0, emoji: "👨‍⚕️", photo_url: "", phone: "", whatsapp: "", video_url: "", sort_order: 0 };
 
 function Doctors() {
   const qc = useQueryClient();
@@ -1256,12 +1256,12 @@ function Doctors() {
   return (
     <div>
       <div className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-3">
-        {(["name", "spec", "degree", "exp", "emoji", "photo_url"] as const).map((k) => (
+        {(["name", "spec", "degree", "exp", "emoji", "photo_url", "phone", "whatsapp", "video_url"] as const).map((k) => (
           <input
             key={k}
             value={form[k]}
             onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-            placeholder={{ name: "নাম", spec: "বিশেষত্ব", degree: "ডিগ্রি", exp: "অভিজ্ঞতা", emoji: "ইমোজি", photo_url: "ছবির লিংক" }[k]}
+            placeholder={{ name: "নাম", spec: "বিশেষত্ব", degree: "ডিগ্রি", exp: "অভিজ্ঞতা", emoji: "ইমোজি", photo_url: "ছবির লিংক", phone: "ফোন নম্বর (01…)", whatsapp: "হোয়াটসঅ্যাপ নম্বর", video_url: "ভিডিও কল লিংক" }[k]}
             className="rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
           />
         ))}
@@ -1295,7 +1295,9 @@ function Doctors() {
               onClick={() =>
                 setForm({
                   id: d.id, name: d.name, spec: d.spec, degree: d.degree, exp: d.exp,
-                  fee: Number(d.fee), emoji: d.emoji, photo_url: d.photo_url, sort_order: d.sort_order,
+                  fee: Number(d.fee), emoji: d.emoji, photo_url: d.photo_url,
+                  phone: d.phone ?? "", whatsapp: d.whatsapp ?? "", video_url: d.video_url ?? "",
+                  sort_order: d.sort_order,
                 })
               }
               className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"

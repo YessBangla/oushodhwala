@@ -64,6 +64,10 @@ export type ShopDoctor = {
   fee: number;
   emoji: string;
   photo: string;
+  phone: string;
+  whatsapp: string;
+  videoUrl: string;
+  online: boolean;
 };
 
 export type ShopSettings = {
@@ -230,6 +234,10 @@ export function useCatalog(): Catalog {
           fee: Number(d.fee),
           emoji: d.emoji,
           photo: d.photo_url ?? "",
+          phone: (d as { phone?: string }).phone ?? "",
+          whatsapp: (d as { whatsapp?: string }).whatsapp ?? "",
+          videoUrl: (d as { video_url?: string }).video_url ?? "",
+          online: (d as { online?: boolean }).online ?? true,
         })),
         settings: {
           deliveryFee: num("delivery_fee", 60),

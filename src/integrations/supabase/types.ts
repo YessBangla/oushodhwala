@@ -75,10 +75,14 @@ export type Database = {
           fee: number
           id: string
           name: string
+          online: boolean
+          phone: string
           photo_url: string
           sort_order: number
           spec: string
           updated_at: string
+          video_url: string
+          whatsapp: string
         }
         Insert: {
           active?: boolean
@@ -89,10 +93,14 @@ export type Database = {
           fee?: number
           id?: string
           name: string
+          online?: boolean
+          phone?: string
           photo_url?: string
           sort_order?: number
           spec?: string
           updated_at?: string
+          video_url?: string
+          whatsapp?: string
         }
         Update: {
           active?: boolean
@@ -103,10 +111,14 @@ export type Database = {
           fee?: number
           id?: string
           name?: string
+          online?: boolean
+          phone?: string
           photo_url?: string
           sort_order?: number
           spec?: string
           updated_at?: string
+          video_url?: string
+          whatsapp?: string
         }
         Relationships: []
       }
