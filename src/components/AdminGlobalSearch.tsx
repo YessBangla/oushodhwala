@@ -55,7 +55,7 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
         ...(products.data ?? []).map((p: any) => ({
           kind: "product" as const,
           tab: "products",
-          title: p.name ?? p.name_en ?? "",
+          title: p.name ?? p.en ?? "",
           sub: `স্টক ${p.stock ?? 0}`,
         })),
         ...(customers.data ?? []).map((c: any) => ({
