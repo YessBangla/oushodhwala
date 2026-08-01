@@ -38,10 +38,10 @@ export function AdminGlobalSearch({ onSelect }: { onSelect: (tab: string) => voi
       const [orders, products, customers] = await Promise.all([
         supabase
           .from("orders")
-          .select("order_no, customer_name, customer_phone, total, status")
-          .or(`order_no.ilike.${like},customer_name.ilike.${like},customer_phone.ilike.${like}`)
+          .select("order_no, customer_name, phone, total, status")
+          .or(`order_no.ilike.${like},customer_name.ilike.${like},phone.ilike.${like}`)
           .limit(5),
-        supabase.from("products").select("id, name, name_en, stock").or(`name.ilike.${like},name_en.ilike.${like}`).limit(5),
+        supabase.from("products").select("id, name, en, stock").or(`name.ilike.${like},en.ilike.${like}`).limit(5),
         supabase.from("profiles").select("id, name, phone").or(`name.ilike.${like},phone.ilike.${like}`).limit(5),
       ]);
 
