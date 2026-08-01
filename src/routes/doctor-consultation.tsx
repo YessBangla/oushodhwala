@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Phone, MessageCircle, Video } from "lucide-react";
+
 import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 
