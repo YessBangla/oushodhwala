@@ -122,16 +122,8 @@ export function Layout({ children }: { children: ReactNode }) {
         <DesktopMenu />
 
 
-        <Link
-          to="/account"
-          className="flex items-center gap-1 border-t border-border bg-muted px-4 py-1.5 text-[11px] text-muted-foreground lg:hidden"
-        >
-          <MapPin className="h-3.5 w-3.5 text-primary" />
-          <span className="truncate">
-            {en ? "Deliver to" : "ডেলিভারি"}: {addr ? addr.area : en ? "Add address" : "ঠিকানা যোগ করুন"}
-          </span>
-          <ChevronRight className="ml-auto h-3.5 w-3.5" />
-        </Link>
+        <DeliverToBar />
+
       </header>
 
       <main className="mx-auto max-w-7xl px-4">{children}</main>
