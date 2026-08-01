@@ -153,7 +153,7 @@ export function MobileMenu() {
         <Menu className="h-5 w-5" />
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-navy/50" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 flex w-[84%] max-w-sm flex-col bg-card shadow-[var(--shadow-elevated)]">
