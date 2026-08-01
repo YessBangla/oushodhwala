@@ -89,11 +89,12 @@ const pickTabs = (ids: string[]) =>
 const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ওভারভিউ", items: pickTabs(["dash"]) },
   { label: "বিক্রয়", items: pickTabs(["orders", "inventory", "accounts", "reports", "returns"]) },
-  { label: "সাপ্লাই চেইন", items: pickTabs(["suppliers", "purchases", "batches"]) },
+  { label: "সাপ্লাই চেইন", items: pickTabs(["suppliers", "purchases", "batches", "erpreports"]) },
   { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
+  { label: "মনিটরিং", items: pickTabs(["monitor", "audit", "erproles"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
 ];
 
