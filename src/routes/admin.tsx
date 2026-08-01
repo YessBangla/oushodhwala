@@ -49,6 +49,7 @@ const TABS = [
   { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "imgaudit", t: "ছবি যাচাই" },
   { id: "imgrev", t: "ছবি রিভিশন" },
+  { id: "customers", t: "গ্রাহক" },
 
 
   { id: "settings", t: "সেটিংস" },
