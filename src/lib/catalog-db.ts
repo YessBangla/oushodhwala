@@ -242,6 +242,10 @@ export function useCatalog(): Catalog {
           whatsapp: (d as { whatsapp?: string }).whatsapp ?? "",
           videoUrl: (d as { video_url?: string }).video_url ?? "",
           online: (d as { online?: boolean }).online ?? true,
+          workStart: (d as { work_start?: string }).work_start || "10:00",
+          workEnd: (d as { work_end?: string }).work_end || "22:00",
+          slotMinutes: Number((d as { slot_minutes?: number }).slot_minutes ?? 30) || 30,
+          workDays: (d as { work_days?: number[] }).work_days ?? [0, 1, 2, 3, 4, 5, 6],
         })),
         settings: {
           deliveryFee: num("delivery_fee", 60),
