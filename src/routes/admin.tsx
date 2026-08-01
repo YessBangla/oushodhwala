@@ -73,6 +73,10 @@ const TABS = [
   { id: "suppliers", t: "সাপ্লায়ার" },
   { id: "purchases", t: "ক্রয় আদেশ" },
   { id: "batches", t: "ব্যাচ ও মেয়াদ" },
+  { id: "monitor", t: "সিস্টেম মনিটর" },
+  { id: "audit", t: "ERP অডিট ট্রেইল" },
+  { id: "erpreports", t: "ERP রিপোর্ট" },
+  { id: "erproles", t: "ERP অ্যাক্সেস" },
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
