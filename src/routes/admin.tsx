@@ -933,6 +933,89 @@ function Products() {
 
 /* ---------------- categories ---------------- */
 
+type CatForm = {
+  slug: string;
+  bn: string;
+  en: string;
+  emoji: string;
+  description: string;
+  description_en: string;
+  kind: string;
+  home_delivery: boolean;
+  home_service: boolean;
+  service_route: string;
+  eta: string;
+  eta_en: string;
+  base_fee: number;
+};
+
+function CategoryPreview({ form }: { form: CatForm }) {
+  const isService = form.kind === "service";
+  const card = (lng: "bn" | "en") => {
+    const name = lng === "bn" ? form.bn || "ক্যাটাগরির নাম" : form.en || form.bn || "Category name";
+    const desc = lng === "bn" ? form.description : form.description_en;
+    const eta = lng === "bn" ? form.eta : form.eta_en;
+    return (
+      <div className="flex gap-3 rounded-xl border border-border bg-card p-3">
+        <span
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg text-xl ${
+            isService ? "bg-primary/10" : "bg-secondary"
+          }`}
+        >
+          {form.emoji || "🧴"}
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-xs font-bold">{name}</span>
+          <span className="mt-0.5 block line-clamp-2 text-[10px] text-muted-foreground">
+            {desc || (lng === "bn" ? "বর্ণনা যোগ করুন" : "Add a description")}
+          </span>
+          <span className="mt-1.5 flex flex-wrap items-center gap-1">
+            {form.home_delivery && (
+              <span className="rounded bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-primary-dark">
+                {lng === "bn" ? "হোম ডেলিভারি" : "Home delivery"}
+              </span>
+            )}
+            {form.home_service && (
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                {lng === "bn" ? "হোম সার্ভিস" : "Home service"}
+              </span>
+            )}
+            {eta && <span className="text-[9px] text-muted-foreground">{eta}</span>}
+            {form.base_fee > 0 && (
+              <span className="text-[9px] font-semibold text-primary-dark">
+                {lng === "bn" ? `শুরু ৳${form.base_fee}` : `from ৳${form.base_fee}`}
+              </span>
+            )}
+          </span>
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 p-3">
+      <p className="text-[11px] font-bold text-muted-foreground">
+        লাইভ প্রিভিউ — {isService ? "হোম সার্ভিস কার্ড" : "পণ্য ক্যাটাগরি কার্ড"}
+      </p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div>
+          <p className="mb-1 text-[10px] font-bold text-muted-foreground">বাংলা</p>
+          {card("bn")}
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] font-bold text-muted-foreground">English</p>
+          {card("en")}
+        </div>
+      </div>
+      <p className="mt-2 text-[10px] text-muted-foreground">
+        লিংক: {isService ? form.service_route || "/home-services" : `/category/${form.slug || "slug"}`}
+      </p>
+    </div>
+  );
+}
+
+
+
 function Categories() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -1043,6 +1126,9 @@ function Categories() {
           ক্যাটাগরি যোগ / আপডেট
         </button>
       </div>
+
+      <CategoryPreview form={form} />
+
       <div className="mt-3 space-y-2">
         {(data ?? []).map((c) => (
           <div key={c.slug} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">

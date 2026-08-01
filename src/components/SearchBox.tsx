@@ -1,14 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, Clock, TrendingUp, Loader2, CornerDownLeft } from "lucide-react";
+import { Search, X, Clock, TrendingUp, Loader2, CornerDownLeft, HomeIcon } from "lucide-react";
 import { searchProducts } from "@/lib/catalog.functions";
 import { ProductImage } from "@/components/ProductImage";
 import { useLang, pick } from "@/lib/lang";
+import { useCatalog } from "@/lib/catalog-db";
+import { matchesQuery } from "@/lib/bn-search";
 import { bn } from "@/data/catalog";
+
+type Scope = "all" | "product" | "service";
+
+/** সার্চ টার্মের সাথে মিলের মাত্রা — কম স্কোর = বেশি প্রাসঙ্গিক */
+function relevance(term: string, ...fields: (string | null | undefined)[]) {
+  const q = term.trim().toLowerCase();
+  let best = 99;
+  fields.forEach((f, i) => {
+    const v = (f ?? "").toLowerCase();
+    if (!v || !q) return;
+    if (v === q) best = Math.min(best, 0 + i * 0.1);
+    else if (v.startsWith(q)) best = Math.min(best, 1 + i * 0.1);
+    else if (v.includes(q)) best = Math.min(best, 2 + i * 0.1);
+  });
+  return best;
+}
 
 const RECENT_KEY = "ow-recent-search";
 const TRENDING = ["নাপা", "প্যারাসিটামল", "ওমিপ্রাজল", "ভিটামিন সি", "প্রেসার মেশিন", "মাস্ক"];
+
 
 function readRecent(): string[] {
   try {
@@ -62,15 +81,36 @@ export function SearchBox({ className = "" }: { className?: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const [scope, setScope] = useState<Scope>("all");
+  const { categories } = useCatalog();
+
   const enabled = debounced.length >= 2;
   const { data, isFetching } = useQuery({
     queryKey: ["search-suggest", debounced],
-    queryFn: () => searchProducts({ data: { q: debounced, limit: 7 } }),
-    enabled,
+    queryFn: () => searchProducts({ data: { q: debounced, limit: 10 } }),
+    enabled: enabled && scope !== "service",
     staleTime: 60_000,
   });
 
-  const rows = useMemo(() => (enabled ? (data?.rows ?? []) : []), [data, enabled]);
+  const rows = useMemo(() => {
+    if (!enabled || scope === "service") return [];
+    const list = [...(data?.rows ?? [])];
+    list.sort(
+      (a, b) =>
+        relevance(debounced, a.name, a.en, a.brand, a.generic) - relevance(debounced, b.name, b.en, b.brand, b.generic),
+    );
+    return list.slice(0, 7);
+  }, [data, enabled, debounced, scope]);
+
+  const services = useMemo(() => {
+    if (!enabled || scope === "product") return [];
+    return categories
+      .filter((c) => c.kind === "service")
+      .filter((c) => matchesQuery(debounced, c.bn, c.en, c.desc, c.descEn, c.slug))
+      .sort((a, b) => relevance(debounced, a.bn, a.en) - relevance(debounced, b.bn, b.en))
+      .slice(0, 4);
+  }, [categories, debounced, enabled, scope]);
+
 
   const saveTerm = (term: string) => {
     const next = [term, ...readRecent().filter((r) => r !== term)].slice(0, 6);
@@ -98,8 +138,28 @@ export function SearchBox({ className = "" }: { className?: string }) {
     navigate({ to: "/product/$id", params: { id } });
   };
 
+  const goService = (slug: string, route: string, term: string) => {
+    saveTerm(term);
+    setOpen(false);
+    setActive(-1);
+    if (route === "/home-diagnostics") void navigate({ to: "/home-diagnostics" });
+    else void navigate({ to: "/home-services", search: { s: slug } });
+  };
+
+  const total = rows.length + services.length;
+  const openOption = (i: number) => {
+    if (i < rows.length) {
+      const r = rows[i]!;
+      goProduct(r.id, r.name);
+    } else {
+      const s = services[i - rows.length]!;
+      goService(s.slug, s.serviceRoute, s.bn);
+    }
+  };
+
   // ফলাফল বদলালে সক্রিয় নির্বাচন রিসেট
-  useEffect(() => setActive(-1), [debounced]);
+  useEffect(() => setActive(-1), [debounced, scope]);
+
 
   // সক্রিয় আইটেম সবসময় দৃশ্যমান রাখা
   useEffect(() => {
@@ -118,29 +178,29 @@ export function SearchBox({ className = "" }: { className?: string }) {
       return;
     }
     if (e.key === "Enter") {
-      if (active >= 0 && rows[active]) {
+      if (active >= 0 && active < total) {
         e.preventDefault();
-        const r = rows[active]!;
-        goProduct(r.id, r.name);
+        openOption(active);
       }
       return; // অন্যথায় ফর্ম সাবমিট → পূর্ণ সার্চ
     }
-    if (!rows.length) return;
+    if (!total) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setOpen(true);
-      setActive((a) => (a + 1) % rows.length);
+      setActive((a) => (a + 1) % total);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setOpen(true);
-      setActive((a) => (a <= 0 ? rows.length - 1 : a - 1));
+      setActive((a) => (a <= 0 ? total - 1 : a - 1));
     } else if (e.key === "Home") {
       e.preventDefault();
       setActive(0);
     } else if (e.key === "End") {
       e.preventDefault();
-      setActive(rows.length - 1);
+      setActive(total - 1);
     }
+
   };
 
 
@@ -205,9 +265,34 @@ export function SearchBox({ className = "" }: { className?: string }) {
           role="listbox"
           className="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elevated)]"
         >
+          <div className="mb-1.5 flex gap-1.5 px-1">
+            {(
+              [
+                ["all", en ? "All" : "সব"],
+                ["product", en ? "Medicine & products" : "ঔষধ ও পণ্য"],
+                ["service", en ? "Home services" : "হোম সার্ভিস"],
+              ] as [Scope, string][]
+            ).map(([v, l]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setScope(v)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  scope === v ? "bg-primary text-primary-foreground" : "bg-muted text-navy"
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
           {enabled ? (
-            rows.length ? (
+            total ? (
               <>
+                {rows.length > 0 && (
+                  <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {en ? "Medicine & products" : "ঔষধ ও পণ্য"}
+                  </p>
+                )}
                 {rows.map((r, i) => (
                   <button
                     key={r.id}
@@ -218,7 +303,6 @@ export function SearchBox({ className = "" }: { className?: string }) {
                     onMouseEnter={() => setActive(i)}
                     onClick={() => goProduct(r.id, r.name)}
                     className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${
-
                       i === active ? "bg-secondary" : ""
                     }`}
                   >
@@ -240,15 +324,55 @@ export function SearchBox({ className = "" }: { className?: string }) {
                     <span className="shrink-0 text-xs font-extrabold text-primary">৳{bn(Number(r.price))}</span>
                   </button>
                 ))}
-                <button
-                  onClick={() => goSearch(q)}
-                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-secondary py-2.5 text-xs font-bold text-primary"
-                >
-                  {en ? `See all results for "${debounced}"` : `"${debounced}" এর সব ফলাফল দেখুন`}
-                  <CornerDownLeft className="h-3.5 w-3.5" />
-                </button>
+
+                {services.length > 0 && (
+                  <p className="px-2 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {en ? "Home services" : "হোম সার্ভিস"}
+                  </p>
+                )}
+                {services.map((s, j) => {
+                  const i = rows.length + j;
+                  return (
+                    <button
+                      key={s.slug}
+                      id={`search-opt-${i}`}
+                      data-idx={i}
+                      role="option"
+                      aria-selected={i === active}
+                      onMouseEnter={() => setActive(i)}
+                      onClick={() => goService(s.slug, s.serviceRoute, s.bn)}
+                      className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${
+                        i === active ? "bg-secondary" : ""
+                      }`}
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-lg">
+                        {s.emoji}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-bold text-navy">{pick(lang, s.bn, s.en)}</span>
+                        <span className="block truncate text-[10px] text-muted-foreground">
+                          {pick(lang, s.eta, s.etaEn) || pick(lang, s.desc, s.descEn)}
+                        </span>
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold text-primary">
+                        <HomeIcon className="h-3 w-3" /> {en ? "Book" : "বুক"}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {scope !== "service" && (
+                  <button
+                    onClick={() => goSearch(q)}
+                    className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-secondary py-2.5 text-xs font-bold text-primary"
+                  >
+                    {en ? `See all results for "${debounced}"` : `"${debounced}" এর সব ফলাফল দেখুন`}
+                    <CornerDownLeft className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </>
             ) : (
+
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
                 {isFetching
                   ? en

@@ -7,29 +7,101 @@ import { ProductCard } from "@/components/ProductCard";
 import { useT } from "@/lib/i18n";
 import { useLang, pick } from "@/lib/lang";
 
+const SITE = "https://oushodhwala.lovable.app";
+
 export const Route = createFileRoute("/category/$slug")({
   loader: ({ params }) => {
     const cat = staticCategories.find((c) => c.slug === params.slug);
     if (!cat) throw notFound();
     return { cat };
   },
-  head: ({ loaderData }) => {
+  head: ({ params, loaderData }) => {
     if (!loaderData) {
       return { meta: [{ title: "ক্যাটাগরি পাওয়া যায়নি — ঔষধওয়ালা" }, { name: "robots", content: "noindex" }] };
     }
-    const title = `${loaderData.cat.bn} — ${loaderData.cat.en} | ঔষধওয়ালা`;
-    const desc = `${loaderData.cat.bn} ক্যাটাগরির অরিজিনাল পণ্য সেরা দামে অর্ডার করুন ঔষধওয়ালা থেকে।`;
+    const c = loaderData.cat;
+    const url = `${SITE}/category/${params.slug}`;
+    const isService = c.kind === "service";
+    const title = `${c.bn} — ${c.en} | ঔষধওয়ালা`;
+    const desc = (
+      c.desc ||
+      (isService
+        ? `${c.bn} — প্রশিক্ষিত টিম আপনার বাসায় এসে সেবা দেবে। ঔষধওয়ালা থেকে হোম সার্ভিস বুক করুন।`
+        : `${c.bn} ক্যাটাগরির অরিজিনাল পণ্য সেরা দামে হোম ডেলিভারিসহ অর্ডার করুন ঔষধওয়ালা থেকে।`)
+    ).slice(0, 155);
+    const descEn = (
+      c.descEn ||
+      (isService
+        ? `${c.en} at home in Bangladesh — book trained professionals from Oushodhwala.`
+        : `Order authentic ${c.en} online at the best price with fast home delivery from Oushodhwala.`)
+    ).slice(0, 155);
     return {
       meta: [
         { title },
         { name: "description", content: desc },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
+        { property: "og:locale", content: "bn_BD" },
+        { property: "og:locale:alternate", content: "en_US" },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "ঔষধওয়ালা · Oushodhwala" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${c.en} — Oushodhwala` },
+        { name: "twitter:description", content: descEn },
+      ],
+      links: [
+        { rel: "canonical", href: url },
+        { rel: "alternate", hrefLang: "bn", href: url },
+        { rel: "alternate", hrefLang: "en", href: url },
+        { rel: "alternate", hrefLang: "x-default", href: url },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "ঔষধওয়ালা", item: SITE },
+              { "@type": "ListItem", position: 2, name: "ক্যাটাগরি", item: `${SITE}/categories` },
+              { "@type": "ListItem", position: 3, name: c.bn, item: url },
+            ],
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(
+            isService
+              ? {
+                  "@context": "https://schema.org",
+                  "@type": "Service",
+                  name: c.en,
+                  alternateName: c.bn,
+                  description: descEn,
+                  areaServed: "Bangladesh",
+                  provider: { "@type": "Organization", name: "Oushodhwala", url: SITE },
+                  ...(c.baseFee > 0
+                    ? { offers: { "@type": "Offer", price: c.baseFee, priceCurrency: "BDT" } }
+                    : {}),
+                }
+              : {
+                  "@context": "https://schema.org",
+                  "@type": "CollectionPage",
+                  name: c.en,
+                  alternateName: c.bn,
+                  description: descEn,
+                  url,
+                  isPartOf: { "@type": "WebSite", name: "Oushodhwala", url: SITE },
+                },
+          ),
+        },
       ],
     };
   },
   component: CategoryPage,
 });
+
 
 function CategoryPage() {
   const t = useT();

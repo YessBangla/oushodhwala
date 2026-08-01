@@ -6,6 +6,8 @@ import { useT } from "@/lib/i18n";
 import { useLang, pick } from "@/lib/lang";
 import type { Category } from "@/data/catalog";
 
+const SITE = "https://oushodhwala.lovable.app";
+
 export const Route = createFileRoute("/categories")({
   head: () => ({
     meta: [
@@ -18,11 +20,27 @@ export const Route = createFileRoute("/categories")({
       { property: "og:title", content: "সব ক্যাটাগরি ও হোম সার্ভিস — ঔষধওয়ালা" },
       { property: "og:description", content: "প্রতিটি ক্যাটাগরিতে হোম ডেলিভারি বা হোম সার্ভিস সুবিধা।" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "ঔষধওয়ালা · Oushodhwala" },
+      { property: "og:locale", content: "bn_BD" },
+      { property: "og:locale:alternate", content: "en_US" },
+      { property: "og:url", content: `${SITE}/categories` },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "All categories & home services — Oushodhwala" },
+      {
+        name: "twitter:description",
+        content: "Medicines, health devices, home nursing, doctor visits and diagnostics — all with home delivery.",
+      },
+    ],
+    links: [
+      { rel: "canonical", href: `${SITE}/categories` },
+      { rel: "alternate", hrefLang: "bn", href: `${SITE}/categories` },
+      { rel: "alternate", hrefLang: "en", href: `${SITE}/categories` },
+      { rel: "alternate", hrefLang: "x-default", href: `${SITE}/categories` },
     ],
   }),
   component: CategoriesPage,
 });
+
 
 function CategoriesPage() {
   const t = useT();
