@@ -21,7 +21,6 @@ import {
   ExternalLink,
   LogOut,
   ChevronRight,
-  Search,
   Bell,
   Users,
   Truck,
