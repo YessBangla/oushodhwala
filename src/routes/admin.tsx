@@ -69,8 +69,9 @@ const TABS = [
   { id: "reviews", t: "রিভিউ মডারেশন" },
   { id: "campaigns", t: "মার্কেটিং ক্যাম্পেইন" },
   { id: "loyalty", t: "লয়ালটি পয়েন্ট" },
-
-
+  { id: "suppliers", t: "সাপ্লায়ার" },
+  { id: "purchases", t: "ক্রয় আদেশ" },
+  { id: "batches", t: "ব্যাচ ও মেয়াদ" },
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
@@ -83,6 +84,7 @@ const pickTabs = (ids: string[]) =>
 const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ওভারভিউ", items: pickTabs(["dash"]) },
   { label: "বিক্রয়", items: pickTabs(["orders", "inventory", "accounts", "reports", "returns"]) },
+  { label: "সাপ্লাই চেইন", items: pickTabs(["suppliers", "purchases", "batches"]) },
   { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
