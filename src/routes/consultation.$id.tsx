@@ -120,7 +120,7 @@ function ConsultationRoom() {
   const waText = encodeURIComponent(
     `আসসালামু আলাইকুম, আমি ঔষধওয়ালা থেকে ${appt.patient_name}। ${appt.doctor_name} এর সাথে ${fmtDateTime(appt.scheduled_at)} সময়ে অ্যাপয়েন্টমেন্ট (ইনভয়েস #${appt.invoice_no})।`,
   );
-  const video = doctor?.videoUrl ?? "";
+  const video = (appt.join_url || doctor?.videoUrl) ?? "";
   const started = new Date(appt.scheduled_at).getTime() - 10 * 60000 <= Date.now();
 
   return (
