@@ -170,6 +170,33 @@ export function DiagnosticsAdmin() {
               />
             </div>
 
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground">
+                <Upload className="h-3.5 w-3.5" />
+                {uploading === b.id ? "আপলোড হচ্ছে..." : "রিপোর্ট ফাইল আপলোড (PDF/ছবি)"}
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  className="hidden"
+                  disabled={uploading === b.id}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void uploadReport(b, f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {b.report_url && (
+                <button
+                  onClick={() => void openReport(b)}
+                  className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-[11px] font-semibold"
+                >
+                  <FileText className="h-3.5 w-3.5" /> রিপোর্ট দেখুন
+                </button>
+              )}
+            </div>
+
+
             <div className="mt-2 flex flex-wrap gap-1.5">
               {Object.entries(STATUS).map(([k, v]) => (
                 <button
