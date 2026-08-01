@@ -19,6 +19,8 @@ import {
   ExternalLink,
   LogOut,
   ChevronRight,
+  Search,
+  Bell,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
