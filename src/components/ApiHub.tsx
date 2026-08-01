@@ -102,6 +102,41 @@ export function ApiHub() {
   const [filter, setFilter] = useState("all");
   const [result, setResult] = useState<(ApiTestResult & { name: string }) | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [env, setEnv] = useState<EnvId>("prod");
+  const [baseDraft, setBaseDraft] = useState<string | null>(null);
+
+  const { data: bases = {} } = useQuery({
+    queryKey: ["api-env-bases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ENVS.map((e) => e.key));
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const r of data ?? []) map[(r as { key: string }).key] = (r as { value: string }).value;
+      return map;
+    },
+  });
+
+  const envDef = ENVS.find((e) => e.id === env)!;
+  const baseUrl = (bases[envDef.key] ?? "").trim() || envDef.fallback;
+
+  const saveBase = useMutation({
+    mutationFn: async (value: string) => {
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ key: envDef.key, value: value.trim(), label: `API base — ${envDef.t}` }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("বেস URL সংরক্ষিত");
+      setBaseDraft(null);
+      void qc.invalidateQueries({ queryKey: ["api-env-bases"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["api-endpoints"],
