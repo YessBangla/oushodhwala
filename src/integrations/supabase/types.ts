@@ -1237,6 +1237,12 @@ export type Database = {
         }
       }
       claim_first_admin: { Args: never; Returns: boolean }
+      doctor_taken_slots: {
+        Args: { _doctor_id: string; _from: string; _to: string }
+        Returns: {
+          scheduled_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
