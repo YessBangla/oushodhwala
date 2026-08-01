@@ -17,6 +17,7 @@ import { ProductImagesAdmin } from "@/components/ProductImagesAdmin";
 import { AdminHealth } from "@/components/AdminHealth";
 import { DiagnosticsAdmin } from "@/components/DiagnosticsAdmin";
 import { CustomersAdmin } from "@/components/CustomersAdmin";
+import { ServiceRequestsAdmin } from "@/components/ServiceRequestsAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 
 
@@ -49,6 +50,7 @@ const TABS = [
   { id: "delivery", t: "ডেলিভারি" },
   { id: "riders", t: "ডেলিভারিম্যান" },
   { id: "diagnostics", t: "হোম ডায়াগনস্টিক" },
+  { id: "services", t: "হোম সার্ভিস" },
   { id: "consults", t: "কনসালটেশন" },
   { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "imgaudit", t: "ছবি যাচাই" },
@@ -72,7 +74,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "বিক্রয়", items: pickTabs(["orders", "inventory"]) },
   { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
-  { label: "সেবা", items: pickTabs(["lab", "diagnostics", "doctors", "consults", "rx"]) },
+  { label: "সেবা", items: pickTabs(["lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "health", "settings"]) },
 ];
@@ -177,6 +179,7 @@ function Admin() {
       {tab === "delivery" && <DeliveryAdmin />}
       {tab === "riders" && <RidersAdmin />}
       {tab === "diagnostics" && <DiagnosticsAdmin />}
+      {tab === "services" && <ServiceRequestsAdmin />}
       {tab === "gallery" && <MediaGallery />}
       {tab === "imgaudit" && <ImageAudit />}
       {tab === "imgrev" && <ImageRevisions />}
@@ -940,7 +943,21 @@ function Categories() {
       return data;
     },
   });
-  const [form, setForm] = useState({ slug: "", bn: "", en: "", emoji: "🧴" });
+  const [form, setForm] = useState({
+    slug: "",
+    bn: "",
+    en: "",
+    emoji: "🧴",
+    description: "",
+    description_en: "",
+    kind: "product",
+    home_delivery: true,
+    home_service: false,
+    service_route: "",
+    eta: "",
+    eta_en: "",
+    base_fee: 0,
+  });
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["admin-categories"] });
@@ -954,7 +971,7 @@ function Categories() {
     },
     onSuccess: () => {
       toast.success("ক্যাটাগরি সংরক্ষিত");
-      setForm({ slug: "", bn: "", en: "", emoji: "🧴" });
+      setForm({ ...form, slug: "", bn: "", en: "", description: "", description_en: "" });
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
