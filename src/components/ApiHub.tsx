@@ -48,6 +48,25 @@ const GROUPS = [
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
+/** এনভায়রনমেন্ট — একই API ভিন্ন সার্ভারে টেস্ট করার জন্য */
+const ENVS = [
+  { id: "dev", t: "ডেভেলপমেন্ট", key: "api_base_dev", fallback: "http://localhost:8080" },
+  { id: "staging", t: "স্টেজিং", key: "api_base_staging", fallback: "https://id-preview--4c282ff2-061d-4bef-824e-7eb6c51ba36f.lovable.app" },
+  { id: "prod", t: "প্রোডাকশন", key: "api_base_prod", fallback: "https://oushodhwala.lovable.app" },
+] as const;
+
+type EnvId = (typeof ENVS)[number]["id"];
+
+/** রিলেটিভ পাথ হলে নির্বাচিত এনভায়রনমেন্টের বেস URL যুক্ত করে */
+function resolveUrl(url: string, base: string) {
+  const u = (url || "").trim();
+  if (!u) return u;
+  if (/^https?:\/\//i.test(u)) return u;
+  const b = (base || "").trim().replace(/\/$/, "");
+  return b + (u.startsWith("/") ? u : `/${u}`);
+}
+
+
 const EMPTY = {
   name: "",
   grp: "general",
