@@ -1,14 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, Clock, TrendingUp, Loader2, CornerDownLeft } from "lucide-react";
+import { Search, X, Clock, TrendingUp, Loader2, CornerDownLeft, HomeIcon } from "lucide-react";
 import { searchProducts } from "@/lib/catalog.functions";
 import { ProductImage } from "@/components/ProductImage";
 import { useLang, pick } from "@/lib/lang";
+import { useCatalog } from "@/lib/catalog-db";
+import { matchesQuery } from "@/lib/bn-search";
 import { bn } from "@/data/catalog";
+
+type Scope = "all" | "product" | "service";
+
+/** সার্চ টার্মের সাথে মিলের মাত্রা — কম স্কোর = বেশি প্রাসঙ্গিক */
+function relevance(term: string, ...fields: (string | null | undefined)[]) {
+  const q = term.trim().toLowerCase();
+  let best = 99;
+  fields.forEach((f, i) => {
+    const v = (f ?? "").toLowerCase();
+    if (!v || !q) return;
+    if (v === q) best = Math.min(best, 0 + i * 0.1);
+    else if (v.startsWith(q)) best = Math.min(best, 1 + i * 0.1);
+    else if (v.includes(q)) best = Math.min(best, 2 + i * 0.1);
+  });
+  return best;
+}
 
 const RECENT_KEY = "ow-recent-search";
 const TRENDING = ["নাপা", "প্যারাসিটামল", "ওমিপ্রাজল", "ভিটামিন সি", "প্রেসার মেশিন", "মাস্ক"];
+
 
 function readRecent(): string[] {
   try {
