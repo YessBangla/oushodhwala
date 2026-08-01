@@ -96,10 +96,32 @@ export function SearchBox({ className = "" }: { className?: string }) {
     navigate({ to: "/product/$id", params: { id } });
   };
 
+  // ফলাফল বদলালে সক্রিয় নির্বাচন রিসেট
+  useEffect(() => setActive(-1), [debounced]);
+
+  // সক্রিয় আইটেম সবসময় দৃশ্যমান রাখা
+  useEffect(() => {
+    if (active < 0) return;
+    listRef.current?.querySelector<HTMLElement>(`[data-idx="${active}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       setOpen(false);
+      setActive(-1);
       return;
+    }
+    if (e.key === "Tab") {
+      setOpen(false);
+      return;
+    }
+    if (e.key === "Enter") {
+      if (active >= 0 && rows[active]) {
+        e.preventDefault();
+        const r = rows[active]!;
+        goProduct(r.id, r.name);
+      }
+      return; // অন্যথায় ফর্ম সাবমিট → পূর্ণ সার্চ
     }
     if (!rows.length) return;
     if (e.key === "ArrowDown") {
@@ -108,13 +130,17 @@ export function SearchBox({ className = "" }: { className?: string }) {
       setActive((a) => (a + 1) % rows.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setOpen(true);
       setActive((a) => (a <= 0 ? rows.length - 1 : a - 1));
-    } else if (e.key === "Enter" && active >= 0) {
+    } else if (e.key === "Home") {
       e.preventDefault();
-      const r = rows[active]!;
-      goProduct(r.id, r.name);
+      setActive(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActive(rows.length - 1);
     }
   };
+
 
   return (
     <div ref={boxRef} className={`relative ${className}`}>
