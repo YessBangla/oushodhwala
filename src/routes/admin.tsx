@@ -118,40 +118,31 @@ function Admin() {
   }
 
   return (
-    <div className="pt-4">
-      <h1 className="text-base font-bold">অ্যাডমিন প্যানেল</h1>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
-              tab === t.id ? "border-primary bg-primary text-primary-foreground" : "border-border"
-            }`}
-          >
-            {t.t}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4">
-        {tab === "dash" && <Dashboard />}
-        {tab === "orders" && <Orders />}
-        {tab === "inventory" && <Inventory />}
-        {tab === "products" && <Products />}
-        {tab === "categories" && <Categories />}
-        {tab === "offers" && <Offers />}
-        {tab === "lab" && <LabTests />}
-        {tab === "doctors" && <Doctors />}
-        {tab === "rx" && <Prescriptions />}
-        {tab === "gallery" && <MediaGallery />}
-        {tab === "imgaudit" && <ImageAudit />}
-        {tab === "imgrev" && <ImageRevisions />}
-
-
-        {tab === "settings" && <Settings />}
-      </div>
-    </div>
+    <AdminShell
+      groups={NAV_GROUPS}
+      active={tab}
+      onSelect={(id) => setTab(id as TabId)}
+      title={TABS.find((t) => t.id === tab)?.t ?? "ড্যাশবোর্ড"}
+      email={user.email}
+      onSignOut={async () => {
+        await supabase.auth.signOut();
+        await refresh();
+      }}
+    >
+      {tab === "dash" && <Dashboard />}
+      {tab === "orders" && <Orders />}
+      {tab === "inventory" && <Inventory />}
+      {tab === "products" && <Products />}
+      {tab === "categories" && <Categories />}
+      {tab === "offers" && <Offers />}
+      {tab === "lab" && <LabTests />}
+      {tab === "doctors" && <Doctors />}
+      {tab === "rx" && <Prescriptions />}
+      {tab === "gallery" && <MediaGallery />}
+      {tab === "imgaudit" && <ImageAudit />}
+      {tab === "imgrev" && <ImageRevisions />}
+      {tab === "settings" && <Settings />}
+    </AdminShell>
   );
 }
 
