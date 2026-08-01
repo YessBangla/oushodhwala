@@ -18,6 +18,7 @@ import { labTests } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionTitle } from "@/components/Layout";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -332,6 +333,7 @@ function Index() {
           ))}
         </div>
       </section>
+      <RecentlyViewed />
     </div>
   );
 }
