@@ -206,9 +206,104 @@ export function DeliveryAdmin() {
       )}
 
       {tab === "riders" && <Riders riders={riders} />}
+      {tab === "notifications" && <NotificationQueue />}
     </div>
   );
 }
+
+function NotificationQueue() {
+  const qc = useQueryClient();
+  const [filter, setFilter] = useState<"queued" | "sent" | "all">("queued");
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["admin-delivery-notifications"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("delivery_notifications")
+        .select("id, order_no, channel, target, status_key, body, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as Notif[];
+    },
+  });
+
+  const list = rows.filter((r) => filter === "all" || r.status === filter);
+
+  const markSent = async (id: string) => {
+    const { error } = await supabase
+      .from("delivery_notifications")
+      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    void qc.invalidateQueries({ queryKey: ["admin-delivery-notifications"] });
+  };
+
+  const send = (n: Notif) => {
+    const url = notifyLink(n.channel as NotifyChannel, n.target, withAbsoluteLinks(n.body));
+    window.open(url, "_blank", "noopener");
+    void markSent(n.id);
+  };
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {(["queued", "sent", "all"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === f ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+          >
+            {f === "queued" ? "পাঠানো বাকি" : f === "sent" ? "পাঠানো হয়েছে" : "সব"} ({bn(rows.filter((r) => f === "all" || r.status === f).length)})
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {list.map((n) => (
+          <div key={n.id} className="rounded-xl border border-border bg-card p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm">{CHANNEL_LABEL[n.channel as NotifyChannel]?.emoji ?? "🔔"}</span>
+              <span className="text-xs font-bold">#{n.order_no}</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
+                {CHANNEL_LABEL[n.channel as NotifyChannel]?.bn ?? n.channel}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {DELIVERY_STATUS[n.status_key]?.bn ?? n.status_key} · {n.target || "—"} · {fmtTime(n.created_at)}
+              </span>
+              <span className="ml-auto flex gap-1.5">
+                {n.status === "queued" ? (
+                  <>
+                    <button
+                      onClick={() => send(n)}
+                      disabled={!n.target}
+                      className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground disabled:opacity-50"
+                    >
+                      <Send className="h-3 w-3" /> পাঠান
+                    </button>
+                    <button onClick={() => void markSent(n.id)} className="rounded-lg bg-muted px-2.5 py-1.5 text-[11px] font-semibold">
+                      সম্পন্ন চিহ্নিত
+                    </button>
+                  </>
+                ) : (
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-primary">
+                    <Check className="h-3 w-3" /> পাঠানো হয়েছে
+                  </span>
+                )}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">{n.body}</p>
+          </div>
+        ))}
+        {list.length === 0 && <p className="py-8 text-center text-xs text-muted-foreground">কোনো বার্তা নেই।</p>}
+      </div>
+    </div>
+  );
+}
+
 
 function Riders({ riders }: { riders: Rider[] }) {
   const qc = useQueryClient();
