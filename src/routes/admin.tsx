@@ -20,6 +20,7 @@ import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { ServiceRequestsAdmin } from "@/components/ServiceRequestsAdmin";
 import { AccountsAdmin } from "@/components/AccountsAdmin";
 import { ReturnsAdmin, ReviewsAdmin } from "@/components/ModerationAdmin";
+import { CampaignsAdmin } from "@/components/CampaignsAdmin";
 import { ReportsAdmin } from "@/components/ReportsAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 
@@ -65,6 +66,7 @@ const TABS = [
   { id: "returns", t: "রিটার্ন ও রিফান্ড" },
   { id: "reports", t: "রিপোর্ট ও বিশ্লেষণ" },
   { id: "reviews", t: "রিভিউ মডারেশন" },
+  { id: "campaigns", t: "মার্কেটিং ক্যাম্পেইন" },
 
 
   { id: "settings", t: "সেটিংস" },
@@ -80,7 +82,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ওভারভিউ", items: pickTabs(["dash"]) },
   { label: "বিক্রয়", items: pickTabs(["orders", "inventory", "accounts", "reports", "returns"]) },
   { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
-  { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
+  { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
@@ -197,6 +199,7 @@ function Admin() {
       {tab === "reports" && <ReportsAdmin />}
       {tab === "returns" && <ReturnsAdmin />}
       {tab === "reviews" && <ReviewsAdmin />}
+      {tab === "campaigns" && <CampaignsAdmin />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
