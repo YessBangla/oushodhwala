@@ -34,9 +34,13 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
           </span>
         )}
       </Link>
-      <div className="flex flex-1 flex-col p-2.5">
+      <div className="flex flex-1 flex-col p-3">
         <div className="flex items-start gap-1">
-          <Link to="/product/$id" params={{ id: p.id }} className="line-clamp-2 text-xs font-semibold leading-snug">
+          <Link
+            to="/product/$id"
+            params={{ id: p.id }}
+            className="line-clamp-2 min-w-0 text-xs font-bold leading-snug text-navy"
+          >
             {p.name}
           </Link>
           <button onClick={() => toggleWish(p.id)} aria-label="উইশলিস্ট" className="ml-auto shrink-0">
@@ -45,15 +49,16 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
             />
           </button>
         </div>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
+        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
           {p.form} · {p.pack}
         </p>
-        <div className="mt-1.5 flex items-baseline gap-1.5">
-          <span className="text-sm font-bold text-primary-dark">৳{bn(p.price)}</span>
+        <div className="mt-2 flex items-baseline gap-1.5">
+          <span className="font-display text-base font-extrabold text-primary">৳{bn(p.price)}</span>
           {p.mrp > p.price && (
             <span className="text-[10px] text-muted-foreground line-through">৳{bn(p.mrp)}</span>
           )}
         </div>
+
         {low && <p className="mt-1 text-[10px] font-semibold text-sale">মাত্র {bn(stock)} টি বাকি</p>}
         {soldOut ? (
           <button disabled className="mt-2 rounded-lg bg-muted py-1.5 text-[11px] font-semibold text-muted-foreground">
