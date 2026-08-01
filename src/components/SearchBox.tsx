@@ -265,9 +265,34 @@ export function SearchBox({ className = "" }: { className?: string }) {
           role="listbox"
           className="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elevated)]"
         >
+          <div className="mb-1.5 flex gap-1.5 px-1">
+            {(
+              [
+                ["all", en ? "All" : "সব"],
+                ["product", en ? "Medicine & products" : "ঔষধ ও পণ্য"],
+                ["service", en ? "Home services" : "হোম সার্ভিস"],
+              ] as [Scope, string][]
+            ).map(([v, l]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setScope(v)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  scope === v ? "bg-primary text-primary-foreground" : "bg-muted text-navy"
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
           {enabled ? (
-            rows.length ? (
+            total ? (
               <>
+                {rows.length > 0 && (
+                  <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {en ? "Medicine & products" : "ঔষধ ও পণ্য"}
+                  </p>
+                )}
                 {rows.map((r, i) => (
                   <button
                     key={r.id}
@@ -278,7 +303,6 @@ export function SearchBox({ className = "" }: { className?: string }) {
                     onMouseEnter={() => setActive(i)}
                     onClick={() => goProduct(r.id, r.name)}
                     className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${
-
                       i === active ? "bg-secondary" : ""
                     }`}
                   >
@@ -300,15 +324,55 @@ export function SearchBox({ className = "" }: { className?: string }) {
                     <span className="shrink-0 text-xs font-extrabold text-primary">৳{bn(Number(r.price))}</span>
                   </button>
                 ))}
-                <button
-                  onClick={() => goSearch(q)}
-                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-secondary py-2.5 text-xs font-bold text-primary"
-                >
-                  {en ? `See all results for "${debounced}"` : `"${debounced}" এর সব ফলাফল দেখুন`}
-                  <CornerDownLeft className="h-3.5 w-3.5" />
-                </button>
+
+                {services.length > 0 && (
+                  <p className="px-2 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {en ? "Home services" : "হোম সার্ভিস"}
+                  </p>
+                )}
+                {services.map((s, j) => {
+                  const i = rows.length + j;
+                  return (
+                    <button
+                      key={s.slug}
+                      id={`search-opt-${i}`}
+                      data-idx={i}
+                      role="option"
+                      aria-selected={i === active}
+                      onMouseEnter={() => setActive(i)}
+                      onClick={() => goService(s.slug, s.serviceRoute, s.bn)}
+                      className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${
+                        i === active ? "bg-secondary" : ""
+                      }`}
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-lg">
+                        {s.emoji}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-bold text-navy">{pick(lang, s.bn, s.en)}</span>
+                        <span className="block truncate text-[10px] text-muted-foreground">
+                          {pick(lang, s.eta, s.etaEn) || pick(lang, s.desc, s.descEn)}
+                        </span>
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold text-primary">
+                        <HomeIcon className="h-3 w-3" /> {en ? "Book" : "বুক"}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {scope !== "service" && (
+                  <button
+                    onClick={() => goSearch(q)}
+                    className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-secondary py-2.5 text-xs font-bold text-primary"
+                  >
+                    {en ? `See all results for "${debounced}"` : `"${debounced}" এর সব ফলাফল দেখুন`}
+                    <CornerDownLeft className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </>
             ) : (
+
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
                 {isFetching
                   ? en
