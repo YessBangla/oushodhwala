@@ -65,7 +65,7 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
             স্টক শেষ
           </button>
         ) : line ? (
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+          <div className="mt-2 flex items-center justify-between rounded-xl bg-primary px-2 py-1.5 text-primary-foreground">
             <button onClick={() => setQty(p.id, line.qty - 1)} aria-label="কমান">
               <Minus className="h-3.5 w-3.5" />
             </button>
@@ -82,7 +82,7 @@ export function ProductCard({ p }: { p: Product & { stock?: number; lowStock?: n
         ) : (
           <button
             onClick={() => add(toLine(p))}
-            className="mt-2 rounded-lg bg-primary py-1.5 text-[11px] font-semibold text-primary-foreground"
+            className="mt-2 rounded-xl bg-primary py-2 text-[11px] font-bold text-primary-foreground transition hover:bg-primary-dark"
           >
             কার্টে যোগ করুন
           </button>
