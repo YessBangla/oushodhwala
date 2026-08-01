@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { LoyaltyCard } from "@/components/LoyaltyCard";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -83,6 +84,8 @@ function Account() {
         <Stat icon={FlaskConical} t={t("ল্যাব টেস্ট", "Lab test")} v={t("বুক", "Book")} to="/lab-test" />
       </div>
 
+
+      <LoyaltyCard />
 
       <section className="mt-4 rounded-xl border border-border bg-card p-4">
         <p className="flex items-center gap-2 text-sm font-bold"><MapPin className="h-4 w-4" /> {t("ঠিকানা", "Address")}</p>

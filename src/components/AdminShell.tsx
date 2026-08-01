@@ -32,6 +32,7 @@ import {
   Star,
   BarChart3,
   Megaphone,
+  Award,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -62,6 +63,7 @@ const ICONS: Record<string, typeof LayoutDashboard> = {
   reviews: Star,
   reports: BarChart3,
   campaigns: Megaphone,
+  loyalty: Award,
 };
 
 export function AdminShell({
