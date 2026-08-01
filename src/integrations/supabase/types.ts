@@ -35,6 +35,77 @@ export type Database = {
         }
         Relationships: []
       }
+      appointments: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          doctor_name: string
+          doctor_spec: string
+          fee: number
+          id: string
+          invoice_no: string
+          mode: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_ref: string
+          payment_status: string
+          phone: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          doctor_name?: string
+          doctor_spec?: string
+          fee?: number
+          id?: string
+          invoice_no: string
+          mode?: string
+          note?: string
+          patient_name?: string
+          payment_method?: string
+          payment_ref?: string
+          payment_status?: string
+          phone?: string
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          doctor_name?: string
+          doctor_spec?: string
+          fee?: number
+          id?: string
+          invoice_no?: string
+          mode?: string
+          note?: string
+          patient_name?: string
+          payment_method?: string
+          payment_ref?: string
+          payment_status?: string
+          phone?: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           active: boolean
@@ -64,6 +135,136 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      consultation_media: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          transcript: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          transcript?: string
+          url?: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          transcript?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_media_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultation_messages: {
+        Row: {
+          appointment_id: string
+          body: string
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          sender: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          body?: string
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          sender?: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          body?: string
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          sender?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_messages_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_reviews: {
+        Row: {
+          appointment_id: string
+          comment: string
+          created_at: string
+          doctor_id: string
+          id: string
+          patient_name: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          comment?: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+          patient_name?: string
+          rating?: number
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          comment?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          patient_name?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_reviews_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_reviews_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       doctors: {
         Row: {
@@ -997,7 +1198,51 @@ export type Database = {
         }
       }
       apply_product_image_map: { Args: never; Returns: number }
+      book_appointment: {
+        Args: {
+          _doctor_id: string
+          _mode: string
+          _note: string
+          _patient_name: string
+          _payment_method: string
+          _payment_ref: string
+          _phone: string
+          _scheduled_at: string
+        }
+        Returns: {
+          created_at: string
+          doctor_id: string
+          doctor_name: string
+          doctor_spec: string
+          fee: number
+          id: string
+          invoice_no: string
+          mode: string
+          note: string
+          patient_name: string
+          payment_method: string
+          payment_ref: string
+          payment_status: string
+          phone: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "appointments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_first_admin: { Args: never; Returns: boolean }
+      doctor_taken_slots: {
+        Args: { _doctor_id: string; _from: string; _to: string }
+        Returns: {
+          scheduled_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

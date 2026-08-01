@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, MapPin, FileText, Heart, Bell, HelpCircle, FlaskConical, ShieldCheck } from "lucide-react";
+import { LogOut, MapPin, FileText, Heart, Bell, HelpCircle, FlaskConical, ShieldCheck, CalendarDays } from "lucide-react";
 import { bn } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,15 @@ function Account() {
     enabled: !!user,
     queryFn: async () => {
       const { count } = await supabase.from("orders").select("id", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
+  const { data: apptCount } = useQuery({
+    queryKey: ["my-appointment-count"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { count } = await supabase.from("appointments").select("id", { count: "exact", head: true });
       return count ?? 0;
     },
   });
@@ -69,8 +78,10 @@ function Account() {
         <Stat icon={FileText} t="অর্ডার" v={bn(orderCount ?? 0)} to="/orders" />
         <Stat icon={Heart} t="উইশলিস্ট" v={bn(wishlist.length)} to="/wishlist" />
         <Stat icon={FileText} t="প্রেসক্রিপশন" v={bn(prescriptions.length)} to="/prescription" />
+        <Stat icon={CalendarDays} t="অ্যাপয়েন্টমেন্ট" v={bn(apptCount ?? 0)} to="/appointments" />
         <Stat icon={FlaskConical} t="ল্যাব টেস্ট" v="বুক" to="/lab-test" />
       </div>
+
 
       <section className="mt-4 rounded-xl border border-border bg-card p-4">
         <p className="flex items-center gap-2 text-sm font-bold"><MapPin className="h-4 w-4" /> ঠিকানা</p>

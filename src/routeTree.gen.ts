@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AppointmentsRouteImport } from './routes/appointments'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
@@ -26,7 +27,9 @@ import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PrescriptionRouteImport } from './routes/prescription'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as WishlistRouteImport } from './routes/wishlist'
+import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as ApiPublicImgSplatRouteImport } from './routes/api/public/img/$'
 
@@ -48,6 +51,11 @@ const AccountRoute = AccountRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppointmentsRoute = AppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -115,9 +123,19 @@ const WishlistRoute = WishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookDoctorIdRoute = BookDoctorIdRouteImport.update({
+  id: '/book-doctor/$id',
+  path: '/book-doctor/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsultationIdRoute = ConsultationIdRouteImport.update({
+  id: '/consultation/$id',
+  path: '/consultation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -136,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/appointments': typeof AppointmentsRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -149,7 +168,9 @@ export interface FileRoutesByFullPath {
   '/prescription': typeof PrescriptionRoute
   '/products': typeof ProductsRoute
   '/wishlist': typeof WishlistRoute
+  '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
@@ -158,6 +179,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/appointments': typeof AppointmentsRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -171,7 +193,9 @@ export interface FileRoutesByTo {
   '/prescription': typeof PrescriptionRoute
   '/products': typeof ProductsRoute
   '/wishlist': typeof WishlistRoute
+  '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
@@ -181,6 +205,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/appointments': typeof AppointmentsRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -194,7 +219,9 @@ export interface FileRoutesById {
   '/prescription': typeof PrescriptionRoute
   '/products': typeof ProductsRoute
   '/wishlist': typeof WishlistRoute
+  '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
 }
@@ -205,6 +232,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
+    | '/appointments'
     | '/auth'
     | '/cart'
     | '/categories'
@@ -218,7 +246,9 @@ export interface FileRouteTypes {
     | '/prescription'
     | '/products'
     | '/wishlist'
+    | '/book-doctor/$id'
     | '/category/$slug'
+    | '/consultation/$id'
     | '/product/$id'
     | '/api/public/img/$'
   fileRoutesByTo: FileRoutesByTo
@@ -227,6 +257,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
+    | '/appointments'
     | '/auth'
     | '/cart'
     | '/categories'
@@ -240,7 +271,9 @@ export interface FileRouteTypes {
     | '/prescription'
     | '/products'
     | '/wishlist'
+    | '/book-doctor/$id'
     | '/category/$slug'
+    | '/consultation/$id'
     | '/product/$id'
     | '/api/public/img/$'
   id:
@@ -249,6 +282,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/account'
     | '/admin'
+    | '/appointments'
     | '/auth'
     | '/cart'
     | '/categories'
@@ -262,7 +296,9 @@ export interface FileRouteTypes {
     | '/prescription'
     | '/products'
     | '/wishlist'
+    | '/book-doctor/$id'
     | '/category/$slug'
+    | '/consultation/$id'
     | '/product/$id'
     | '/api/public/img/$'
   fileRoutesById: FileRoutesById
@@ -272,6 +308,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
+  AppointmentsRoute: typeof AppointmentsRoute
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
@@ -285,7 +322,9 @@ export interface RootRouteChildren {
   PrescriptionRoute: typeof PrescriptionRoute
   ProductsRoute: typeof ProductsRoute
   WishlistRoute: typeof WishlistRoute
+  BookDoctorIdRoute: typeof BookDoctorIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  ConsultationIdRoute: typeof ConsultationIdRoute
   ProductIdRoute: typeof ProductIdRoute
   ApiPublicImgSplatRoute: typeof ApiPublicImgSplatRoute
 }
@@ -318,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appointments': {
+      id: '/appointments'
+      path: '/appointments'
+      fullPath: '/appointments'
+      preLoaderRoute: typeof AppointmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -411,11 +457,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book-doctor/$id': {
+      id: '/book-doctor/$id'
+      path: '/book-doctor/$id'
+      fullPath: '/book-doctor/$id'
+      preLoaderRoute: typeof BookDoctorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
       fullPath: '/category/$slug'
       preLoaderRoute: typeof CategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consultation/$id': {
+      id: '/consultation/$id'
+      path: '/consultation/$id'
+      fullPath: '/consultation/$id'
+      preLoaderRoute: typeof ConsultationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
@@ -440,6 +500,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
+  AppointmentsRoute: AppointmentsRoute,
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
@@ -453,7 +514,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrescriptionRoute: PrescriptionRoute,
   ProductsRoute: ProductsRoute,
   WishlistRoute: WishlistRoute,
+  BookDoctorIdRoute: BookDoctorIdRoute,
   CategorySlugRoute: CategorySlugRoute,
+  ConsultationIdRoute: ConsultationIdRoute,
   ProductIdRoute: ProductIdRoute,
   ApiPublicImgSplatRoute: ApiPublicImgSplatRoute,
 }
