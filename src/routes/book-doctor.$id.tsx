@@ -128,6 +128,7 @@ function BookDoctor() {
   }
 
   const now = Date.now();
+  const closed = !isWorkingDay(day, doctor) || blackoutDays.has(dayKey(day));
 
   return (
     <div className="pt-4 pb-10">
