@@ -14,6 +14,7 @@ import { AdminShell, type AdminNavGroup } from "@/components/AdminShell";
 import { Consultations } from "@/components/Consultations";
 import { DeliveryAdmin } from "@/components/DeliveryAdmin";
 import { DiagnosticsAdmin } from "@/components/DiagnosticsAdmin";
+import { CustomersAdmin } from "@/components/CustomersAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 
 
@@ -49,6 +50,7 @@ const TABS = [
   { id: "gallery", t: "ছবি গ্যালারি" },
   { id: "imgaudit", t: "ছবি যাচাই" },
   { id: "imgrev", t: "ছবি রিভিশন" },
+  { id: "customers", t: "গ্রাহক" },
 
 
   { id: "settings", t: "সেটিংস" },
@@ -67,7 +69,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers"]) },
   { label: "সেবা", items: pickTabs(["lab", "diagnostics", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgaudit", "imgrev"]) },
-  { label: "সিস্টেম", items: pickTabs(["settings"]) },
+  { label: "সিস্টেম", items: pickTabs(["customers", "settings"]) },
 ];
 
 
@@ -172,6 +174,7 @@ function Admin() {
       {tab === "gallery" && <MediaGallery />}
       {tab === "imgaudit" && <ImageAudit />}
       {tab === "imgrev" && <ImageRevisions />}
+      {tab === "customers" && <CustomersAdmin />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );

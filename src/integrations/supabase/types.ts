@@ -1649,6 +1649,19 @@ export type Database = {
         }
       }
       admin_exists: { Args: never; Returns: boolean }
+      admin_list_customers: {
+        Args: { _limit?: number; _q?: string }
+        Returns: {
+          email: string
+          is_admin: boolean
+          joined_at: string
+          name: string
+          orders_count: number
+          phone: string
+          total_spent: number
+          user_id: string
+        }[]
+      }
       admin_set_diagnostic_status: {
         Args: {
           _booking_id: string
@@ -1751,6 +1764,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_set_user_admin: {
+        Args: { _make_admin: boolean; _user_id: string }
+        Returns: boolean
       }
       apply_product_image_map: { Args: never; Returns: number }
       book_appointment: {
