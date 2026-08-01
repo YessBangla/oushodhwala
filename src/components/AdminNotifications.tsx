@@ -83,13 +83,22 @@ async function load(): Promise<Item[]> {
       sub: r.reason || "কারণ উল্লেখ নেই",
       at: r.created_at,
     });
-  for (const rv of reviews.data ?? [])
+  const reviewRows = reviews.data ?? [];
+  const reviewNames = new Map<string, string>();
+  if (reviewRows.length > 0) {
+    const { data: rp } = await supabase
+      .from("products")
+      .select("id, name")
+      .in("id", reviewRows.map((r) => r.product_id));
+    for (const p of rp ?? []) reviewNames.set(p.id, p.name);
+  }
+  for (const rv of reviewRows)
     items.push({
       id: `rv-${rv.id}`,
       tab: "reviews",
       icon: "reviews",
       title: "নতুন রিভিউ মডারেশন বাকি",
-      sub: `রেটিং ${bn(Number(rv.rating || 0))} · ${rv.product_id}`,
+      sub: `রেটিং ${bn(Number(rv.rating || 0))} · ${reviewNames.get(rv.product_id) ?? rv.product_id}`,
       at: rv.created_at,
     });
   for (const p of rx.data ?? [])
