@@ -4,11 +4,24 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CalendarDays, Clock, Phone, MessageCircle, Video } from "lucide-react";
 
-import { bn } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-db";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { REFUND_POLICY_BN, WEEKDAYS, dayKey, isWorkingDay, nextDays, slotDate, slotTimes, type CallMode } from "@/lib/appointments";
+import { useT } from "@/lib/i18n";
+import {
+  REFUND_POLICY_BN,
+  REFUND_POLICY_EN,
+  MODE_LABEL,
+  PAYMENT_LABEL,
+  WEEKDAYS,
+  WEEKDAYS_EN,
+  dayKey,
+  isWorkingDay,
+  nextDays,
+  slotDate,
+  slotTimes,
+  type CallMode,
+} from "@/lib/appointments";
 
 export const Route = createFileRoute("/book-doctor/$id")({
   head: () => ({
@@ -26,20 +39,21 @@ export const Route = createFileRoute("/book-doctor/$id")({
   component: BookDoctor,
 });
 
-const MODES: { id: CallMode; t: string; icon: typeof Phone }[] = [
-  { id: "phone", t: "ফোন কল", icon: Phone },
-  { id: "whatsapp", t: "হোয়াটসঅ্যাপ", icon: MessageCircle },
-  { id: "video", t: "ভিডিও কল", icon: Video },
+const MODES: { id: CallMode; icon: typeof Phone }[] = [
+  { id: "phone", icon: Phone },
+  { id: "whatsapp", icon: MessageCircle },
+  { id: "video", icon: Video },
 ];
 
-const ALL_PAYMENTS = [
-  { id: "cod", t: "ক্যাশ (কল শেষে)", e: "💵", key: "cod" as const },
-  { id: "bkash", t: "bKash", e: "📱", key: "bkash" as const },
-  { id: "nagad", t: "Nagad", e: "📲", key: "nagad" as const },
-  { id: "card", t: "কার্ড", e: "💳", key: "card" as const },
+const ALL_PAYMENTS: { id: "cod" | "bkash" | "nagad" | "card"; e: string }[] = [
+  { id: "cod", e: "💵" },
+  { id: "bkash", e: "📱" },
+  { id: "nagad", e: "📲" },
+  { id: "card", e: "💳" },
 ];
 
 function BookDoctor() {
+  const t = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { doctors } = useCatalog();
@@ -88,10 +102,10 @@ function BookDoctor() {
 
   const book = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("বুকিং করতে লগইন করুন");
-      if (!time) throw new Error("সময় নির্বাচন করুন");
-      if (!name.trim() || !phone.trim()) throw new Error("নাম ও মোবাইল নম্বর দিন");
-      if (payment !== "cod" && !payRef.trim()) throw new Error("পেমেন্ট ট্রানজেকশন আইডি দিন");
+      if (!user) throw new Error(t("বুকিং করতে লগইন করুন", "Please log in to book"));
+      if (!time) throw new Error(t("সময় নির্বাচন করুন", "Select a time"));
+      if (!name.trim() || !phone.trim()) throw new Error(t("নাম ও মোবাইল নম্বর দিন", "Enter name and mobile number"));
+      if (payment !== "cod" && !payRef.trim()) throw new Error(t("পেমেন্ট ট্রানজেকশন আইডি দিন", "Enter payment transaction ID"));
       const { data, error } = await supabase.rpc("book_appointment", {
         _doctor_id: id,
         _mode: mode,
@@ -103,14 +117,14 @@ function BookDoctor() {
         _payment_ref: payRef.trim(),
       });
       if (error) {
-        if (error.message.includes("SLOT_TAKEN")) throw new Error("এই সময়টি ইতিমধ্যে বুক হয়ে গেছে, অন্য সময় নিন");
-        if (error.message.includes("PAST_SLOT")) throw new Error("অতীতের সময় নির্বাচন করা যাবে না");
+        if (error.message.includes("SLOT_TAKEN")) throw new Error(t("এই সময়টি ইতিমধ্যে বুক হয়ে গেছে, অন্য সময় নিন", "This slot is already booked, please choose another time"));
+        if (error.message.includes("PAST_SLOT")) throw new Error(t("অতীতের সময় নির্বাচন করা যাবে না", "You cannot select a past time"));
         throw error;
       }
       return data as unknown as { id: string; invoice_no: string };
     },
     onSuccess: (appt) => {
-      toast.success(`অ্যাপয়েন্টমেন্ট নিশ্চিত — ইনভয়েস #${appt.invoice_no}`);
+      toast.success(t(`অ্যাপয়েন্টমেন্ট নিশ্চিত — ইনভয়েস #${appt.invoice_no}`, `Appointment confirmed — Invoice #${appt.invoice_no}`));
       void navigate({ to: "/consultation/$id", params: { id: appt.id } });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -119,9 +133,9 @@ function BookDoctor() {
   if (!doctor) {
     return (
       <div className="pt-16 text-center text-sm text-muted-foreground">
-        ডাক্তার পাওয়া যায়নি।{" "}
+        {t("ডাক্তার পাওয়া যায়নি।", "Doctor not found.")}{" "}
         <Link to="/doctor-consultation" className="font-semibold text-primary underline">
-          তালিকায় ফিরে যান
+          {t("তালিকায় ফিরে যান", "Go back to the list")}
         </Link>
       </div>
     );
@@ -129,11 +143,13 @@ function BookDoctor() {
 
   const now = Date.now();
   const closed = !isWorkingDay(day, doctor) || blackoutDays.has(dayKey(day));
+  const weekdays = t.en ? WEEKDAYS_EN : WEEKDAYS;
+  const locale = t.en ? "en-US" : "bn-BD";
 
   return (
     <div className="pt-4 pb-10">
       <Link to="/doctor-consultation" className="text-[11px] font-semibold text-muted-foreground hover:text-primary">
-        ← ডাক্তার তালিকা
+        ← {t("ডাক্তার তালিকা", "Doctor list")}
       </Link>
 
       <section className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
@@ -145,12 +161,12 @@ function BookDoctor() {
         <div className="min-w-0">
           <h1 className="font-display text-base font-extrabold text-navy">{doctor.name}</h1>
           <p className="text-[11px] text-muted-foreground">{doctor.spec} · {doctor.degree}</p>
-          <p className="text-[11px] text-muted-foreground">অভিজ্ঞতা: {doctor.exp}</p>
+          <p className="text-[11px] text-muted-foreground">{t("অভিজ্ঞতা", "Experience")}: {doctor.exp}</p>
         </div>
-        <span className="ml-auto font-display text-lg font-extrabold text-primary">৳{bn(doctor.fee)}</span>
+        <span className="ml-auto font-display text-lg font-extrabold text-primary">{t.money(doctor.fee)}</span>
       </section>
 
-      <Section icon={CalendarDays} title="তারিখ নির্বাচন করুন">
+      <Section icon={CalendarDays} title={t("তারিখ নির্বাচন করুন", "Select a date")}>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {days.map((d) => {
             const on = dayKey(d) === dayKey(day);
@@ -162,49 +178,49 @@ function BookDoctor() {
                 onClick={() => { setDay(d); setTime(""); }}
                 className={`shrink-0 rounded-xl border px-3 py-2 text-center ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"} ${off ? "cursor-not-allowed opacity-35 line-through" : ""}`}
               >
-                <span className="block text-[10px] opacity-80">{d.toLocaleDateString("bn-BD", { weekday: "short" })}</span>
-                <span className="block text-sm font-bold">{d.toLocaleDateString("bn-BD", { day: "numeric" })}</span>
-                <span className="block text-[9px] opacity-80">{d.toLocaleDateString("bn-BD", { month: "short" })}</span>
+                <span className="block text-[10px] opacity-80">{d.toLocaleDateString(locale, { weekday: "short" })}</span>
+                <span className="block text-sm font-bold">{d.toLocaleDateString(locale, { day: "numeric" })}</span>
+                <span className="block text-[9px] opacity-80">{d.toLocaleDateString(locale, { month: "short" })}</span>
               </button>
             );
           })}
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground">
-          কর্মদিবস: {doctor.workDays.map((n) => WEEKDAYS[n]).join(", ")} · সময়: {doctor.workStart}–{doctor.workEnd}
+          {t("কর্মদিবস", "Working days")}: {doctor.workDays.map((n) => weekdays[n]).join(", ")} · {t("সময়", "Time")}: {doctor.workStart}–{doctor.workEnd}
         </p>
       </Section>
 
-      <Section icon={Clock} title="সময় নির্বাচন করুন">
+      <Section icon={Clock} title={t("সময় নির্বাচন করুন", "Select a time")}>
         {closed ? (
           <p className="rounded-xl border border-border bg-secondary p-3 text-[11px] font-semibold">
-            এই দিনে ডাক্তার উপলব্ধ নন{blackoutReason ? ` — ${blackoutReason}` : ""}। অন্য তারিখ নির্বাচন করুন।
+            {t("এই দিনে ডাক্তার উপলব্ধ নন", "The doctor is not available on this day")}{blackoutReason ? ` — ${blackoutReason}` : ""}। {t("অন্য তারিখ নির্বাচন করুন।", "Please select another date.")}
           </p>
         ) : (
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {slotTimes(doctor).map((t) => {
-              const ts = slotDate(day, t).getTime();
+            {slotTimes(doctor).map((s) => {
+              const ts = slotDate(day, s).getTime();
               const disabled = ts < now || taken.includes(ts);
-              const on = time === t;
+              const on = time === s;
               return (
                 <button
-                  key={t}
+                  key={s}
                   disabled={disabled}
-                  onClick={() => setTime(t)}
+                  onClick={() => setTime(s)}
                   className={`rounded-lg border py-2 text-[11px] font-semibold ${
                     on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
                   } ${disabled ? "cursor-not-allowed opacity-35 line-through" : ""}`}
                 >
-                  {t}
+                  {s}
                 </button>
               );
             })}
           </div>
         )}
-        <p className="mt-2 text-[10px] text-muted-foreground">প্রতিটি সেশন {bn(doctor.slotMinutes)} মিনিট। বুক হয়ে যাওয়া সময় নিষ্ক্রিয় দেখাবে।</p>
+        <p className="mt-2 text-[10px] text-muted-foreground">{t(`প্রতিটি সেশন ${t.n(doctor.slotMinutes)} মিনিট। বুক হয়ে যাওয়া সময় নিষ্ক্রিয় দেখাবে।`, `Each session is ${t.n(doctor.slotMinutes)} minutes. Already booked slots will be disabled.`)}</p>
       </Section>
 
 
-      <Section icon={Video} title="কলের মাধ্যম">
+      <Section icon={Video} title={t("কলের মাধ্যম", "Call mode")}>
         <div className="grid grid-cols-3 gap-2">
           {MODES.map((m) => (
             <button
@@ -214,57 +230,57 @@ function BookDoctor() {
                 mode === m.id ? "border-primary bg-primary/5 text-primary" : "border-border bg-card"
               }`}
             >
-              <m.icon className="h-4 w-4" /> {m.t}
+              <m.icon className="h-4 w-4" /> {t(MODE_LABEL[m.id].bn, MODE_LABEL[m.id].en)}
             </button>
           ))}
         </div>
       </Section>
 
-      <Section icon={Phone} title="রোগীর তথ্য">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="রোগীর নাম" maxLength={100}
+      <Section icon={Phone} title={t("রোগীর তথ্য", "Patient information")}>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("রোগীর নাম", "Patient's name")} maxLength={100}
           className="w-full rounded-lg border border-border bg-card p-3 text-xs outline-none" />
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="মোবাইল নম্বর" maxLength={20}
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("মোবাইল নম্বর", "Mobile number")} maxLength={20}
           className="mt-2 w-full rounded-lg border border-border bg-card p-3 text-xs outline-none" />
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000}
-          placeholder="সমস্যার সংক্ষিপ্ত বিবরণ (ঐচ্ছিক)"
+          placeholder={t("সমস্যার সংক্ষিপ্ত বিবরণ (ঐচ্ছিক)", "Brief description of the problem (optional)")}
           className="mt-2 w-full rounded-lg border border-border bg-card p-3 text-xs outline-none" />
       </Section>
 
-      <Section icon={CalendarDays} title="পেমেন্ট">
+      <Section icon={CalendarDays} title={t("পেমেন্ট", "Payment")}>
         <div className="space-y-2">
           {ALL_PAYMENTS.map((m) => (
             <label key={m.id} className={`flex items-center gap-3 rounded-xl border p-3 text-xs ${payment === m.id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
               <input type="radio" checked={payment === m.id} onChange={() => setPayment(m.id)} />
               <span>{m.e}</span>
-              <span className="font-semibold">{m.t}</span>
+              <span className="font-semibold">{t(PAYMENT_LABEL[m.id]!.bn, PAYMENT_LABEL[m.id]!.en)}</span>
             </label>
           ))}
         </div>
         {payment !== "cod" && (
           <input value={payRef} onChange={(e) => setPayRef(e.target.value)} maxLength={40}
-            placeholder="ট্রানজেকশন আইডি (সিমুলেটেড গেটওয়ে)"
+            placeholder={t("ট্রানজেকশন আইডি (সিমুলেটেড গেটওয়ে)", "Transaction ID (simulated gateway)")}
             className="mt-2 w-full rounded-lg border border-border bg-card p-3 text-xs outline-none" />
         )}
       </Section>
 
       <div className="mt-4 rounded-2xl border border-border bg-card p-4 text-xs">
-        <Row t="ডাক্তার" v={doctor.name} />
-        <Row t="সময়" v={time ? `${day.toLocaleDateString("bn-BD", { day: "numeric", month: "long" })}, ${time}` : "—"} />
-        <Row t="মাধ্যম" v={MODES.find((m) => m.id === mode)!.t} />
+        <Row t={t("ডাক্তার", "Doctor")} v={doctor.name} />
+        <Row t={t("সময়", "Time")} v={time ? `${day.toLocaleDateString(locale, { day: "numeric", month: "long" })}, ${time}` : "—"} />
+        <Row t={t("মাধ্যম", "Mode")} v={t(MODE_LABEL[mode].bn, MODE_LABEL[mode].en)} />
         <div className="mt-2 flex items-center border-t border-border pt-2">
-          <span className="font-bold">মোট ফি</span>
-          <span className="ml-auto font-display text-lg font-extrabold text-primary">৳{bn(doctor.fee)}</span>
+          <span className="font-bold">{t("মোট ফি", "Total fee")}</span>
+          <span className="ml-auto font-display text-lg font-extrabold text-primary">{t.money(doctor.fee)}</span>
         </div>
       </div>
 
       <p className="mt-3 rounded-xl border border-dashed border-border p-3 text-[10px] leading-relaxed text-muted-foreground">
-        {REFUND_POLICY_BN}
+        {t.en ? REFUND_POLICY_EN : REFUND_POLICY_BN}
       </p>
 
       {!user && (
         <p className="mt-3 rounded-lg bg-secondary p-3 text-xs">
-          বুকিং করতে{" "}
-          <Link to="/auth" className="font-semibold text-primary underline">লগইন করুন</Link>।
+          {t("বুকিং করতে", "To book,")}{" "}
+          <Link to="/auth" className="font-semibold text-primary underline">{t("লগইন করুন", "log in")}</Link>।
         </p>
       )}
 
@@ -273,7 +289,7 @@ function BookDoctor() {
         disabled={!user || !time || book.isPending}
         className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
       >
-        {book.isPending ? "নিশ্চিত হচ্ছে..." : `পেমেন্ট করে বুক করুন — ৳${bn(doctor.fee)}`}
+        {book.isPending ? t("নিশ্চিত হচ্ছে...", "Confirming...") : t(`পেমেন্ট করে বুক করুন — ৳${t.n(doctor.fee)}`, `Pay & book — ${t.money(doctor.fee)}`)}
       </button>
     </div>
   );
