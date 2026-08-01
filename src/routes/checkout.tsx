@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { useCatalog, catalogQueryKey, deliveryChargeFor } from "@/lib/catalog-db";
