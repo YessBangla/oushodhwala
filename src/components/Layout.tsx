@@ -43,6 +43,21 @@ export function Layout({ children }: { children: ReactNode }) {
     { icon: User, t: t("একাউন্ট", "Account"), to: "/account" as const },
   ];
 
+  // ফর্ম-ভিত্তিক পেজে ভাসমান বোতাম লুকানো — ইনপুট ঢেকে না ফেলে
+  const hideFab = [
+    "/prescription",
+    "/checkout",
+    "/cart",
+    "/auth",
+    "/home-services",
+    "/home-diagnostics",
+    "/delivery",
+    "/admin",
+    "/book-doctor",
+    "/consultation",
+    "/account",
+  ].some((p) => pathname.startsWith(p));
+
 
   return (
     <div className="min-h-screen bg-background pb-20 font-sans">
