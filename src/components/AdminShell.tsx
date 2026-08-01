@@ -53,8 +53,8 @@ export function AdminShell({
   active: string;
   onSelect: (id: string) => void;
   title: string;
-  email?: string | null;
-  onSignOut?: () => void;
+  email?: string | null | undefined;
+  onSignOut?: (() => void) | undefined;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
