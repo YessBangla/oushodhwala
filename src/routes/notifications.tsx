@@ -122,7 +122,7 @@ function Notifications() {
             <span className="text-lg">{ICON[n.kind] ?? "🔔"}</span>
             <div className="min-w-0">
               <p className="text-xs font-semibold">{n.title}</p>
-              <p className="text-[11px] text-muted-foreground">{n.body}</p>
+              <p className="text-[11px] text-muted-foreground">{bnAmounts(n.body)}</p>
               <p className="mt-0.5 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")}</p>
               {n.kind === "order" && n.order_no && (
                 <Link to="/track/$no" params={{ no: n.order_no }} className="mt-1 inline-block text-[10px] font-semibold text-primary">
