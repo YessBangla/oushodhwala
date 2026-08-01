@@ -23,6 +23,8 @@ import { useLang } from "@/lib/lang";
 import { useT } from "@/lib/i18n";
 import { SearchBox } from "@/components/SearchBox";
 import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
+import { DeliverToBar } from "@/components/DeliverToBar";
+
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count, addresses, activeAddress, wishlist } = useStore();
