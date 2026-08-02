@@ -26,6 +26,7 @@ import { DesktopMenu, MobileMenu } from "@/components/MainMenu";
 import { DeliverToBar } from "@/components/DeliverToBar";
 import { BackToTop } from "@/components/BackToTop";
 import { AskChat } from "@/components/AskChat";
+import { BrandLogo } from "@/components/BrandLogo";
 import { installErrorLogger } from "@/lib/error-log";
 
 
@@ -88,14 +89,8 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:flex lg:gap-6">
             <MobileMenu />
-            <Link to="/" className="flex min-w-0 items-center gap-2">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl brand-gradient text-lg text-primary-foreground">
-                💊
-              </span>
-              <span className="min-w-0 leading-tight">
-                <span className="block truncate font-display text-base font-extrabold text-navy">{t("ঔষধওয়ালা", "Oushodhwala")}</span>
-                <span className="block text-[10px] font-semibold tracking-[0.18em] text-primary">OUSHODHWALA</span>
-              </span>
+            <Link to="/" className="flex min-w-0 items-center" aria-label={t("ঔষধওয়ালা", "Oushodhwala")}>
+              <BrandLogo size={40} bn={t("ঔষধওয়ালা", "Oushodhwala")} eager />
             </Link>
 
             <SearchBox className="order-3 col-span-3 lg:order-none lg:min-w-0 lg:flex-1" />
