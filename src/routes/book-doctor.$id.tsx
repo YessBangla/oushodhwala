@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import {
-import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
   REFUND_POLICY_BN,
   REFUND_POLICY_EN,
   MODE_LABEL,
@@ -23,6 +22,7 @@ import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
   slotTimes,
   type CallMode,
 } from "@/lib/appointments";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/book-doctor/$id")({
   head: () => ({

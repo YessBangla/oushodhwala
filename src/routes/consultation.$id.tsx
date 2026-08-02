@@ -10,7 +10,6 @@ import { useCatalog } from "@/lib/catalog-db";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
   MODE_LABEL,
   PAYMENT_LABEL,
   REFUND_LABEL,
@@ -26,6 +25,7 @@ import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
   waNumber,
   type CallMode,
 } from "@/lib/appointments";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/consultation/$id")({
   head: () => ({
