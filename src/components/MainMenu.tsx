@@ -197,7 +197,27 @@ export function MobileMenu() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-3">
+              <div className="mb-3 rounded-xl border border-border p-2">
+                <p className="mb-1.5 px-1 text-[11px] font-semibold text-muted-foreground">
+                  {en ? "Language" : "ভাষা"}
+                </p>
+                <div className="flex gap-1" role="group" aria-label={en ? "Language" : "ভাষা"}>
+                  {(["bn", "en"] as const).map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => setLang(l)}
+                      aria-pressed={lang === l}
+                      className={`min-h-11 flex-1 rounded-lg px-3 text-sm font-bold ${
+                        lang === l ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {l === "bn" ? "বাংলা" : "English"}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-1">
+
                 {items.concat(extra).map((m) =>
                   m.search ? (
                     <Link
