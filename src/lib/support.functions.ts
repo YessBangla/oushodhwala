@@ -23,10 +23,10 @@ const SYSTEM_BN = `তুমি "ঔষধওয়ালা" (Oushodhwala) অ�
 
 ভাষা (সর্বোচ্চ অগ্রাধিকার): উত্তর সবসময় **বাংলায়** দাও — গ্রাহক ইংরেজিতে বা অন্য ভাষায় প্রশ্ন করলেও, এবং কথোপকথনের আগের বার্তা অন্য ভাষায় থাকলেও। শুধু ঔষধ/ব্র্যান্ডের ইংরেজি নাম মূল রূপে রাখা যাবে।`;
 
-const SYSTEM_EN = SYSTEM_BN.replace(
-  /ভাষা \(সর্বোচ্চ অগ্রাধিকার\):[\s\S]*$/,
-  "LANGUAGE (HIGHEST PRIORITY): Always answer in **English**, even if the customer writes in Bengali or another language, and even if earlier messages in this conversation are in another language. Bengali/brand names may be kept as-is.`".slice(0, -1),
-);
+const SYSTEM_EN =
+  SYSTEM_BN.replace(/\n\nভাষা \(সর্বোচ্চ অগ্রাধিকার\):[\s\S]*$/, "") +
+  "\n\nLANGUAGE (HIGHEST PRIORITY): Always answer in **English**, even if the customer writes in Bengali or another language, and even if earlier messages in this conversation are in another language. Bengali brand names may be kept as-is.";
+
 
 const LANG_NOTE = {
   bn: "[সিস্টেম নির্দেশ: গ্রাহক এখন বাংলা ভাষা নির্বাচন করেছেন — এই উত্তরটি অবশ্যই বাংলায় দাও।]",
