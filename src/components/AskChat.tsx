@@ -12,6 +12,17 @@ type Msg = { id: string; sender: "user" | "ai" | "agent"; body: string; agent_na
 type Conv = { id: string; agent_active: boolean; agent_name: string; agent_last_seen: string | null };
 
 const AGENT_WINDOW_MS = 5 * 60 * 1000;
+const CHAT_LANG_KEY = "ow-chat-lang";
+
+type ChatLangPref = "auto" | "bn" | "en";
+
+/** লেখা থেকে ভাষা শনাক্ত — বাংলা অক্ষর থাকলে bn, নাহলে en */
+function detectLang(text: string): "bn" | "en" | null {
+  const bn = (text.match(/[\u0980-\u09FF]/g) ?? []).length;
+  const en = (text.match(/[A-Za-z]/g) ?? []).length;
+  if (!bn && !en) return null;
+  return bn >= en ? "bn" : "en";
+}
 
 function agentLive(c: Conv | null) {
   if (!c?.agent_active) return false;
