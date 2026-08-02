@@ -161,7 +161,7 @@ export function AskChat() {
 
   const send = async () => {
     const body = input.trim();
-    if (!body || !conv || busy) return;
+    if (!body || busy) return;
     const d = detectLang(body);
     if (langPref === "auto" && d) setDetected(d);
     const useLang: "bn" | "en" = langPref !== "auto" ? langPref : (d ?? detected ?? lang);
@@ -169,6 +169,23 @@ export function AskChat() {
     setErr("");
     setBusy(true);
     try {
+      if (!user) {
+        // গেস্ট মোড — লগইন ছাড়াই সাধারণ প্রশ্নের উত্তর
+        const now = new Date().toISOString();
+        const mine: Msg = { id: `u-${Date.now()}`, sender: "user", body, agent_name: "", created_at: now };
+        const history = [...msgs, mine].slice(-15).map((m) => ({
+          role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
+          content: m.body,
+        }));
+        setMsgs((prev) => [...prev, mine]);
+        const res = await askGuest({ data: { lang: useLang, messages: history } });
+        setMsgs((prev) => [
+          ...prev,
+          { id: `a-${Date.now()}`, sender: "ai", body: res.text, agent_name: "", created_at: new Date().toISOString() },
+        ]);
+        return;
+      }
+      if (!conv) return;
       const { error } = await supabase.rpc("support_add_message", {
         _conv: conv.id,
         _sender: "user",
@@ -182,9 +199,10 @@ export function AskChat() {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
-      if (conv) void loadMsgs(conv.id);
+      if (user && conv) void loadMsgs(conv.id);
     }
   };
+
 
   return (
     <>
