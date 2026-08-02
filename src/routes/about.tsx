@@ -31,7 +31,14 @@ function About() {
             "We source products directly from DGDA-licensed pharmaceutical manufacturers and approved distributors. Every order is verified by our in-house registered pharmacist team — checking dosage, interactions and prescription accuracy.",
           )}
         </p>
+        <p>
+          {t(
+            "ঔষধওয়ালা হলো Shondhaan-এর একটি অংশ, আর Shondhaan হলো Yess Bangla Private Limited-এর একটি সিস্টার কনসার্ন।",
+            "Oushodhwala is a part of Shondhaan, and Shondhaan is a sister concern of Yess Bangla Private Limited.",
+          )}
+        </p>
       </div>
+
 
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         {[
