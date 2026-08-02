@@ -161,6 +161,9 @@ export function AskChat() {
   const send = async () => {
     const body = input.trim();
     if (!body || !conv || busy) return;
+    const d = detectLang(body);
+    if (langPref === "auto" && d) setDetected(d);
+    const useLang: "bn" | "en" = langPref !== "auto" ? langPref : (d ?? detected ?? lang);
     setInput("");
     setErr("");
     setBusy(true);
@@ -173,7 +176,7 @@ export function AskChat() {
       });
       if (error) throw new Error(error.message);
       await loadMsgs(conv.id);
-      if (!live) await ask({ data: { conversationId: conv.id, lang } });
+      if (!live) await ask({ data: { conversationId: conv.id, lang: useLang } });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
