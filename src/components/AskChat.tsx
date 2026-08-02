@@ -73,6 +73,30 @@ export function AskChat() {
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // ভাষা: ম্যানুয়াল সিলেকশন > টাইপ করা ভাষা (auto-detect) > সাইটের ভাষা
+  const [langPref, setLangPref] = useState<ChatLangPref>("auto");
+  const [detected, setDetected] = useState<"bn" | "en" | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_LANG_KEY);
+      if (saved === "bn" || saved === "en" || saved === "auto") setLangPref(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const chooseLang = (p: ChatLangPref) => {
+    setLangPref(p);
+    try {
+      localStorage.setItem(CHAT_LANG_KEY, p);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const chatLang: "bn" | "en" = langPref !== "auto" ? langPref : (detected ?? lang);
+
   const loadMsgs = useCallback(async (convId: string) => {
     const { data } = await supabase
       .from("support_messages")
