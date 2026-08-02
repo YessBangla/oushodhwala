@@ -16,7 +16,12 @@ const STATIC_PATHS = [
   "/prescription",
   "/about",
   "/help",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/refund-policy",
 ];
+
 
 function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
