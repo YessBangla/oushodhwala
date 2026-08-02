@@ -35,6 +35,7 @@ import {
   BarChart3,
   Megaphone,
   Award,
+  UserCog,
 } from "lucide-react";
 
 export type AdminNavItem = { id: string; t: string; icon: string };
@@ -42,6 +43,7 @@ export type AdminNavGroup = { label: string; items: AdminNavItem[] };
 
 const ICONS: Record<string, typeof LayoutDashboard> = {
   dash: LayoutDashboard,
+  staff: UserCog,
   orders: ShoppingCart,
   inventory: Boxes,
   products: Pill,

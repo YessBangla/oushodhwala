@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -29,6 +29,8 @@ import { ReportsAdmin } from "@/components/ReportsAdmin";
 import { LoyaltyAdmin } from "@/components/LoyaltyAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+import { allowedTabs } from "@/lib/roles";
+import { StaffRoles } from "@/components/StaffRoles";
 
 
 
@@ -83,6 +85,8 @@ const TABS = [
   { id: "audit", t: "ERP অডিট ট্রেইল" },
   { id: "erpreports", t: "ERP রিপোর্ট" },
   { id: "erproles", t: "ERP অ্যাক্সেস" },
+  { id: "staff", t: "স্টাফ ও ভূমিকা" },
+
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
@@ -100,7 +104,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["support", "lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
-  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles"]) },
+  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles", "staff"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
 ];
 
@@ -117,8 +121,19 @@ const STATUS: Record<string, string> = {
 };
 
 function Admin() {
-  const { user, isAdmin, loading, refresh } = useAuth();
-  const [tab, setTab] = useState<TabId>("dash");
+  const { user, isAdmin, isStaff, roles, loading, refresh } = useAuth();
+  const allowed = useMemo(() => allowedTabs(roles), [roles]);
+  const visibleGroups = useMemo<AdminNavGroup[]>(() => {
+    if (allowed === "all") return NAV_GROUPS;
+    return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => allowed.has(i.id)) })).filter(
+      (g) => g.items.length > 0,
+    );
+  }, [allowed]);
+  const firstTab = (visibleGroups[0]?.items[0]?.id ?? "dash") as TabId;
+  const [tabState, setTab] = useState<TabId | null>(null);
+  const tab: TabId = tabState && (allowed === "all" || allowed.has(tabState)) ? tabState : firstTab;
+
+
 
   const { data: adminExists, refetch: refetchExists } = useQuery({
     queryKey: ["admin-exists"],
@@ -144,7 +159,7 @@ function Admin() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="pt-16 text-center">
         <p className="text-4xl">⛔</p>
@@ -181,7 +196,7 @@ function Admin() {
 
   return (
     <AdminShell
-      groups={NAV_GROUPS}
+      groups={visibleGroups}
       active={tab}
       onSelect={(id) => setTab(id as TabId)}
       title={TABS.find((t) => t.id === tab)?.t ?? "ড্যাশবোর্ড"}
@@ -226,6 +241,7 @@ function Admin() {
       {tab === "audit" && <ErpAudit />}
       {tab === "erpreports" && <ErpReports />}
       {tab === "erproles" && <ErpRoles />}
+      {tab === "staff" && <StaffRoles />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
