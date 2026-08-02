@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useLang } from "@/lib/lang";
 import { askSupportAI } from "@/lib/support.functions";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type Msg = { id: string; sender: "user" | "ai" | "agent"; body: string; agent_name: string; created_at: string };
 type Conv = { id: string; agent_active: boolean; agent_name: string; agent_last_seen: string | null };
