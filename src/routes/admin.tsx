@@ -83,6 +83,8 @@ const TABS = [
   { id: "audit", t: "ERP অডিট ট্রেইল" },
   { id: "erpreports", t: "ERP রিপোর্ট" },
   { id: "erproles", t: "ERP অ্যাক্সেস" },
+  { id: "staff", t: "স্টাফ ও ভূমিকা" },
+
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
