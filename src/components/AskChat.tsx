@@ -64,6 +64,8 @@ export function AskChat() {
   const { lang } = useLang();
   const { user } = useAuth();
   const ask = useServerFn(askSupportAI);
+  const askGuest = useServerFn(askSupportGuest);
+
 
   const [open, setOpen] = useState(false);
   const [conv, setConv] = useState<Conv | null>(null);
