@@ -24,6 +24,7 @@ import {
 import { useCatalog } from "@/lib/catalog-db";
 import { useLang, pick } from "@/lib/lang";
 import { useAuth } from "@/hooks/useAuth";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type Item = { t: string; to: string; icon: typeof Store; search?: Record<string, string> };
 
