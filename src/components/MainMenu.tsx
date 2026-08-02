@@ -149,7 +149,8 @@ export function MobileMenu() {
   const { categories } = useCatalog();
   const productCats = categories.filter((c) => c.kind !== "service");
   const serviceCats = categories.filter((c) => c.kind === "service");
-  const { lang } = useLang();
+  const { lang, setLang } = useLang();
+
   const { isAdmin } = useAuth();
   const en = lang === "en";
   const items = useItems();
