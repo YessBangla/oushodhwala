@@ -220,10 +220,37 @@ export function AskChat() {
                 )}
               </p>
             </div>
+            <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-navy-foreground/25">
+              {(["bn", "en", "auto"] as ChatLangPref[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => chooseLang(p)}
+                  aria-pressed={langPref === p}
+                  className={`px-2 py-1 text-[10px] font-bold ${
+                    langPref === p ? "bg-primary text-primary-foreground" : "opacity-70"
+                  }`}
+                >
+                  {p === "bn" ? "বাং" : p === "en" ? "EN" : t("অটো", "Auto")}
+                </button>
+              ))}
+            </div>
             <button onClick={() => setOpen(false)} aria-label={t("বন্ধ", "Close")} className="p-1">
               <X className="h-5 w-5" />
             </button>
           </div>
+
+          <p className="flex items-center gap-1.5 border-b border-border bg-muted px-3 py-1 text-[11px] text-muted-foreground">
+            <Languages className="h-3 w-3 text-primary" />
+            <span className="font-semibold text-navy">
+              {chatLang === "bn" ? "উত্তরের ভাষা: বাংলা" : "Reply language: English"}
+            </span>
+            <span>
+              {langPref === "auto"
+                ? t("(অটো — আপনি যে ভাষায় লিখবেন)", "(auto — follows what you type)")
+                : t("(ম্যানুয়াল)", "(manual)")}
+            </span>
+          </p>
+
 
           {!user ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
