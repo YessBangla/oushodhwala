@@ -1,14 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertAdmin(context: Ctx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (data !== true) throw new Error("FORBIDDEN");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as any;
-}
+import { adminClient } from "@/lib/authz";
 
 const PACK_RE = /data-src="(https:\/\/medex\.com\.bd\/storage\/images\/packaging\/[^"]+)"/g;
 const OG_RE = /<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i;
@@ -45,7 +37,7 @@ async function scrapeOne(source: string, product: { id: string; en: string; name
 export const getImageAuditSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const statuses = ["ok", "placeholder", "duplicate", "missing", "broken"];
     const counts: Record<string, number> = {};
     await Promise.all(
@@ -65,7 +57,7 @@ export const listImageIssues = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { status?: string; q?: string; limit?: number; offset?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 40, 200);
     let q = admin.from("product_image_audit").select("*", { count: "exact" });
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
@@ -80,7 +72,7 @@ export const exportImageIssuesCsv = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { status?: string }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     let q = admin.from("product_image_audit").select("product_id,product_name,status,box_url,medicine_url,http_status,source,note,checked_at");
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
     else q = q.neq("status", "ok");
@@ -96,7 +88,7 @@ export const rescanImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { limit?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 60, 120);
     const { data: prods } = await admin
       .from("products").select("id,name,image_url,medicine_image_url").order("updated_at", { ascending: false }).limit(limit);
@@ -131,7 +123,7 @@ export const runImageImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { source?: "medex" | "medeasy"; mode?: "missing" | "failed"; limit?: number; runId?: string }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const source = data.source ?? "medex";
     const mode = data.mode ?? "missing";
     const limit = Math.min(data.limit ?? 25, 40);
@@ -203,7 +195,7 @@ export const runImageImport = createServerFn({ method: "POST" })
 export const listImportRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const { data: runs } = await admin.from("image_import_runs").select("*").order("created_at", { ascending: false }).limit(25);
     const { data: fails, count } = await admin
       .from("image_import_failures").select("*", { count: "exact" }).eq("resolved", false).order("updated_at", { ascending: false }).limit(100);

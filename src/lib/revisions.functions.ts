@@ -1,14 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertAdmin(context: Ctx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (data !== true) throw new Error("FORBIDDEN");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as any;
-}
+import { adminClient } from "@/lib/authz";
 
 const FIELD_COL: Record<string, string> = { box: "image_url", medicine: "medicine_image_url" };
 
@@ -33,7 +25,7 @@ async function logAudit(
 export const getRevisionSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const statuses = ["pending", "approved", "rejected", "rolled_back"];
     const counts: Record<string, number> = {};
     await Promise.all(
@@ -55,7 +47,7 @@ export const listRevisions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { status?: string; method?: string; q?: string; limit?: number; offset?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 24, 60);
     const offset = data.offset ?? 0;
     let q = admin.from("image_revisions").select("*", { count: "exact" });
@@ -72,7 +64,7 @@ export const approveRevisions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { ids: string[] }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = (data.ids ?? []).slice(0, 200);
     if (!ids.length) return { applied: 0 };
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids).eq("status", "pending");
@@ -100,7 +92,7 @@ export const rejectRevisions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { ids: string[]; note?: string }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = (data.ids ?? []).slice(0, 200);
     if (!ids.length) return { rejected: 0 };
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids);
@@ -122,7 +114,7 @@ export const rollbackRevisions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { ids: string[] }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = (data.ids ?? []).slice(0, 200);
     if (!ids.length) return { restored: 0 };
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids).eq("status", "approved");
@@ -147,7 +139,7 @@ export const listImageAudit = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { q?: string; action?: string; limit?: number; offset?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 40, 200);
     const offset = data.offset ?? 0;
     let q = admin.from("image_audit_log").select("*", { count: "exact" });
@@ -167,7 +159,7 @@ export const autoFetchAlternates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { limit?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 20, 40);
     const { data: prods } = await admin
       .from("products").select("id,name,en,image_url")

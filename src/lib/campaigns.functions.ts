@@ -1,14 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertAdmin(context: Ctx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (data !== true) throw new Error("FORBIDDEN");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as any;
-}
+import { adminClient } from "@/lib/authz";
 
 export type Segment = "all" | "buyers30" | "inactive60" | "highvalue";
 
@@ -47,7 +39,7 @@ export const countAudience = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { segment: Segment }) => d)
   .handler(async ({ context, data }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = await resolveAudience(admin, data.segment);
     return { count: ids.length };
   });
@@ -57,7 +49,7 @@ export const sendCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { segment: Segment; title: string; body: string }) => d)
   .handler(async ({ context, data }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const title = (data.title || "").trim();
     const body = (data.body || "").trim();
     if (!title) throw new Error("TITLE_REQUIRED");

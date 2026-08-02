@@ -1,15 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertStaff(context: Ctx) {
-  const [{ data: a }, { data: e }] = await Promise.all([
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "erp_manager" }),
-  ]);
-  if (a !== true && e !== true) throw new Error("FORBIDDEN");
-}
+import { requireStaff } from "@/lib/authz";
 
 export type ApiTestInput = {
   url: string;
@@ -32,7 +23,7 @@ export const runApiTest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: ApiTestInput) => input)
   .handler(async ({ data, context }): Promise<ApiTestResult> => {
-    await assertStaff(context as unknown as Ctx);
+    await requireStaff(context as never);
 
     const method = (data.method || "GET").toUpperCase();
     let url = (data.url || "").trim();
