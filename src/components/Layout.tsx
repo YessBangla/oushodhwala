@@ -154,7 +154,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-7xl px-4 py-8">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="font-display text-base font-extrabold">{t("ঔষধওয়ালা", "Oushodhwala")} · Oushodhwala</p>
+              <BrandLogo size={44} tone="light" bn={t("ঔষধওয়ালা", "Oushodhwala")} />
               <p className="mt-2 text-xs leading-relaxed opacity-75">
                 {t(
                   "বাংলাদেশের বিশ্বস্ত অনলাইন ফার্মেসি — ১০০% অরিজিনাল ঔষধ, লাইসেন্সপ্রাপ্ত ফার্মাসিস্টের তত্ত্বাবধানে, ঘরে বসে।",
