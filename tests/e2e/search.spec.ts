@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { trackConsole } from "./browse.spec";
+import { trackConsole } from "./helpers";
 
 test.describe("search", () => {
   test("english query returns suggestions", async ({ page }) => {

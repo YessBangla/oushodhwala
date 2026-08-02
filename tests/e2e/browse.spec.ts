@@ -1,14 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
-
-/** কনসোল এরর ধরার হেল্পার */
-export function trackConsole(page: Page) {
-  const errors: string[] = [];
-  page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
-  });
-  page.on("pageerror", (e) => errors.push(e.message));
-  return errors;
-}
+import { test, expect } from "@playwright/test";
+import { trackConsole } from "./helpers";
 
 test.describe("browse", () => {
   test("home page renders products and navigation", async ({ page }) => {
