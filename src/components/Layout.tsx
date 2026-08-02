@@ -202,7 +202,12 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <p className="mt-8 border-t border-navy-foreground/15 pt-4 text-center text-[10px] opacity-60">
-            {t("© ২০২৬ Oushodhwala Ltd. সর্বস্বত্ব সংরক্ষিত। DGDA লাইসেন্সপ্রাপ্ত ফার্মেসি পার্টনার।", "© 2026 Oushodhwala Ltd. All rights reserved. DGDA licensed pharmacy partner.")}
+            {t(
+              "ঔষধওয়ালা — Shondhaan-এর একটি অংশ · Shondhaan, Yess Bangla Private Limited-এর একটি সিস্টার কনসার্ন",
+              "Oushodhwala — a part of Shondhaan · Shondhaan, a sister concern of Yess Bangla Private Limited",
+            )}
+            <br />
+            {t("© ২০২৬ সর্বস্বত্ব সংরক্ষিত। DGDA লাইসেন্সপ্রাপ্ত ফার্মেসি পার্টনার।", "© 2026 All rights reserved. DGDA licensed pharmacy partner.")}
           </p>
         </div>
       </footer>
