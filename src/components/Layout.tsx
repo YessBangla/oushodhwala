@@ -102,7 +102,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
             <div className="flex shrink-0 items-center gap-4">
               <div
-                className="hidden items-center rounded-full bg-muted p-0.5 text-[11px] font-bold sm:flex"
+                className="flex items-center rounded-full bg-muted p-0.5 text-[11px] font-bold"
                 role="group"
                 aria-label={t("ভাষা", "Language")}
               >
@@ -117,6 +117,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   </button>
                 ))}
               </div>
+
 
               <Link to="/wishlist" className="relative hidden text-navy sm:block" aria-label={t("উইশলিস্ট", "Wishlist")}>
                 <Heart className="h-5 w-5" />
