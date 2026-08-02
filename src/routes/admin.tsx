@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -29,6 +29,8 @@ import { ReportsAdmin } from "@/components/ReportsAdmin";
 import { LoyaltyAdmin } from "@/components/LoyaltyAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+import { allowedTabs } from "@/lib/roles";
+import { StaffRoles } from "@/components/StaffRoles";
 
 
 
@@ -157,7 +159,7 @@ function Admin() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="pt-16 text-center">
         <p className="text-4xl">⛔</p>
@@ -194,7 +196,7 @@ function Admin() {
 
   return (
     <AdminShell
-      groups={NAV_GROUPS}
+      groups={visibleGroups}
       active={tab}
       onSelect={(id) => setTab(id as TabId)}
       title={TABS.find((t) => t.id === tab)?.t ?? "ড্যাশবোর্ড"}
@@ -239,6 +241,7 @@ function Admin() {
       {tab === "audit" && <ErpAudit />}
       {tab === "erpreports" && <ErpReports />}
       {tab === "erproles" && <ErpRoles />}
+      {tab === "staff" && <StaffRoles />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
