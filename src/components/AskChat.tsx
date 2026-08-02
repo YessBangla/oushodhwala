@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, X, Send, Headset, Bot, Loader2, User as UserIcon } from "lucide-react";
+import { MessageCircle, X, Send, Headset, Bot, Loader2, Languages, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
@@ -12,6 +12,17 @@ type Msg = { id: string; sender: "user" | "ai" | "agent"; body: string; agent_na
 type Conv = { id: string; agent_active: boolean; agent_name: string; agent_last_seen: string | null };
 
 const AGENT_WINDOW_MS = 5 * 60 * 1000;
+const CHAT_LANG_KEY = "ow-chat-lang";
+
+type ChatLangPref = "auto" | "bn" | "en";
+
+/** লেখা থেকে ভাষা শনাক্ত — বাংলা অক্ষর থাকলে bn, নাহলে en */
+function detectLang(text: string): "bn" | "en" | null {
+  const bn = (text.match(/[\u0980-\u09FF]/g) ?? []).length;
+  const en = (text.match(/[A-Za-z]/g) ?? []).length;
+  if (!bn && !en) return null;
+  return bn >= en ? "bn" : "en";
+}
 
 function agentLive(c: Conv | null) {
   if (!c?.agent_active) return false;
@@ -61,6 +72,30 @@ export function AskChat() {
   const [err, setErr] = useState("");
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // ভাষা: ম্যানুয়াল সিলেকশন > টাইপ করা ভাষা (auto-detect) > সাইটের ভাষা
+  const [langPref, setLangPref] = useState<ChatLangPref>("auto");
+  const [detected, setDetected] = useState<"bn" | "en" | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_LANG_KEY);
+      if (saved === "bn" || saved === "en" || saved === "auto") setLangPref(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const chooseLang = (p: ChatLangPref) => {
+    setLangPref(p);
+    try {
+      localStorage.setItem(CHAT_LANG_KEY, p);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const chatLang: "bn" | "en" = langPref !== "auto" ? langPref : (detected ?? lang);
 
   const loadMsgs = useCallback(async (convId: string) => {
     const { data } = await supabase
@@ -126,6 +161,9 @@ export function AskChat() {
   const send = async () => {
     const body = input.trim();
     if (!body || !conv || busy) return;
+    const d = detectLang(body);
+    if (langPref === "auto" && d) setDetected(d);
+    const useLang: "bn" | "en" = langPref !== "auto" ? langPref : (d ?? detected ?? lang);
     setInput("");
     setErr("");
     setBusy(true);
@@ -138,7 +176,7 @@ export function AskChat() {
       });
       if (error) throw new Error(error.message);
       await loadMsgs(conv.id);
-      if (!live) await ask({ data: { conversationId: conv.id, lang } });
+      if (!live) await ask({ data: { conversationId: conv.id, lang: useLang } });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -182,10 +220,37 @@ export function AskChat() {
                 )}
               </p>
             </div>
+            <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-navy-foreground/25">
+              {(["bn", "en", "auto"] as ChatLangPref[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => chooseLang(p)}
+                  aria-pressed={langPref === p}
+                  className={`px-2 py-1 text-[10px] font-bold ${
+                    langPref === p ? "bg-primary text-primary-foreground" : "opacity-70"
+                  }`}
+                >
+                  {p === "bn" ? "বাং" : p === "en" ? "EN" : t("অটো", "Auto")}
+                </button>
+              ))}
+            </div>
             <button onClick={() => setOpen(false)} aria-label={t("বন্ধ", "Close")} className="p-1">
               <X className="h-5 w-5" />
             </button>
           </div>
+
+          <p className="flex items-center gap-1.5 border-b border-border bg-muted px-3 py-1 text-[11px] text-muted-foreground">
+            <Languages className="h-3 w-3 text-primary" />
+            <span className="font-semibold text-navy">
+              {chatLang === "bn" ? "উত্তরের ভাষা: বাংলা" : "Reply language: English"}
+            </span>
+            <span>
+              {langPref === "auto"
+                ? t("(অটো — আপনি যে ভাষায় লিখবেন)", "(auto — follows what you type)")
+                : t("(ম্যানুয়াল)", "(manual)")}
+            </span>
+          </p>
+
 
           {!user ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
