@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       if (event === "SIGNED_OUT") {
         setProfile(null);
-        setIsAdmin(false);
+        setRoles([]);
       } else {
         void loadMeta(s?.user.id);
       }
@@ -85,11 +85,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const hasRole = (r: AppRole) => roles.includes(r);
+  const isSuperAdmin = hasRole("super_admin");
+  const isAdmin = isSuperAdmin || hasRole("admin");
+  const isStaff = isAdmin || STAFF_ROLES.some((r) => roles.includes(r));
+
   const value: AuthCtx = {
     session,
     user: session?.user ?? null,
     profile,
+    roles,
     isAdmin,
+    isSuperAdmin,
+    isStaff,
+    hasRole,
     loading,
     refresh: async () => {
       const { data } = await supabase.auth.getSession();
@@ -99,9 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await supabase.auth.signOut();
       setProfile(null);
-      setIsAdmin(false);
+      setRoles([]);
     },
   };
+
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
