@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, X, Send, Headset, Bot, Loader2, User as UserIcon } from "lucide-react";
+import { MessageCircle, X, Send, Headset, Bot, Loader2, Languages, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
