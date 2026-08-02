@@ -76,11 +76,11 @@ export const approveRevisions = createServerFn({ method: "POST" })
       const current = (prod as any)?.[col] ?? r.before_url;
       await admin.from("products").update({ [col]: r.after_url }).eq("id", r.product_id);
       await admin.from("image_revisions").update({
-        status: "approved", before_url: current, reviewed_by: (context as Ctx).userId, reviewed_at: new Date().toISOString(),
+        status: "approved", before_url: current, reviewed_by: (context as { userId: string }).userId, reviewed_at: new Date().toISOString(),
       }).eq("id", r.id);
       await logAudit(admin, {
         product_id: r.product_id, product_name: r.product_name, action: "approve", field: r.field,
-        from_url: current, to_url: r.after_url, revision_id: r.id, actor: (context as Ctx).userId, note: r.method,
+        from_url: current, to_url: r.after_url, revision_id: r.id, actor: (context as { userId: string }).userId, note: r.method,
       });
       applied++;
     }
@@ -98,12 +98,12 @@ export const rejectRevisions = createServerFn({ method: "POST" })
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids);
     for (const r of revs ?? []) {
       await admin.from("image_revisions").update({
-        status: "rejected", reviewed_by: (context as Ctx).userId, reviewed_at: new Date().toISOString(),
+        status: "rejected", reviewed_by: (context as { userId: string }).userId, reviewed_at: new Date().toISOString(),
         note: data.note ? data.note : r.note,
       }).eq("id", r.id);
       await logAudit(admin, {
         product_id: r.product_id, product_name: r.product_name, action: "reject", field: r.field,
-        from_url: r.before_url, to_url: r.after_url, revision_id: r.id, actor: (context as Ctx).userId, note: data.note ?? "",
+        from_url: r.before_url, to_url: r.after_url, revision_id: r.id, actor: (context as { userId: string }).userId, note: data.note ?? "",
       });
     }
     return { rejected: (revs ?? []).length };
@@ -123,11 +123,11 @@ export const rollbackRevisions = createServerFn({ method: "POST" })
       const col = FIELD_COL[r.field] ?? "image_url";
       await admin.from("products").update({ [col]: r.before_url }).eq("id", r.product_id);
       await admin.from("image_revisions").update({
-        status: "rolled_back", reviewed_by: (context as Ctx).userId, reviewed_at: new Date().toISOString(),
+        status: "rolled_back", reviewed_by: (context as { userId: string }).userId, reviewed_at: new Date().toISOString(),
       }).eq("id", r.id);
       await logAudit(admin, {
         product_id: r.product_id, product_name: r.product_name, action: "rollback", field: r.field,
-        from_url: r.after_url, to_url: r.before_url, revision_id: r.id, actor: (context as Ctx).userId, note: "রোলব্যাক",
+        from_url: r.after_url, to_url: r.before_url, revision_id: r.id, actor: (context as { userId: string }).userId, note: "রোলব্যাক",
       });
       restored++;
     }
@@ -196,7 +196,7 @@ export const autoFetchAlternates = createServerFn({ method: "POST" })
       });
       await logAudit(admin, {
         product_id: p.id, product_name: p.name, action: "fetch-alt", field: "box",
-        from_url: p.image_url, to_url: found, actor: (context as Ctx).userId, note: source,
+        from_url: p.image_url, to_url: found, actor: (context as { userId: string }).userId, note: source,
       });
       queued++;
     }
