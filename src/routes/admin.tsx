@@ -102,7 +102,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["support", "lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
-  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles"]) },
+  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles", "staff"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
 ];
 
