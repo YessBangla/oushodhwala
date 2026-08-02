@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DoctorConsultationRouteImport } from './routes/doctor-consultation'
 import { Route as HelpRouteImport } from './routes/help'
@@ -28,7 +29,10 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PrescriptionRouteImport } from './routes/prescription'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -85,6 +89,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DeliveryRoute = DeliveryRouteImport.update({
   id: '/delivery',
   path: '/delivery',
@@ -135,9 +144,24 @@ const PrescriptionRoute = PrescriptionRouteImport.update({
   path: '/prescription',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundPolicyRoute = RefundPolicyRouteImport.update({
+  id: '/refund-policy',
+  path: '/refund-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WishlistRoute = WishlistRouteImport.update({
@@ -201,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
@@ -211,7 +236,10 @@ export interface FileRoutesByFullPath {
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
   '/prescription': typeof PrescriptionRoute
+  '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -233,6 +261,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
@@ -243,7 +272,10 @@ export interface FileRoutesByTo {
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
   '/prescription': typeof PrescriptionRoute
+  '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -266,6 +298,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
@@ -276,7 +309,10 @@ export interface FileRoutesById {
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
   '/prescription': typeof PrescriptionRoute
+  '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -300,6 +336,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
     | '/delivery'
     | '/doctor-consultation'
     | '/help'
@@ -310,7 +347,10 @@ export interface FileRouteTypes {
     | '/offers'
     | '/orders'
     | '/prescription'
+    | '/privacy'
     | '/products'
+    | '/refund-policy'
+    | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
     | '/category/$slug'
@@ -332,6 +372,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
     | '/delivery'
     | '/doctor-consultation'
     | '/help'
@@ -342,7 +383,10 @@ export interface FileRouteTypes {
     | '/offers'
     | '/orders'
     | '/prescription'
+    | '/privacy'
     | '/products'
+    | '/refund-policy'
+    | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
     | '/category/$slug'
@@ -364,6 +408,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
     | '/delivery'
     | '/doctor-consultation'
     | '/help'
@@ -374,7 +419,10 @@ export interface FileRouteTypes {
     | '/offers'
     | '/orders'
     | '/prescription'
+    | '/privacy'
     | '/products'
+    | '/refund-policy'
+    | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
     | '/category/$slug'
@@ -397,6 +445,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
+  ContactRoute: typeof ContactRoute
   DeliveryRoute: typeof DeliveryRoute
   DoctorConsultationRoute: typeof DoctorConsultationRoute
   HelpRoute: typeof HelpRoute
@@ -407,7 +456,10 @@ export interface RootRouteChildren {
   OffersRoute: typeof OffersRoute
   OrdersRoute: typeof OrdersRoute
   PrescriptionRoute: typeof PrescriptionRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
+  RefundPolicyRoute: typeof RefundPolicyRoute
+  TermsRoute: typeof TermsRoute
   WishlistRoute: typeof WishlistRoute
   BookDoctorIdRoute: typeof BookDoctorIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -485,6 +537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/delivery': {
       id: '/delivery'
       path: '/delivery'
@@ -555,11 +614,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrescriptionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products': {
       id: '/products'
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund-policy': {
+      id: '/refund-policy'
+      path: '/refund-policy'
+      fullPath: '/refund-policy'
+      preLoaderRoute: typeof RefundPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wishlist': {
@@ -645,6 +725,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
+  ContactRoute: ContactRoute,
   DeliveryRoute: DeliveryRoute,
   DoctorConsultationRoute: DoctorConsultationRoute,
   HelpRoute: HelpRoute,
@@ -655,7 +736,10 @@ const rootRouteChildren: RootRouteChildren = {
   OffersRoute: OffersRoute,
   OrdersRoute: OrdersRoute,
   PrescriptionRoute: PrescriptionRoute,
+  PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
+  RefundPolicyRoute: RefundPolicyRoute,
+  TermsRoute: TermsRoute,
   WishlistRoute: WishlistRoute,
   BookDoctorIdRoute: BookDoctorIdRoute,
   CategorySlugRoute: CategorySlugRoute,

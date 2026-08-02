@@ -182,11 +182,15 @@ export function Layout({ children }: { children: ReactNode }) {
               <p className="mb-3 font-display text-sm font-bold">{t("কোম্পানি", "Company")}</p>
               <ul className="space-y-2 opacity-75">
                 <li><Link to="/about" className="hover:opacity-100">{t("আমাদের সম্পর্কে", "About us")}</Link></li>
+                <li><Link to="/contact" className="hover:opacity-100">{t("যোগাযোগ", "Contact us")}</Link></li>
                 <li><Link to="/help" className="hover:opacity-100">{t("সহায়তা ও FAQ", "Help & FAQ")}</Link></li>
                 <li><Link to="/orders" className="hover:opacity-100">{t("অর্ডার ট্র্যাকিং", "Order tracking")}</Link></li>
-                <li><Link to="/account" className="hover:opacity-100">{t("একাউন্ট", "Account")}</Link></li>
+                <li><Link to="/privacy" className="hover:opacity-100">{t("গোপনীয়তা নীতি", "Privacy policy")}</Link></li>
+                <li><Link to="/terms" className="hover:opacity-100">{t("শর্তাবলী", "Terms of service")}</Link></li>
+                <li><Link to="/refund-policy" className="hover:opacity-100">{t("রিটার্ন ও রিফান্ড", "Return & refund")}</Link></li>
               </ul>
             </div>
+
             <div className="text-xs">
               <p className="mb-3 font-display text-sm font-bold">{t("পেমেন্ট ও নিরাপত্তা", "Payment & security")}</p>
               <div className="flex flex-wrap gap-2">
