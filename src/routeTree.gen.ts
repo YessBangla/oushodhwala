@@ -30,6 +30,7 @@ import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PrescriptionRouteImport } from './routes/prescription'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -146,6 +147,11 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
   path: '/wishlist',
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/prescription': typeof PrescriptionRoute
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
+  '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -252,6 +259,7 @@ export interface FileRoutesByTo {
   '/prescription': typeof PrescriptionRoute
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
+  '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/prescription': typeof PrescriptionRoute
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
+  '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/prescription'
     | '/privacy'
     | '/products'
+    | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
     | '/category/$slug'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/prescription'
     | '/privacy'
     | '/products'
+    | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
     | '/category/$slug'
@@ -387,6 +398,7 @@ export interface FileRouteTypes {
     | '/prescription'
     | '/privacy'
     | '/products'
+    | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
     | '/category/$slug'
@@ -421,6 +433,7 @@ export interface RootRouteChildren {
   PrescriptionRoute: typeof PrescriptionRoute
   PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
+  TermsRoute: typeof TermsRoute
   WishlistRoute: typeof WishlistRoute
   BookDoctorIdRoute: typeof BookDoctorIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
@@ -582,6 +595,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wishlist': {
       id: '/wishlist'
       path: '/wishlist'
@@ -677,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrescriptionRoute: PrescriptionRoute,
   PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
+  TermsRoute: TermsRoute,
   WishlistRoute: WishlistRoute,
   BookDoctorIdRoute: BookDoctorIdRoute,
   CategorySlugRoute: CategorySlugRoute,
