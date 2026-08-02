@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/prescription")({
   head: () => ({
@@ -52,6 +53,7 @@ function Prescription() {
   const submit = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error(t("লগইন প্রয়োজন", "Login required"));
+      opsStart("prescription_upload", { files: files.length });
       const urls: string[] = [];
       for (const f of files) {
         const path = `${user.id}/${Date.now()}-${f.name.replace(/[^\w.\-]/g, "_")}`;
@@ -62,7 +64,11 @@ function Prescription() {
       const { error } = await supabase
         .from("prescriptions")
         .insert({ user_id: user.id, note, phone, file_urls: urls });
-      if (error) throw error;
+      if (error) {
+        opsFailure("prescription_upload", error, { files: urls.length });
+        throw error;
+      }
+      opsSuccess("prescription_upload", "", { files: urls.length });
     },
     onSuccess: () => {
       toast.success(t("প্রেসক্রিপশন জমা হয়েছে — ফার্মাসিস্ট যাচাই করে যোগাযোগ করবেন", "Prescription submitted — our pharmacist will verify and contact you"));

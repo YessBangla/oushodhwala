@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -108,6 +109,7 @@ function Checkout() {
       return;
     }
     setBusy(true);
+    opsStart("checkout", { items: cart.length, method });
     try {
       let ref = "";
       if (needsRef) {
@@ -150,8 +152,10 @@ function Checkout() {
           _area: addr.area ?? "",
         });
       }
+      opsSuccess("checkout", orderNo, { total, method, items: cart.length });
       setPlaced(orderNo);
     } catch (e) {
+      opsFailure("checkout", e, { method, items: cart.length });
       const msg = e instanceof Error ? e.message : t("অর্ডার সম্পন্ন হয়নি", "Order could not be placed");
       if (msg.startsWith("OUT_OF_STOCK")) {
         const [, name, left] = msg.split(":");

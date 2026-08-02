@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n";
 import { AddressPicker, emptyAddress, type PickedAddress } from "@/components/AddressPicker";
 import { matchesQuery } from "@/lib/bn-search";
 import { resolveDownloadUrl, resolveFileUrl } from "@/lib/storage";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 
 export const Route = createFileRoute("/home-diagnostics")({
@@ -121,6 +122,7 @@ function HomeDiagnostics() {
       return setErr(t("নাম, ফোন ও ঠিকানা দিন।", "Name, phone and address are required."));
     }
     setBusy(true);
+    opsStart("diagnostic_booking", { tests: chosen.length });
     const { data, error } = await supabase.rpc("book_home_diagnostic", {
       _tests: chosen.map((x) => ({ id: x.id, bn: x.bn, en: x.en, price: x.price })),
       _patient_name: name,
@@ -136,10 +138,12 @@ function HomeDiagnostics() {
     });
     setBusy(false);
     if (error) {
+      opsFailure("diagnostic_booking", error, { tests: chosen.length });
       setErr(error.message);
       return;
     }
     const row = data as unknown as { booking_no: string; total: number };
+    opsSuccess("diagnostic_booking", row.booking_no, { total: Number(row.total) });
     setDone({ no: row.booking_no, total: Number(row.total) });
     setPicked([]);
     void refetch();
