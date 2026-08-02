@@ -181,6 +181,13 @@ export const askSupportAI = createServerFn({ method: "POST" })
 
     if (history.length === 0) return { skipped: true as const, reason: "empty" };
 
+    // নির্বাচিত ভাষা প্রতিটি উত্তরে প্রয়োগ — আগের বার্তা অন্য ভাষায় থাকলেও
+    const last = history[history.length - 1]!;
+    const messages =
+      last.role === "user"
+        ? [...history.slice(0, -1), { ...last, content: `${last.content}\n\n${LANG_NOTE[data.lang]}` }]
+        : [...history, { role: "user" as const, content: LANG_NOTE[data.lang] }];
+
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI সেবা কনফিগার করা নেই।");
 
@@ -191,7 +198,8 @@ export const askSupportAI = createServerFn({ method: "POST" })
       const result = await generateText({
         model: gateway("openai/gpt-5.6-sol"),
         system: data.lang === "en" ? SYSTEM_EN : SYSTEM_BN,
-        messages: history,
+        messages,
+
         tools: buildTools(supabase),
         stopWhen: stepCountIs(50),
         providerOptions: { lovable: { reasoningEffort: "none" } },
