@@ -19,9 +19,20 @@ const SYSTEM_BN = `তুমি "ঔষধওয়ালা" (Oushodhwala) অ�
 
 নিরাপত্তা: তুমি ডাক্তার নও। ডোজ/চিকিৎসা পরামর্শে সবসময় রেজিস্টার্ড ডাক্তার বা আমাদের ডাক্তার কনসালটেশন সেবার পরামর্শ দাও। প্রেসক্রিপশন ঔষধ প্রেসক্রিপশন ছাড়া দেওয়া যায় না।
 
-স্টাইল: সংক্ষিপ্ত, ভদ্র, মার্কডাউন বুলেট। উত্তর ২০০ শব্দের মধ্যে রাখো। উত্তর সবসময় বাংলায় দাও।`;
+স্টাইল: সংক্ষিপ্ত, ভদ্র, মার্কডাউন বুলেট। উত্তর ২০০ শব্দের মধ্যে রাখো।
 
-const SYSTEM_EN = SYSTEM_BN.replace("উত্তর সবসময় বাংলায় দাও।", "Always answer in English.");
+ভাষা (সর্বোচ্চ অগ্রাধিকার): উত্তর সবসময় **বাংলায়** দাও — গ্রাহক ইংরেজিতে বা অন্য ভাষায় প্রশ্ন করলেও, এবং কথোপকথনের আগের বার্তা অন্য ভাষায় থাকলেও। শুধু ঔষধ/ব্র্যান্ডের ইংরেজি নাম মূল রূপে রাখা যাবে।`;
+
+const SYSTEM_EN =
+  SYSTEM_BN.replace(/\n\nভাষা \(সর্বোচ্চ অগ্রাধিকার\):[\s\S]*$/, "") +
+  "\n\nLANGUAGE (HIGHEST PRIORITY): Always answer in **English**, even if the customer writes in Bengali or another language, and even if earlier messages in this conversation are in another language. Bengali brand names may be kept as-is.";
+
+
+const LANG_NOTE = {
+  bn: "[সিস্টেম নির্দেশ: গ্রাহক এখন বাংলা ভাষা নির্বাচন করেছেন — এই উত্তরটি অবশ্যই বাংলায় দাও।]",
+  en: "[System instruction: the customer has selected English — you must answer this message in English.]",
+} as const;
+
 
 type Sb = { from: (t: string) => any; rpc: (f: string, a?: unknown) => any };
 
@@ -170,6 +181,13 @@ export const askSupportAI = createServerFn({ method: "POST" })
 
     if (history.length === 0) return { skipped: true as const, reason: "empty" };
 
+    // নির্বাচিত ভাষা প্রতিটি উত্তরে প্রয়োগ — আগের বার্তা অন্য ভাষায় থাকলেও
+    const last = history[history.length - 1]!;
+    const messages =
+      last.role === "user"
+        ? [...history.slice(0, -1), { ...last, content: `${last.content}\n\n${LANG_NOTE[data.lang]}` }]
+        : [...history, { role: "user" as const, content: LANG_NOTE[data.lang] }];
+
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI সেবা কনফিগার করা নেই।");
 
@@ -180,7 +198,8 @@ export const askSupportAI = createServerFn({ method: "POST" })
       const result = await generateText({
         model: gateway("openai/gpt-5.6-sol"),
         system: data.lang === "en" ? SYSTEM_EN : SYSTEM_BN,
-        messages: history,
+        messages,
+
         tools: buildTools(supabase),
         stopWhen: stepCountIs(50),
         providerOptions: { lovable: { reasoningEffort: "none" } },
