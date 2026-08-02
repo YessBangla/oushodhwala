@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { adminClient } from "@/lib/authz";
+import { adminClient, badRequest } from "@/lib/authz";
 
 export type Segment = "all" | "buyers30" | "inactive60" | "highvalue";
 
@@ -52,7 +52,7 @@ export const sendCampaign = createServerFn({ method: "POST" })
     const admin = await adminClient(context as never);
     const title = (data.title || "").trim();
     const body = (data.body || "").trim();
-    if (!title) throw new Error("TITLE_REQUIRED");
+    if (!title) throw badRequest("Campaign title is required");
     const ids = await resolveAudience(admin, data.segment);
     if (ids.length === 0) return { sent: 0 };
 

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requireStaff } from "@/lib/authz";
+import { requireStaff, badRequest } from "@/lib/authz";
 
 export type ApiTestInput = {
   url: string;
@@ -27,12 +27,12 @@ export const runApiTest = createServerFn({ method: "POST" })
 
     const method = (data.method || "GET").toUpperCase();
     let url = (data.url || "").trim();
-    if (!url) throw new Error("URL_REQUIRED");
+    if (!url) throw badRequest("URL is required");
     if (url.startsWith("/")) {
       const origin = process.env["PUBLIC_ORIGIN"] || "http://localhost:8080";
       url = origin.replace(/\/$/, "") + url;
     }
-    if (!/^https?:\/\//i.test(url)) throw new Error("BAD_URL");
+    if (!/^https?:\/\//i.test(url)) throw badRequest("URL must start with http(s)://");
 
     const headers: Record<string, string> = { ...(data.headers ?? {}) };
     if (data.body && !headers["Content-Type"] && !headers["content-type"]) {
