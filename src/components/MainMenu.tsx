@@ -24,6 +24,7 @@ import {
 import { useCatalog } from "@/lib/catalog-db";
 import { useLang, pick } from "@/lib/lang";
 import { useAuth } from "@/hooks/useAuth";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type Item = { t: string; to: string; icon: typeof Store; search?: Record<string, string> };
 
@@ -185,13 +186,7 @@ export function MobileMenu() {
           <div className="absolute inset-0 bg-navy/50" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 flex w-[84%] max-w-sm flex-col bg-card shadow-[var(--shadow-elevated)]">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <span className="grid h-9 w-9 place-items-center rounded-xl brand-gradient text-base text-primary-foreground">
-                💊
-              </span>
-              <span className="leading-tight">
-                <span className="block font-display text-sm font-extrabold text-navy">ঔষধওয়ালা</span>
-                <span className="block text-[9px] font-semibold tracking-[0.18em] text-primary">OUSHODHWALA</span>
-              </span>
+              <BrandLogo size={36} bn={en ? "Oushodhwala" : "ঔষধওয়ালা"} />
               <button onClick={() => setOpen(false)} aria-label={en ? "Close" : "বন্ধ"} className="ml-auto text-navy">
                 <X className="h-5 w-5" />
               </button>

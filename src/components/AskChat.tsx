@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useLang } from "@/lib/lang";
 import { askSupportAI } from "@/lib/support.functions";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type Msg = { id: string; sender: "user" | "ai" | "agent"; body: string; agent_name: string; created_at: string };
 type Conv = { id: string; agent_active: boolean; agent_name: string; agent_last_seen: string | null };
@@ -201,7 +202,7 @@ export function AskChat() {
       {open && (
         <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col overflow-hidden border border-border bg-card shadow-[var(--shadow-elevated)] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[560px] sm:w-[380px] sm:rounded-2xl h-[85vh] rounded-t-2xl">
           <div className="flex items-center gap-2 border-b border-border bg-navy px-3 py-2.5 text-navy-foreground">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground">💊</span>
+            <BrandLogo size={32} showWordmark={false} />
             <div className="min-w-0 flex-1 leading-tight">
               <p className="truncate text-sm font-bold">{t("ঔষধওয়ালাকে বলুন", "Ask Oushodhwala")}</p>
               <p className="flex items-center gap-1 text-[10px] opacity-80">
