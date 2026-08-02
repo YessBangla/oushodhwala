@@ -228,3 +228,68 @@ export const askSupportAI = createServerFn({ method: "POST" })
 
     return { skipped: false as const, text };
   });
+
+/** গেস্ট (লগইন ছাড়া) AI উত্তর — শুধু পাবলিক তথ্য (পণ্য, দাম, স্টক, ল্যাব টেস্ট, ডাক্তার, অফার) */
+const GuestInput = z.object({
+  lang: z.enum(["bn", "en"]).default("bn"),
+  messages: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) }))
+    .min(1)
+    .max(16),
+});
+
+const GUEST_NOTE = {
+  bn: "\n\nগুরুত্বপূর্ণ: এই গ্রাহক লগইন করেননি। ব্যক্তিগত তথ্য (অর্ডার, লয়ালটি পয়েন্ট, প্রেসক্রিপশন ইতিহাস) দেখা যাবে না — এসব চাইলে ভদ্রভাবে লগইন করতে বলো। অন্য সব সাধারণ তথ্য স্বাভাবিকভাবে দাও।",
+  en: "\n\nIMPORTANT: this customer is NOT signed in. Personal data (orders, loyalty points, prescription history) is unavailable — politely ask them to sign in for those. Answer all other general questions normally.",
+} as const;
+
+export const askSupportGuest = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => GuestInput.parse(data))
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    }) as unknown as Sb;
+
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI সেবা কনফিগার করা নেই।");
+    const gateway = createLovableAiGatewayProvider(key);
+
+    const all = buildTools(supabase);
+    const publicTools = {
+      search_products: all.search_products,
+      product_details: all.product_details,
+      list_categories: all.list_categories,
+      lab_tests: all.lab_tests,
+      doctors: all.doctors,
+      active_offers: all.active_offers,
+    };
+
+    const history = data.messages.map((m) => ({ role: m.role, content: m.content }));
+    const last = history[history.length - 1]!;
+    const messages =
+      last.role === "user"
+        ? [...history.slice(0, -1), { ...last, content: `${last.content}\n\n${LANG_NOTE[data.lang]}` }]
+        : [...history, { role: "user" as const, content: LANG_NOTE[data.lang] }];
+
+    try {
+      const result = await generateText({
+        model: gateway("openai/gpt-5.6-sol"),
+        system: (data.lang === "en" ? SYSTEM_EN : SYSTEM_BN) + GUEST_NOTE[data.lang],
+        messages,
+        tools: publicTools,
+        stopWhen: stepCountIs(50),
+        providerOptions: { lovable: { reasoningEffort: "none" } },
+      });
+      const text = result.text.trim();
+      return {
+        text:
+          text || (data.lang === "en" ? "Sorry, I couldn't find that." : "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না।"),
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("429")) throw new Error("অনেক বেশি অনুরোধ — কিছুক্ষণ পরে চেষ্টা করুন।");
+      if (msg.includes("402")) throw new Error("AI ক্রেডিট শেষ হয়ে গেছে।");
+      throw new Error("AI উত্তর তৈরি করা যায়নি: " + msg);
+    }
+  });
