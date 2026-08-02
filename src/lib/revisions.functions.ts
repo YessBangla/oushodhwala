@@ -1,14 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertAdmin(context: Ctx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (data !== true) throw new Error("FORBIDDEN");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as any;
-}
+import { adminClient } from "@/lib/authz";
 
 const FIELD_COL: Record<string, string> = { box: "image_url", medicine: "medicine_image_url" };
 
@@ -33,7 +25,7 @@ async function logAudit(
 export const getRevisionSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const statuses = ["pending", "approved", "rejected", "rolled_back"];
     const counts: Record<string, number> = {};
     await Promise.all(
@@ -55,7 +47,7 @@ export const listRevisions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { status?: string; method?: string; q?: string; limit?: number; offset?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 24, 60);
     const offset = data.offset ?? 0;
     let q = admin.from("image_revisions").select("*", { count: "exact" });
@@ -72,7 +64,7 @@ export const approveRevisions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { ids: string[] }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = (data.ids ?? []).slice(0, 200);
     if (!ids.length) return { applied: 0 };
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids).eq("status", "pending");
@@ -84,11 +76,11 @@ export const approveRevisions = createServerFn({ method: "POST" })
       const current = (prod as any)?.[col] ?? r.before_url;
       await admin.from("products").update({ [col]: r.after_url }).eq("id", r.product_id);
       await admin.from("image_revisions").update({
-        status: "approved", before_url: current, reviewed_by: (context as Ctx).userId, reviewed_at: new Date().toISOString(),
+        status: "approved", before_url: current, reviewed_by: (context as { userId: string }).userId, reviewed_at: new Date().toISOString(),
       }).eq("id", r.id);
       await logAudit(admin, {
         product_id: r.product_id, product_name: r.product_name, action: "approve", field: r.field,
-        from_url: current, to_url: r.after_url, revision_id: r.id, actor: (context as Ctx).userId, note: r.method,
+        from_url: current, to_url: r.after_url, revision_id: r.id, actor: (context as { userId: string }).userId, note: r.method,
       });
       applied++;
     }
@@ -100,18 +92,18 @@ export const rejectRevisions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { ids: string[]; note?: string }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = (data.ids ?? []).slice(0, 200);
     if (!ids.length) return { rejected: 0 };
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids);
     for (const r of revs ?? []) {
       await admin.from("image_revisions").update({
-        status: "rejected", reviewed_by: (context as Ctx).userId, reviewed_at: new Date().toISOString(),
+        status: "rejected", reviewed_by: (context as { userId: string }).userId, reviewed_at: new Date().toISOString(),
         note: data.note ? data.note : r.note,
       }).eq("id", r.id);
       await logAudit(admin, {
         product_id: r.product_id, product_name: r.product_name, action: "reject", field: r.field,
-        from_url: r.before_url, to_url: r.after_url, revision_id: r.id, actor: (context as Ctx).userId, note: data.note ?? "",
+        from_url: r.before_url, to_url: r.after_url, revision_id: r.id, actor: (context as { userId: string }).userId, note: data.note ?? "",
       });
     }
     return { rejected: (revs ?? []).length };
@@ -122,7 +114,7 @@ export const rollbackRevisions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { ids: string[] }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const ids = (data.ids ?? []).slice(0, 200);
     if (!ids.length) return { restored: 0 };
     const { data: revs } = await admin.from("image_revisions").select("*").in("id", ids).eq("status", "approved");
@@ -131,11 +123,11 @@ export const rollbackRevisions = createServerFn({ method: "POST" })
       const col = FIELD_COL[r.field] ?? "image_url";
       await admin.from("products").update({ [col]: r.before_url }).eq("id", r.product_id);
       await admin.from("image_revisions").update({
-        status: "rolled_back", reviewed_by: (context as Ctx).userId, reviewed_at: new Date().toISOString(),
+        status: "rolled_back", reviewed_by: (context as { userId: string }).userId, reviewed_at: new Date().toISOString(),
       }).eq("id", r.id);
       await logAudit(admin, {
         product_id: r.product_id, product_name: r.product_name, action: "rollback", field: r.field,
-        from_url: r.after_url, to_url: r.before_url, revision_id: r.id, actor: (context as Ctx).userId, note: "রোলব্যাক",
+        from_url: r.after_url, to_url: r.before_url, revision_id: r.id, actor: (context as { userId: string }).userId, note: "রোলব্যাক",
       });
       restored++;
     }
@@ -147,7 +139,7 @@ export const listImageAudit = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { q?: string; action?: string; limit?: number; offset?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 40, 200);
     const offset = data.offset ?? 0;
     let q = admin.from("image_audit_log").select("*", { count: "exact" });
@@ -167,7 +159,7 @@ export const autoFetchAlternates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { limit?: number }) => d)
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = await adminClient(context as never);
     const limit = Math.min(data.limit ?? 20, 40);
     const { data: prods } = await admin
       .from("products").select("id,name,en,image_url")
@@ -204,7 +196,7 @@ export const autoFetchAlternates = createServerFn({ method: "POST" })
       });
       await logAudit(admin, {
         product_id: p.id, product_name: p.name, action: "fetch-alt", field: "box",
-        from_url: p.image_url, to_url: found, actor: (context as Ctx).userId, note: source,
+        from_url: p.image_url, to_url: found, actor: (context as { userId: string }).userId, note: source,
       });
       queued++;
     }

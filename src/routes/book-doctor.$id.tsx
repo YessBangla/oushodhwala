@@ -22,6 +22,7 @@ import {
   slotTimes,
   type CallMode,
 } from "@/lib/appointments";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/book-doctor/$id")({
   head: () => ({
@@ -105,6 +106,7 @@ function BookDoctor() {
       if (!user) throw new Error(t("বুকিং করতে লগইন করুন", "Please log in to book"));
       if (!time) throw new Error(t("সময় নির্বাচন করুন", "Select a time"));
       if (!name.trim() || !phone.trim()) throw new Error(t("নাম ও মোবাইল নম্বর দিন", "Enter name and mobile number"));
+      opsStart("appointment_booking", { doctorId: id, mode });
       if (payment !== "cod" && !payRef.trim()) throw new Error(t("পেমেন্ট ট্রানজেকশন আইডি দিন", "Enter payment transaction ID"));
       const { data, error } = await supabase.rpc("book_appointment", {
         _doctor_id: id,
@@ -117,6 +119,7 @@ function BookDoctor() {
         _payment_ref: payRef.trim(),
       });
       if (error) {
+        opsFailure("appointment_booking", error, { doctorId: id, mode });
         if (error.message.includes("SLOT_TAKEN")) throw new Error(t("এই সময়টি ইতিমধ্যে বুক হয়ে গেছে, অন্য সময় নিন", "This slot is already booked, please choose another time"));
         if (error.message.includes("PAST_SLOT")) throw new Error(t("অতীতের সময় নির্বাচন করা যাবে না", "You cannot select a past time"));
         throw error;
@@ -124,6 +127,7 @@ function BookDoctor() {
       return data as unknown as { id: string; invoice_no: string };
     },
     onSuccess: (appt) => {
+      opsSuccess("appointment_booking", appt.invoice_no, { appointmentId: appt.id, mode });
       toast.success(t(`অ্যাপয়েন্টমেন্ট নিশ্চিত — ইনভয়েস #${appt.invoice_no}`, `Appointment confirmed — Invoice #${appt.invoice_no}`));
       void navigate({ to: "/consultation/$id", params: { id: appt.id } });
     },

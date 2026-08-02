@@ -25,6 +25,7 @@ import {
   waNumber,
   type CallMode,
 } from "@/lib/appointments";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/consultation/$id")({
   head: () => ({
@@ -189,8 +190,13 @@ function CancelBox({
 
   const cancel = useMutation({
     mutationFn: async () => {
+      opsStart("appointment_cancel", { appointmentId: appt.id });
       const { error } = await supabase.rpc("cancel_appointment", { _appointment_id: appt.id, _reason: reason.trim() });
-      if (error) throw error;
+      if (error) {
+        opsFailure("appointment_cancel", error, { appointmentId: appt.id });
+        throw error;
+      }
+      opsSuccess("appointment_cancel", appt.id);
     },
     onSuccess: () => {
       toast.success(t("অ্যাপয়েন্টমেন্ট বাতিল হয়েছে", "Appointment cancelled"));
@@ -279,7 +285,11 @@ function RxBox({
       const { error } = rx
         ? await supabase.from("consultation_prescriptions").update(payload).eq("appointment_id", appointmentId)
         : await supabase.from("consultation_prescriptions").insert(payload);
-      if (error) throw error;
+      if (error) {
+        opsFailure("prescription_upload", error, { appointmentId, kind: "consultation_rx" });
+        throw error;
+      }
+      opsSuccess("prescription_upload", appointmentId, { kind: "consultation_rx" });
     },
     onSuccess: () => {
       toast.success(t("প্রেসক্রিপশন সংরক্ষণ হয়েছে", "Prescription saved"));

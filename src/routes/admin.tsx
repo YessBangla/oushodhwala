@@ -28,6 +28,7 @@ import { CampaignsAdmin } from "@/components/CampaignsAdmin";
 import { ReportsAdmin } from "@/components/ReportsAdmin";
 import { LoyaltyAdmin } from "@/components/LoyaltyAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
+import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 
 
@@ -281,8 +282,13 @@ function Orders() {
 
   const setStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      opsStart("order_status_change", { orderId: id, status });
       const { error } = await supabase.rpc("admin_set_order_status", { _order_id: id, _status: status });
-      if (error) throw error;
+      if (error) {
+        opsFailure("order_status_change", error, { orderId: id, status });
+        throw error;
+      }
+      opsSuccess("order_status_change", id, { status });
     },
     onSuccess: () => {
       toast.success("অর্ডার আপডেট হয়েছে — গ্রাহককে নোটিফিকেশন পাঠানো হয়েছে");
