@@ -119,8 +119,19 @@ const STATUS: Record<string, string> = {
 };
 
 function Admin() {
-  const { user, isAdmin, loading, refresh } = useAuth();
-  const [tab, setTab] = useState<TabId>("dash");
+  const { user, isAdmin, isStaff, roles, loading, refresh } = useAuth();
+  const allowed = useMemo(() => allowedTabs(roles), [roles]);
+  const visibleGroups = useMemo<AdminNavGroup[]>(() => {
+    if (allowed === "all") return NAV_GROUPS;
+    return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => allowed.has(i.id)) })).filter(
+      (g) => g.items.length > 0,
+    );
+  }, [allowed]);
+  const firstTab = (visibleGroups[0]?.items[0]?.id ?? "dash") as TabId;
+  const [tabState, setTab] = useState<TabId | null>(null);
+  const tab: TabId = tabState && (allowed === "all" || allowed.has(tabState)) ? tabState : firstTab;
+
+
 
   const { data: adminExists, refetch: refetchExists } = useQuery({
     queryKey: ["admin-exists"],
