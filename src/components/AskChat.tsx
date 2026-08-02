@@ -253,27 +253,19 @@ export function AskChat() {
           </p>
 
 
-          {!user ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-              <MessageCircle className="h-10 w-10 text-primary" />
-              <p className="text-sm font-semibold text-navy">{t("চ্যাট করতে লগইন করুন", "Sign in to chat")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t(
-                  "আপনার অর্ডার ও ঔষধ সম্পর্কিত সঠিক তথ্য দিতে লগইন প্রয়োজন।",
-                  "Sign in so we can answer about your orders and medicines."
-                )}
-              </p>
-              <Link
-                to="/auth"
-                onClick={() => setOpen(false)}
-                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
-              >
-                {t("লগইন / রেজিস্ট্রেশন", "Login / Register")}
+          {!user && (
+            <p className="border-b border-border bg-primary/5 px-3 py-1.5 text-[11px] text-muted-foreground">
+              {t("গেস্ট মোড — সাধারণ তথ্য পাবেন। অর্ডার/পয়েন্ট দেখতে ", "Guest mode — general info available. For orders/points ")}
+              <Link to="/auth" onClick={() => setOpen(false)} className="font-semibold text-primary underline">
+                {t("লগইন করুন", "sign in")}
               </Link>
-            </div>
-          ) : (
+            </p>
+          )}
+
+          {(
             <>
               <div ref={boxRef} className="flex-1 space-y-3 overflow-y-auto bg-background px-3 py-3">
+
                 {msgs.length === 0 && (
                   <div className="rounded-xl border border-border bg-card p-3">
                     <p className="text-[13px] font-semibold text-navy">
