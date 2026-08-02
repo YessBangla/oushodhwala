@@ -1,0 +1,21 @@
+{
+  "name": "ঔষধওয়ালা — Oushodhwala Online Pharmacy",
+  "short_name": "ঔষধওয়ালা",
+  "description": "বাংলাদেশের বিশ্বস্ত অনলাইন ফার্মেসি — ১০০% অরিজিনাল ঔষধ, ল্যাব টেস্ট, ডাক্তার পরামর্শ ও দ্রুত হোম ডেলিভারি।",
+  "lang": "bn",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f7a4f",
+  "categories": ["health", "medical", "shopping"],
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ],
+  "shortcuts": [
+    { "name": "প্রেসক্রিপশন আপলোড", "url": "/prescription" },
+    { "name": "ল্যাব টেস্ট", "url": "/lab-test" },
+    { "name": "আমার অর্ডার", "url": "/orders" }
+  ]
+}

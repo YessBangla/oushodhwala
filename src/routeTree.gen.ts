@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DoctorConsultationRouteImport } from './routes/doctor-consultation'
 import { Route as HelpRouteImport } from './routes/help'
@@ -86,6 +87,11 @@ const CategoriesRoute = CategoriesRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeliveryRoute = DeliveryRouteImport.update({
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
@@ -290,6 +298,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
+  '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/doctor-consultation': typeof DoctorConsultationRoute
   '/help': typeof HelpRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
     | '/delivery'
     | '/doctor-consultation'
     | '/help'
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
     | '/delivery'
     | '/doctor-consultation'
     | '/help'
@@ -397,6 +408,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/checkout'
+    | '/contact'
     | '/delivery'
     | '/doctor-consultation'
     | '/help'
@@ -433,6 +445,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
+  ContactRoute: typeof ContactRoute
   DeliveryRoute: typeof DeliveryRoute
   DoctorConsultationRoute: typeof DoctorConsultationRoute
   HelpRoute: typeof HelpRoute
@@ -522,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/delivery': {
@@ -705,6 +725,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
+  ContactRoute: ContactRoute,
   DeliveryRoute: DeliveryRoute,
   DoctorConsultationRoute: DoctorConsultationRoute,
   HelpRoute: HelpRoute,
