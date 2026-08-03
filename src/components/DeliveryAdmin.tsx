@@ -354,22 +354,39 @@ export function DeliveryAdmin() {
                       <td className="px-3 py-2 font-mono text-[11px]">{d?.otp ?? "—"}</td>
                       <td className="px-3 py-2">
                         {d && (
-                          <select
-                            value=""
-                            onChange={(e) => e.target.value && void force(d.id, e.target.value)}
-                            className="rounded-lg border border-border bg-card px-2 py-1 text-[11px]"
-                          >
-                            <option value="">অবস্থা বদলান</option>
-                            {["picked", "on_the_way", "arrived", "delivered", "failed"].map((s) => (
-                              <option key={s} value={s}>
-                                {DELIVERY_STATUS[s]?.bn ?? s}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex flex-col gap-1">
+                            <select
+                              value=""
+                              onChange={(e) => e.target.value && void force(d.id, e.target.value)}
+                              className="rounded-lg border border-border bg-card px-2 py-1 text-[11px]"
+                            >
+                              <option value="">অবস্থা বদলান</option>
+                              {["picked", "on_the_way", "arrived", "delivered", "failed"].map((s) => (
+                                <option key={s} value={s}>
+                                  {DELIVERY_STATUS[s]?.bn ?? s}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => setOpenRow(openRow === d.id ? "" : d.id)}
+                              className="flex items-center gap-1 text-[10px] font-semibold text-primary"
+                            >
+                              <MapIcon className="h-3 w-3" /> {openRow === d.id ? "বন্ধ করুন" : "ম্যাপ ও লিংক"}
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
+                    {d && openRow === d.id && (
+                      <tr className="border-t border-border bg-muted/40">
+                        <td colSpan={7} className="px-3 py-3">
+                          <DeliveryDetail delivery={d} />
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   );
+
                 })}
                 {list.length === 0 && (
                   <tr>
