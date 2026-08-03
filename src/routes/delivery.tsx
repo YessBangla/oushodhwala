@@ -583,6 +583,26 @@ function DeliveryPanel() {
                 >
                   {t("ঠিকানা কপি", "Copy address")}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void copyTrackLink(r.public_token);
+                    setCopied(r.id);
+                    setTimeout(() => setCopied(""), 2000);
+                  }}
+                  className="flex min-h-9 items-center gap-1 rounded-lg bg-muted px-2 font-semibold"
+                >
+                  <Share2 className="h-3 w-3 text-primary" />
+                  {copied === r.id ? t("লিংক কপি হয়েছে", "Link copied") : t("ট্র্যাকিং লিংক", "Tracking link")}
+                </button>
+                <a
+                  href={whatsappTrackLink(r.public_token, r.order_no)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-9 items-center rounded-lg bg-muted px-2 font-semibold"
+                >
+                  {t("লিংক পাঠান", "Send link")}
+                </a>
                 <span className="ml-auto font-display text-sm font-extrabold text-primary">{t.money(Number(r.orders?.total ?? 0))}</span>
               </div>
 
