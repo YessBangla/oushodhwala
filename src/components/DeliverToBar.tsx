@@ -123,7 +123,7 @@ export function DeliverToBar() {
             onClick={toggle}
             className="fixed inset-0 z-30 cursor-default bg-navy/20"
           />
-          <div className="absolute left-2 right-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card px-4 py-3 shadow-xl sm:left-4 sm:right-auto sm:w-[420px]">
+          <div className="fixed inset-x-3 top-24 z-40 max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card px-4 py-3 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]">
           <p className="text-[11px] font-bold text-navy">{t("ডেলিভারি ঠিকানা", "Delivery address")}</p>
           <ul className="mt-2 space-y-1.5">
             {addresses.map((a) => (

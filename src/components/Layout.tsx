@@ -95,7 +95,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
             <SearchBox className="order-3 col-span-3 lg:order-none lg:min-w-0 lg:flex-1" />
 
-            <div className="flex shrink-0 items-center gap-4">
+            <div className="flex shrink-0 items-center gap-3">
+              <DeliverToBar />
               <div
                 className="flex items-center rounded-full bg-muted p-0.5 text-[11px] font-bold"
                 role="group"
@@ -138,10 +139,6 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <DesktopMenu />
-
-
-        <DeliverToBar />
-
       </header>
 
       <main className="mx-auto max-w-7xl px-4">{children}</main>
