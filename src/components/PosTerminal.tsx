@@ -296,34 +296,53 @@ export function PosTerminal() {
         )}
 
 
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
           {isFetching && <p className="col-span-full text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
           {(results ?? []).map((p) => (
             <button
               key={p.id}
               onClick={() => add(p)}
-              className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-border bg-card p-2 text-left transition-colors hover:border-primary"
+              className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
             >
-              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg">
-                <ProductImage
-                  src={p.image_url || p.medicine_image_url}
-                  alt={p.name}
-                  emoji={p.emoji || "💊"}
-                  ratio="square"
-                  imgClassName="p-0.5"
-                  emojiClassName="text-lg"
-                />
+              <div className="relative bg-secondary/40 p-2">
+                <div className="mx-auto h-20 w-20 overflow-hidden rounded-xl bg-card">
+                  <ProductImage
+                    src={p.image_url || p.medicine_image_url}
+                    alt={p.name}
+                    emoji={p.emoji || "💊"}
+                    ratio="square"
+                    imgClassName="p-1"
+                    emojiClassName="text-2xl"
+                  />
+                </div>
+                <span className="absolute right-2 top-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                  {bn(p.stock)}
+                </span>
               </div>
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="truncate text-[11px] font-semibold leading-tight">{p.name}</p>
-                <p className="truncate text-[10px] text-muted-foreground">
-                  {p.pack} · স্টক {bn(p.stock)}
-                </p>
-                <p className="text-xs font-bold text-primary">৳{bn(p.price)}</p>
+              <div className="min-w-0 flex-1 space-y-1 border-t border-border p-2.5">
+                {p.category && (
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {cats.find((c) => c.slug === p.category)?.bn ?? p.category}
+                  </p>
+                )}
+                <p className="truncate text-xs font-bold leading-tight text-navy">{p.name}</p>
+                {p.brand && (
+                  <span className="inline-block max-w-full truncate rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-primary-dark">
+                    {p.brand}
+                  </span>
+                )}
+                <p className="truncate text-[10px] text-muted-foreground">{p.pack}</p>
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-sm font-extrabold text-primary">৳{bn(p.price)}</p>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-base font-bold leading-none text-primary-foreground transition-transform group-hover:scale-110">
+                    +
+                  </span>
+                </div>
               </div>
             </button>
           ))}
         </div>
+
 
 
         <div className="rounded-xl border border-border bg-card">
