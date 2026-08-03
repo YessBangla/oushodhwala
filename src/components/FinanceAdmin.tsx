@@ -653,6 +653,22 @@ export function Financials() {
   const revenue = Number(data?.online_sales ?? 0) + Number(data?.pos_sales ?? 0);
   const cost = Number(data?.purchases ?? 0) + Number(data?.expenses ?? 0) + Number(data?.refunds ?? 0);
 
+  const finCols = [
+    { key: "item", label: "বিবরণ" },
+    { key: "amount", label: "টাকা" },
+  ];
+  const finRows = [
+    { item: "অনলাইন বিক্রয়", amount: Number(data?.online_sales ?? 0) },
+    { item: "POS বিক্রয়", amount: Number(data?.pos_sales ?? 0) },
+    { item: "মোট ক্রয়", amount: Number(data?.purchases ?? 0) },
+    { item: "মোট খরচ", amount: Number(data?.expenses ?? 0) },
+    { item: "রিফান্ড", amount: Number(data?.refunds ?? 0) },
+    { item: "POS বাকি", amount: Number(data?.pos_due ?? 0) },
+    { item: "স্টকের মূল্য", amount: Number(data?.stock_value ?? 0) },
+    ...Object.entries(data?.expenses_by_cat ?? {}).map(([k, v]) => ({ item: `খরচ · ${catLabel(k)}`, amount: Number(v) })),
+    { item: "নিট লাভ/ক্ষতি", amount: revenue - cost },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -660,7 +676,14 @@ export function Financials() {
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
         <span className="text-xs text-muted-foreground">থেকে</span>
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
+        <button onClick={() => downloadCsv(`financials-${from}_${to}`, finCols, finRows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          CSV
+        </button>
+        <button onClick={() => printReport("ফিন্যান্সিয়ালস", `${from} — ${to}`, finCols, finRows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          PDF
+        </button>
       </div>
+
 
       {isLoading && <p className="text-xs text-muted-foreground">লোড হচ্ছে…</p>}
 
