@@ -305,24 +305,32 @@ export function PosTerminal() {
         )}
 
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {isFetching && <p className="text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+          {isFetching && <p className="col-span-full text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
           {(results ?? []).map((p) => (
             <button
               key={p.id}
               onClick={() => add(p)}
-              className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-left hover:border-primary"
+              className="group overflow-hidden rounded-xl border border-border bg-card text-left transition-colors hover:border-primary"
             >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold">{p.name}</span>
-                <span className="block text-[11px] text-muted-foreground">
+              <ProductImage
+                src={p.image_url || p.medicine_image_url}
+                alt={p.name}
+                emoji={p.emoji || "💊"}
+                ratio="square"
+                imgClassName="transition-transform group-hover:scale-105"
+              />
+              <div className="space-y-0.5 p-2">
+                <p className="truncate text-xs font-semibold leading-tight">{p.name}</p>
+                <p className="truncate text-[10px] text-muted-foreground">
                   {p.pack} · স্টক {bn(p.stock)}
-                </span>
-              </span>
-              <span className="shrink-0 text-sm font-bold text-primary">৳{bn(p.price)}</span>
+                </p>
+                <p className="text-sm font-bold text-primary">৳{bn(p.price)}</p>
+              </div>
             </button>
           ))}
         </div>
+
 
         <div className="rounded-xl border border-border bg-card">
           <p className="border-b border-border px-3 py-2 text-xs font-bold">কার্ট ({bn(lines.length)})</p>
