@@ -27,6 +27,7 @@ import { DeliverToBar } from "@/components/DeliverToBar";
 import { BackToTop } from "@/components/BackToTop";
 import { AskChat } from "@/components/AskChat";
 import { BrandLogo } from "@/components/BrandLogo";
+import { AccountMenu } from "@/components/AccountMenu";
 import { installErrorLogger } from "@/lib/error-log";
 
 
@@ -134,6 +135,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   </span>
                 )}
               </Link>
+              <AccountMenu />
             </div>
           </div>
         </div>

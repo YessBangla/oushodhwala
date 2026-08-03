@@ -32,6 +32,7 @@ import { Route as PrescriptionRouteImport } from './routes/prescription'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
@@ -159,6 +160,11 @@ const RefundPolicyRoute = RefundPolicyRouteImport.update({
   path: '/refund-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
@@ -312,6 +320,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
@@ -350,6 +359,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/products'
     | '/refund-policy'
+    | '/reset-password'
     | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/products'
     | '/refund-policy'
+    | '/reset-password'
     | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/products'
     | '/refund-policy'
+    | '/reset-password'
     | '/terms'
     | '/wishlist'
     | '/book-doctor/$id'
@@ -459,6 +471,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   WishlistRoute: typeof WishlistRoute
   BookDoctorIdRoute: typeof BookDoctorIdRoute
@@ -635,6 +648,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RefundPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -739,6 +759,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
   RefundPolicyRoute: RefundPolicyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   WishlistRoute: WishlistRoute,
   BookDoctorIdRoute: BookDoctorIdRoute,
