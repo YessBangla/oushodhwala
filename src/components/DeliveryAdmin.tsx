@@ -581,6 +581,7 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
   const qc = useQueryClient();
   const [zone, setZone] = useState("");
   const [count, setCount] = useState(1);
+  const [scenario, setScenario] = useState("mixed");
   const [busy, setBusy] = useState("");
 
   const zones = Array.from(new Set(riders.map((r) => r.zone).filter(Boolean)));
