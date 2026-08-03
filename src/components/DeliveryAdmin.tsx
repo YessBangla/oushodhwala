@@ -135,7 +135,27 @@ export function DeliveryAdmin() {
     };
   }, [qc]);
 
+  // স্ট্যাটাস বা ETA বদলালে অ্যাডমিনকে ব্রাউজার নোটিফিকেশন
+  const prevRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    const prev = prevRef.current;
+    const next = new Map<string, string>();
+    deliveries.forEach((d) => {
+      const key = `${d.status}|${d.eta_minutes}`;
+      next.set(d.id, key);
+      const old = prev.get(d.id);
+      if (prev.size > 0 && old && old !== key) {
+        notifyPush(
+          `#${d.order_no} — ${DELIVERY_STATUS[d.status]?.bn ?? d.status}`,
+          `ETA ${bn(d.eta_minutes)} মিনিট${d.riders?.name ? ` · ${d.riders.name}` : ""}`,
+        );
+      }
+    });
+    prevRef.current = next;
+  }, [deliveries]);
+
   const byOrder = useMemo(() => new Map(deliveries.map((d) => [d.order_id, d])), [deliveries]);
+
 
   const areaOf = (o: OrderRow) => (o.area || o.thana || (o.address ?? "").split(",")[0] || "").trim();
   const areas = Array.from(new Set(orders.map(areaOf).filter(Boolean))).sort();
