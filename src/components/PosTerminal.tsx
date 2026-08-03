@@ -4,9 +4,22 @@ import { toast } from "sonner";
 import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { ProductImage } from "@/components/ProductImage";
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
-type P = { id: string; name: string; en: string; price: number; stock: number; pack: string; category: string; brand: string };
+type P = {
+  id: string;
+  name: string;
+  en: string;
+  price: number;
+  stock: number;
+  pack: string;
+  category: string;
+  brand: string;
+  image_url?: string | null;
+  medicine_image_url?: string | null;
+  emoji?: string | null;
+};
 type Line = { product_id: string; product_name: string; price: number; qty: number };
 
 const METHODS = [
@@ -39,7 +52,7 @@ export function PosTerminal() {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("id,name,en,price,stock,pack,category,brand")
+        .select("id,name,en,price,stock,pack,category,brand,image_url,medicine_image_url,emoji")
         .eq("active", true);
       if (q.trim().length > 1) query = query.or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`);
       if (cat !== "all") query = query.eq("category", cat);
@@ -157,7 +170,7 @@ export function PosTerminal() {
     if (!c) return;
     const { data } = await supabase
       .from("products")
-      .select("id,name,en,price,stock,pack,category,brand")
+      .select("id,name,en,price,stock,pack,category,brand,image_url,medicine_image_url,emoji")
       .eq("active", true)
       .or(`id.eq.${/^[0-9a-f-]{36}$/i.test(c) ? c : "00000000-0000-0000-0000-000000000000"},name.ilike.%${c}%,en.ilike.%${c}%`)
       .limit(1);
@@ -243,27 +256,38 @@ export function PosTerminal() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setCat("all")}
-            className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${
-              cat === "all" ? "bg-primary text-primary-foreground" : "border border-border text-navy"
-            }`}
-          >
-            সব
-          </button>
-          {cats.map((c) => (
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">ক্যাটাগরি</p>
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
+              {cat === "all" ? "সব" : (cats.find((c) => c.slug === cat)?.bn ?? cat)} · {bn((results ?? []).length)} পণ্য
+            </span>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [scrollbar-width:thin]">
             <button
-              key={c.slug}
-              onClick={() => setCat(c.slug)}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${
-                cat === c.slug ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+              onClick={() => setCat("all")}
+              className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${
+                cat === "all" ? "bg-primary text-primary-foreground" : "border border-border text-navy hover:border-primary"
               }`}
             >
-              {c.bn}
+              সব
             </button>
-          ))}
+            {cats.map((c) => (
+              <button
+                key={c.slug}
+                onClick={() => setCat(c.slug)}
+                className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${
+                  cat === c.slug
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border text-navy hover:border-primary"
+                }`}
+              >
+                {c.bn}
+              </button>
+            ))}
+          </div>
         </div>
+
 
         {held.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-2">
@@ -281,24 +305,32 @@ export function PosTerminal() {
         )}
 
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {isFetching && <p className="text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+          {isFetching && <p className="col-span-full text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
           {(results ?? []).map((p) => (
             <button
               key={p.id}
               onClick={() => add(p)}
-              className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-left hover:border-primary"
+              className="group overflow-hidden rounded-xl border border-border bg-card text-left transition-colors hover:border-primary"
             >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold">{p.name}</span>
-                <span className="block text-[11px] text-muted-foreground">
+              <ProductImage
+                src={p.image_url || p.medicine_image_url}
+                alt={p.name}
+                emoji={p.emoji || "💊"}
+                ratio="square"
+                imgClassName="transition-transform group-hover:scale-105"
+              />
+              <div className="space-y-0.5 p-2">
+                <p className="truncate text-xs font-semibold leading-tight">{p.name}</p>
+                <p className="truncate text-[10px] text-muted-foreground">
                   {p.pack} · স্টক {bn(p.stock)}
-                </span>
-              </span>
-              <span className="shrink-0 text-sm font-bold text-primary">৳{bn(p.price)}</span>
+                </p>
+                <p className="text-sm font-bold text-primary">৳{bn(p.price)}</p>
+              </div>
             </button>
           ))}
         </div>
+
 
         <div className="rounded-xl border border-border bg-card">
           <p className="border-b border-border px-3 py-2 text-xs font-bold">কার্ট ({bn(lines.length)})</p>
