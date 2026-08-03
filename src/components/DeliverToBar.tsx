@@ -249,7 +249,8 @@ export function DeliverToBar() {
               )}
             </div>
           )}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
