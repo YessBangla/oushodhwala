@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2, Navigation } from "lucide-react";
+import { Bike, MapPin, RefreshCw, Phone, Camera, CheckCircle2, Navigation, Search, Share2, Wifi } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
 import { SignaturePad } from "@/components/SignaturePad";
 import { uploadFile, safeName } from "@/lib/storage";
+import { copyTrackLink, whatsappTrackLink } from "@/lib/track-link";
 
 
 export const Route = createFileRoute("/delivery")({
@@ -35,7 +36,17 @@ type Row = {
   eta_minutes: number;
   note: string;
   created_at: string;
-  orders: { customer_name: string; phone: string; address: string; total: number; payment_method: string; payment_status: string } | null;
+  public_token: string;
+  orders: {
+    customer_name: string;
+    phone: string;
+    address: string;
+    area: string;
+    thana: string;
+    total: number;
+    payment_method: string;
+    payment_status: string;
+  } | null;
 };
 
 const NEXT: Record<string, string[]> = {
@@ -55,6 +66,12 @@ function DeliveryPanel() {
   const [sharing, setSharing] = useState(false);
   const [lastPing, setLastPing] = useState<string>("");
   const [perm, setPerm] = useState<"unknown" | "granted" | "denied" | "prompt" | "unsupported">("unknown");
+  const [live, setLive] = useState(false);
+  const [q, setQ] = useState("");
+  const [fStatus, setFStatus] = useState("all");
+  const [fArea, setFArea] = useState("all");
+  const [fPriority, setFPriority] = useState<"all" | "urgent" | "cod">("all");
+  const [copied, setCopied] = useState("");
 
   // লোকেশন পারমিশনের অবস্থা
   useEffect(() => {
@@ -89,13 +106,18 @@ function DeliveryPanel() {
     },
   });
 
-  const { data: rows = [], refetch } = useQuery({
+  const { data: rows = [], refetch, dataUpdatedAt } = useQuery({
     queryKey: ["rider-deliveries", rider?.id],
     enabled: !!rider,
+    // পোলিং — WebSocket বন্ধ থাকলেও প্রতি ১৫ সেকেন্ডে স্ট্যাটাস/ETA আপডেট হবে
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deliveries")
-        .select("id, order_no, status, otp, eta_minutes, note, created_at, orders(customer_name, phone, address, total, payment_method, payment_status)")
+        .select(
+          "id, order_no, status, otp, eta_minutes, note, created_at, public_token, orders(customer_name, phone, address, area, thana, total, payment_method, payment_status)",
+        )
         .eq("rider_id", rider!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -108,8 +130,10 @@ function DeliveryPanel() {
     const ch = supabase
       .channel("rider-deliveries")
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, () => void refetch())
-      .subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "delivery_events" }, () => void refetch())
+      .subscribe((s) => setLive(s === "SUBSCRIBED"));
     return () => {
+      setLive(false);
       void supabase.removeChannel(ch);
     };
   }, [rider, refetch]);
@@ -247,18 +271,43 @@ function DeliveryPanel() {
     );
   }
 
-  const active = rows.filter((r) => !["delivered", "failed"].includes(r.status));
-  const past = rows.filter((r) => ["delivered", "failed"].includes(r.status));
+  const areaOf = (r: Row) => (r.orders?.area || r.orders?.thana || (r.orders?.address ?? "").split(",")[0] || "").trim();
+  const areas = Array.from(new Set(rows.map(areaOf).filter(Boolean))).sort();
 
-  // আজকের পরিসংখ্যান
+  // অগ্রাধিকার — পৌঁছে গেছে/পথে আছে অথবা ETA ≤ ২০ মিনিট হলে জরুরি
+  const isUrgent = (r: Row) => ["arrived", "on_the_way"].includes(r.status) || Number(r.eta_minutes) <= 20;
+  const isCod = (r: Row) => r.orders?.payment_method === "cod" && r.orders?.payment_status !== "paid";
+
+  const term = q.trim().toLowerCase();
+  const match = (r: Row) => {
+    if (term) {
+      const hay = [r.order_no, r.orders?.customer_name, r.orders?.phone, r.orders?.address, areaOf(r)]
+        .join(" ")
+        .toLowerCase();
+      if (!hay.includes(term)) return false;
+    }
+    if (fStatus !== "all" && r.status !== fStatus) return false;
+    if (fArea !== "all" && areaOf(r) !== fArea) return false;
+    if (fPriority === "urgent" && !isUrgent(r)) return false;
+    if (fPriority === "cod" && !isCod(r)) return false;
+    return true;
+  };
+
+  const allActive = rows.filter((r) => !["delivered", "failed"].includes(r.status));
+  const active = allActive.filter(match);
+  const allPast = rows.filter((r) => ["delivered", "failed"].includes(r.status));
+  const past = allPast.filter(match);
+  const filtering = term !== "" || fStatus !== "all" || fArea !== "all" || fPriority !== "all";
+
+  // আজকের পরিসংখ্যান — সবসময় পূর্ণ তালিকার ভিত্তিতে
   const today = new Date().toDateString();
   const isToday = (iso: string) => new Date(iso).toDateString() === today;
-  const doneToday = past.filter((r) => r.status === "delivered" && isToday(r.created_at)).length;
-  const failedToday = past.filter((r) => r.status === "failed" && isToday(r.created_at)).length;
-  const codDue = active
+  const doneToday = allPast.filter((r) => r.status === "delivered" && isToday(r.created_at)).length;
+  const failedToday = allPast.filter((r) => r.status === "failed" && isToday(r.created_at)).length;
+  const codDue = allActive
     .filter((r) => r.orders?.payment_method === "cod" && r.orders?.payment_status !== "paid")
     .reduce((s, r) => s + Number(r.orders?.total ?? 0), 0);
-  const collectedToday = past
+  const collectedToday = allPast
     .filter((r) => r.status === "delivered" && isToday(r.created_at) && r.orders?.payment_method === "cod")
     .reduce((s, r) => s + Number(r.orders?.total ?? 0), 0);
 
@@ -267,7 +316,7 @@ function DeliveryPanel() {
   const activeSorted = [...active].sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
 
   const stats: { label: string; value: string; tone: string }[] = [
-    { label: t("চলমান", "Active"), value: t.n(active.length), tone: "text-primary" },
+    { label: t("চলমান", "Active"), value: t.n(allActive.length), tone: "text-primary" },
     { label: t("আজ সম্পন্ন", "Done today"), value: t.n(doneToday), tone: "text-primary-dark" },
     { label: t("সংগ্রহ বাকি (COD)", "COD to collect"), value: t.money(codDue), tone: "text-navy" },
     { label: t("আজ সংগৃহীত", "Collected today"), value: t.money(collectedToday), tone: "text-navy" },
@@ -294,6 +343,20 @@ function DeliveryPanel() {
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
+
+      {/* লাইভ সিঙ্ক অবস্থা */}
+      <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
+        <Wifi className={`h-3.5 w-3.5 ${live ? "text-primary" : "text-muted-foreground"}`} />
+        {live
+          ? t("লাইভ সিঙ্ক চালু (রিয়েল-টাইম)", "Live sync on (real-time)")
+          : t("লাইভ সিঙ্ক: প্রতি ১৫ সেকেন্ডে রিফ্রেশ", "Live sync: refreshing every 15s")}
+        {dataUpdatedAt > 0 && (
+          <span>
+            · {t("সর্বশেষ আপডেট", "Last update")}: {fmtTime(new Date(dataUpdatedAt).toISOString(), t.en)}
+          </span>
+        )}
+      </p>
+
 
       {/* আজকের সারাংশ */}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -382,14 +445,82 @@ function DeliveryPanel() {
 
       {err && <p className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-[11px] font-semibold text-destructive">{err}</p>}
 
+      {/* ফিল্টার ও সার্চ */}
+      <div className="mt-4 rounded-2xl border border-border bg-card p-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("অর্ডার নম্বর, গ্রাহক, ফোন বা ঠিকানা খুঁজুন", "Search order no, customer, phone or address")}
+            className="min-h-11 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+          <select
+            value={fStatus}
+            onChange={(e) => setFStatus(e.target.value)}
+            className="min-h-9 rounded-lg border border-border bg-card px-2 font-semibold"
+            aria-label={t("অবস্থা", "Status")}
+          >
+            <option value="all">{t("সব অবস্থা", "All statuses")}</option>
+            {["assigned", "picked", "on_the_way", "arrived", "delivered", "failed"].map((s) => (
+              <option key={s} value={s}>
+                {t(DELIVERY_STATUS[s]?.bn ?? s, DELIVERY_STATUS[s]?.en ?? s)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={fArea}
+            onChange={(e) => setFArea(e.target.value)}
+            className="min-h-9 rounded-lg border border-border bg-card px-2 font-semibold"
+            aria-label={t("এলাকা", "Area")}
+          >
+            <option value="all">{t("সব এলাকা", "All areas")}</option>
+            {areas.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+          <select
+            value={fPriority}
+            onChange={(e) => setFPriority(e.target.value as "all" | "urgent" | "cod")}
+            className="min-h-9 rounded-lg border border-border bg-card px-2 font-semibold"
+            aria-label={t("অগ্রাধিকার", "Priority")}
+          >
+            <option value="all">{t("সব অগ্রাধিকার", "All priorities")}</option>
+            <option value="urgent">{t("জরুরি (ETA ≤ ২০ মিনিট / পথে)", "Urgent (ETA ≤ 20 min / en route)")}</option>
+            <option value="cod">{t("ক্যাশ সংগ্রহ বাকি", "Cash to collect")}</option>
+          </select>
+          {filtering && (
+            <button
+              onClick={() => {
+                setQ("");
+                setFStatus("all");
+                setFArea("all");
+                setFPriority("all");
+              }}
+              className="min-h-9 rounded-lg bg-muted px-3 font-bold text-navy"
+            >
+              {t("ফিল্টার মুছুন", "Clear filters")}
+            </button>
+          )}
+        </div>
+      </div>
+
       <h2 className="mt-5 text-sm font-bold text-navy">
-        {t("চলমান ডেলিভারি", "Active deliveries")} ({t.n(active.length)})
+        {t("চলমান ডেলিভারি", "Active deliveries")} ({t.n(active.length)}
+        {filtering ? `/${t.n(allActive.length)}` : ""})
       </h2>
       {active.length === 0 && (
         <p className="mt-2 rounded-2xl border border-dashed border-border bg-card p-6 text-center text-xs text-muted-foreground">
-          {t("এখন কোনো ডেলিভারি নেই। নতুন অর্ডার এলে এখানে দেখাবে।", "No active delivery right now. New assignments appear here.")}
+          {filtering
+            ? t("এই ফিল্টারে কোনো ডেলিভারি নেই।", "No deliveries match these filters.")
+            : t("এখন কোনো ডেলিভারি নেই। নতুন অর্ডার এলে এখানে দেখাবে।", "No active delivery right now. New assignments appear here.")}
         </p>
       )}
+
 
       <ul className="mt-2 space-y-3">
         {activeSorted.map((r, i) => {

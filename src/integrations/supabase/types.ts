@@ -486,6 +486,7 @@ export type Database = {
           pod_photo_url: string
           pod_receiver_name: string
           pod_signature_url: string
+          public_token: string
           rider_id: string | null
           status: string
           updated_at: string
@@ -509,6 +510,7 @@ export type Database = {
           pod_photo_url?: string
           pod_receiver_name?: string
           pod_signature_url?: string
+          public_token?: string
           rider_id?: string | null
           status?: string
           updated_at?: string
@@ -532,6 +534,7 @@ export type Database = {
           pod_photo_url?: string
           pod_receiver_name?: string
           pod_signature_url?: string
+          public_token?: string
           rider_id?: string | null
           status?: string
           updated_at?: string
@@ -2529,6 +2532,7 @@ export type Database = {
           pod_photo_url: string
           pod_receiver_name: string
           pod_signature_url: string
+          public_token: string
           rider_id: string | null
           status: string
           updated_at: string
@@ -3015,6 +3019,41 @@ export type Database = {
         Returns: boolean
       }
       claim_first_admin: { Args: never; Returns: boolean }
+      demo_cancel_delivery: { Args: { _delivery_id: string }; Returns: boolean }
+      demo_reset_deliveries: { Args: never; Returns: number }
+      demo_seed_delivery: {
+        Args: { _zone?: string }
+        Returns: {
+          assigned_at: string | null
+          created_at: string
+          delivered_at: string | null
+          eta_minutes: number
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          note: string
+          order_id: string
+          order_no: string
+          otp: string
+          picked_at: string | null
+          pod_at: string | null
+          pod_photo_url: string
+          pod_receiver_name: string
+          pod_signature_url: string
+          public_token: string
+          rider_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       doctor_taken_slots: {
         Args: { _doctor_id: string; _from: string; _to: string }
         Returns: {
@@ -3162,6 +3201,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      public_track: { Args: { _token: string }; Returns: Json }
       queue_appointment_reminders: {
         Args: { _within_hours?: number }
         Returns: number
@@ -3216,6 +3256,7 @@ export type Database = {
               pod_photo_url: string
               pod_receiver_name: string
               pod_signature_url: string
+              public_token: string
               rider_id: string | null
               status: string
               updated_at: string
@@ -3258,6 +3299,7 @@ export type Database = {
               pod_photo_url: string
               pod_receiver_name: string
               pod_signature_url: string
+              public_token: string
               rider_id: string | null
               status: string
               updated_at: string
