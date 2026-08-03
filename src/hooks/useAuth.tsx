@@ -34,6 +34,9 @@ type AuthCtx = {
   isStaff: boolean;
   hasRole: (r: AppRole) => boolean;
   loading: boolean;
+  /** সেশনের মেয়াদ শেষ হয়ে স্বয়ংক্রিয় লগআউট হয়েছে কিনা */
+  expired: boolean;
+  clearExpired: () => void;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -45,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expired, setExpired] = useState(false);
 
   const loadMeta = async (uid: string | undefined) => {
     if (!uid) {
@@ -69,6 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === "SIGNED_OUT") {
         setProfile(null);
         setRoles([]);
+      } else if (event === "TOKEN_REFRESHED") {
+        /* সেশন রিফ্রেশ — মেটা পুনরায় লোডের দরকার নেই */
       } else {
         void loadMeta(s?.user.id);
       }
@@ -85,6 +91,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /** সেশনের মেয়াদ শেষ হলে স্বয়ংক্রিয় লগআউট — বাসি টোকেন নিয়ে ব্যর্থ রিকোয়েস্ট ঠেকায় */
+  useEffect(() => {
+    if (!session?.expires_at) return;
+    const ms = session.expires_at * 1000 - Date.now();
+    if (ms <= 0) {
+      setExpired(true);
+      void supabase.auth.signOut();
+      return;
+    }
+    const id = window.setTimeout(() => {
+      void supabase.auth.getSession().then(({ data }) => {
+        // রিফ্রেশ ব্যর্থ হলে সেশন থাকবে না — তখনই লগআউট বার্তা
+        if (!data.session) {
+          setExpired(true);
+          void supabase.auth.signOut();
+        }
+      });
+    }, ms + 1000);
+    return () => window.clearTimeout(id);
+  }, [session?.expires_at]);
+
+  // ট্যাব আবার সক্রিয় হলে সেশন যাচাই
+  useEffect(() => {
+    const onFocus = () => {
+      void supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
+
   const hasRole = (r: AppRole) => roles.includes(r);
   const isSuperAdmin = hasRole("super_admin");
   const isAdmin = isSuperAdmin || hasRole("admin");
@@ -100,12 +137,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isStaff,
     hasRole,
     loading,
+    expired,
+    clearExpired: () => setExpired(false),
     refresh: async () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
       await loadMeta(data.session?.user.id);
     },
     signOut: async () => {
+      setExpired(false);
       await supabase.auth.signOut();
       setProfile(null);
       setRoles([]);

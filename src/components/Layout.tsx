@@ -143,6 +143,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 )}
               </Link>
               <AccountMenu />
+              <AccountMenu variant="mobile" />
             </div>
           </div>
         </div>

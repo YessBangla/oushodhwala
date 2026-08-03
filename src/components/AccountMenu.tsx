@@ -5,14 +5,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useDismissable, menuKeyNav } from "@/hooks/useDismissable";
 
-/** হেডারের ডানপাশে কর্পোরেট অ্যাকাউন্ট/লগইন কন্ট্রোল (ডেস্কটপ) */
-export function AccountMenu() {
+/** হেডারের ডানপাশে কর্পোরেট অ্যাকাউন্ট/লগইন কন্ট্রোল (ডেস্কটপ ও মোবাইল) */
+export function AccountMenu({ variant = "desktop" }: { variant?: "desktop" | "mobile" }) {
   const { user, profile, isStaff, signOut, loading } = useAuth();
   const t = useT();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const { ref, triggerRef } = useDismissable<HTMLDivElement>(open, close);
+  const mobile = variant === "mobile";
+  const shell = mobile ? "lg:hidden" : "hidden lg:block";
 
   // খুললে প্রথম মেনু আইটেমে ফোকাস
   useEffect(() => {
@@ -24,11 +26,25 @@ export function AccountMenu() {
   }, [open, ref]);
 
   if (loading) {
-    return <div className="hidden h-9 w-24 animate-pulse rounded-full bg-muted lg:block" aria-hidden />;
+    return (
+      <div
+        className={`${mobile ? "h-11 w-11 lg:hidden" : "hidden h-9 w-24 lg:block"} animate-pulse rounded-full bg-muted`}
+        aria-hidden
+      />
+    );
   }
 
   if (!user) {
-    return (
+    return mobile ? (
+      <Link
+        to="/auth"
+        aria-label={t("লগইন", "Log in")}
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
+      >
+        <LogIn className="h-4 w-4" />
+        <span className="hidden sm:inline">{t("লগইন", "Log in")}</span>
+      </Link>
+    ) : (
       <Link
         to="/auth"
         className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:inline-flex"
@@ -43,7 +59,8 @@ export function AccountMenu() {
     "flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-navy outline-none hover:bg-secondary focus-visible:bg-secondary focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
-    <div className="relative hidden lg:block" ref={ref} onKeyDown={(e) => menuKeyNav(ref.current, e)}>
+    <div className={`relative ${shell}`} ref={ref} onKeyDown={(e) => menuKeyNav(ref.current, e)}>
+
       <button
         ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
@@ -55,13 +72,19 @@ export function AccountMenu() {
         }}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex max-w-[10rem] items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-xs font-semibold text-navy transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        aria-label={mobile ? t("একাউন্ট মেনু", "Account menu") : undefined}
+        className={
+          mobile
+            ? "flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            : "flex max-w-[10rem] items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-xs font-semibold text-navy transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        }
       >
         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
           {label.charAt(0).toUpperCase()}
         </span>
-        <span className="truncate">{label}</span>
-        <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
+        {!mobile && <span className="truncate">{label}</span>}
+        {!mobile && <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />}
+
       </button>
 
       {open && (
