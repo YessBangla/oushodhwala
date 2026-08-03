@@ -117,9 +117,9 @@ function ResetPasswordPage() {
         kind: "error",
         text:
           gate.reason === "cooldown"
-            ? t(`আবার পাঠাতে ${t.n(gate.secondsLeft)} সেকেন্ড অপেক্ষা করুন।`, `Please wait ${gate.secondsLeft}s before requesting again.`)
+            ? t(`আবার পাঠাতে ${gate.secondsLeft} সেকেন্ড অপেক্ষা করুন।`, `Please wait ${gate.secondsLeft}s before requesting again.`)
             : t(
-                `ঘণ্টায় সর্বোচ্চ ${t.n(MAX_PER_WINDOW)} বার চেষ্টা করা যায়। ${t.n(gate.minutesLeft)} মিনিট পরে আবার চেষ্টা করুন।`,
+                `ঘণ্টায় সর্বোচ্চ ${MAX_PER_WINDOW} বার চেষ্টা করা যায়। ${gate.minutesLeft} মিনিট পরে আবার চেষ্টা করুন।`,
                 `Limit is ${MAX_PER_WINDOW} requests per hour. Try again in ${gate.minutesLeft} minutes.`,
               ),
       });
@@ -263,12 +263,12 @@ function ResetPasswordPage() {
           >
             <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
             {left > 0
-              ? t(`আবার পাঠান (${t.n(left)}s)`, `Resend (${left}s)`)
+              ? t(`আবার পাঠান (${left}s)`, `Resend (${left}s)`)
               : t("নতুন রিসেট লিংক পাঠান", "Send a new reset link")}
           </button>
           <p className="mt-2 text-[10px] text-muted-foreground">
             {t(
-              `নিরাপত্তার জন্য ঘণ্টায় সর্বোচ্চ ${t.n(MAX_PER_WINDOW)} বার লিংক পাঠানো যায়।`,
+              `নিরাপত্তার জন্য ঘণ্টায় সর্বোচ্চ ${MAX_PER_WINDOW} বার লিংক পাঠানো যায়।`,
               `For security, at most ${MAX_PER_WINDOW} link requests are allowed per hour.`,
             )}
           </p>
