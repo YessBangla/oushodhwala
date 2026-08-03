@@ -144,7 +144,7 @@ function PublicTrack() {
     data.path && data.path.length > 0
       ? data.path
       : data.last_lat != null && data.last_lng != null
-        ? [{ lat: Number(data.last_lat), lng: Number(data.last_lng), at: data.last_seen_at }]
+        ? [{ lat: Number(data.last_lat), lng: Number(data.last_lng), at: data.last_seen_at ?? null }]
         : [];
 
   const exportPdf = () =>
