@@ -199,9 +199,9 @@ export function AdminShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-background p-4 lg:p-6">
-          <div className="mx-auto max-w-7xl">
-            <h1 className="mb-4 text-xl font-black tracking-tight">{title}</h1>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background p-3 sm:p-4 lg:p-6">
+          <div className="mx-auto w-full min-w-0 max-w-[1600px]">
+            <h1 className="mb-4 truncate text-lg font-black tracking-tight sm:text-xl">{title}</h1>
             {children}
           </div>
         </main>
