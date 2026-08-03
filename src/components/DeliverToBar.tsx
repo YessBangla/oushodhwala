@@ -25,7 +25,7 @@ type LiveDelivery = {
 };
 
 /** হেডারের "ডেলিভারি" বার — হাইড/আনহাইড প্যানেলসহ, লগইন ছাড়াই ঠিকানা বদলানো যায় */
-export function DeliverToBar() {
+export function DeliverToBar({ full = false }: { full?: boolean }) {
   const t = useT();
   const navigate = useNavigate();
   const { addresses, activeAddress, setActiveAddress, addAddress, removeAddress } = useStore();
