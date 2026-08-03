@@ -519,22 +519,24 @@ function DeliveryPanel() {
             )}
 
 
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(NEXT[r.status] ?? []).map((s) => (
-                <button
-                  key={s}
-                  disabled={busy === r.id + s}
-                  onClick={() => void update(r, s)}
-                  className={`rounded-lg px-3 py-2 text-[11px] font-bold disabled:opacity-60 ${
-                    s === "failed" ? "bg-destructive/10 text-destructive" : "bg-primary text-primary-foreground"
-                  }`}
-                >
-                  {t(DELIVERY_STATUS[s]?.bn ?? s, DELIVERY_STATUS[s]?.en ?? s)}
-                </button>
-              ))}
-            </div>
-          </li>
-        ))}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(NEXT[r.status] ?? []).map((s) => (
+                  <button
+                    key={s}
+                    disabled={busy === r.id + s}
+                    onClick={() => void update(r, s)}
+                    className={`min-h-11 rounded-lg px-3 text-[11px] font-bold disabled:opacity-60 ${
+                      s === "failed" ? "bg-destructive/10 text-destructive" : "bg-primary text-primary-foreground"
+                    }`}
+                  >
+                    {t(DELIVERY_STATUS[s]?.bn ?? s, DELIVERY_STATUS[s]?.en ?? s)}
+                  </button>
+                ))}
+              </div>
+            </li>
+          );
+        })}
+
       </ul>
 
       {past.length > 0 && (
