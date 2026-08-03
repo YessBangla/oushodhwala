@@ -9,7 +9,7 @@ export type IntegrationRow = {
   sender_id: string;
   note: string;
   active: boolean;
-  config: Record<string, unknown>;
+  config_text: string;
   has_key: boolean;
   has_secret: boolean;
   last_ok: boolean | null;
@@ -28,7 +28,7 @@ export function maskRow(r: Record<string, unknown>): IntegrationRow {
     sender_id: String(r["sender_id"] ?? ""),
     note: String(r["note"] ?? ""),
     active: Boolean(r["active"]),
-    config: (r["config"] as Record<string, unknown>) ?? {},
+    config_text: JSON.stringify(r["config"] ?? {}, null, 2),
     has_key: Boolean(String(r["api_key"] ?? "")),
     has_secret: Boolean(String(r["api_secret"] ?? "")),
     last_ok: (r["last_ok"] as boolean | null) ?? null,
