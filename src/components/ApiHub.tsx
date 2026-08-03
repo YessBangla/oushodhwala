@@ -285,6 +285,28 @@ export function ApiHub() {
         ))}
       </div>
 
+      {/* ট্যাব — ইন্টিগ্রেশন ক্রেডেনশিয়াল বনাম এন্ডপয়েন্ট টেস্টার */}
+      <div className="flex flex-wrap gap-1.5 rounded-xl border border-border bg-card p-1.5">
+        {[
+          ["integrations", "ইন্টিগ্রেশন ও কী"],
+          ["endpoints", "এন্ডপয়েন্ট টেস্টার"],
+        ].map(([id, t]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id as "integrations" | "endpoints")}
+            className={`rounded-lg px-4 py-2 text-xs font-bold ${
+              tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {tab === "integrations" && <ApiIntegrations />}
+
+      {tab === "endpoints" && (
+      <>
       {/* এনভায়রনমেন্ট সুইচ */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap items-center gap-2">
