@@ -293,7 +293,7 @@ export function DeliveryZonesAdmin() {
   });
 
   const save = useMutation({
-    mutationFn: async (v: { id: string; patch: Record<string, unknown> }) => {
+    mutationFn: async (v: { id: string; patch: { fee?: number; express_fee?: number; free_above?: number; eta_minutes?: number; active?: boolean } }) => {
       const { error } = await supabase.from("delivery_zones").update(v.patch).eq("id", v.id);
       if (error) throw error;
     },
@@ -346,7 +346,7 @@ export function DeliveryZonesAdmin() {
                     <input
                       type="number"
                       defaultValue={Number(z[k])}
-                      onBlur={(e) => save.mutate({ id: z.id, patch: { [k]: Number(e.target.value) } })}
+                      onBlur={(e) => save.mutate({ id: z.id, patch: { [k]: Number(e.target.value) } as { fee?: number } })}
                       className="h-9 w-20 rounded-lg border border-border bg-background px-2 text-right"
                     />
                   </td>
