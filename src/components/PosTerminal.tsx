@@ -320,6 +320,7 @@ export function PosTerminal() {
                   emoji={p.emoji || "💊"}
                   ratio="square"
                   imgClassName="p-0.5"
+                  emojiClassName="text-lg"
                 />
               </div>
               <div className="min-w-0 flex-1 space-y-0.5">
