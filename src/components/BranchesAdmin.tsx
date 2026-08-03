@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Store, ArrowLeftRight, Search, Trash2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { downloadCsv, printReport } from "@/lib/erp-report";
+
 
 /* ---------------- ব্রাঞ্চ ---------------- */
 export function BranchesAdmin() {
