@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle } from "lucide-react";
+import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle, ChevronsUpDown, Check, Clock, SlidersHorizontal, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { ProductImage } from "@/components/ProductImage";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
