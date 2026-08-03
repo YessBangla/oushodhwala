@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, Clock, TrendingUp, Loader2, CornerDownLeft, HomeIcon } from "lucide-react";
+import { Search, X, Clock, TrendingUp, Loader2, CornerDownLeft, HomeIcon, RefreshCw } from "lucide-react";
 import { searchProducts } from "@/lib/catalog.functions";
 import { ProductImage } from "@/components/ProductImage";
 import { useLang, pick } from "@/lib/lang";
@@ -85,12 +85,14 @@ export function SearchBox({ className = "" }: { className?: string }) {
   const { categories } = useCatalog();
 
   const enabled = debounced.length >= 2;
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError, refetch } = useQuery({
     queryKey: ["search-suggest", debounced],
     queryFn: () => searchProducts({ data: { q: debounced, limit: 10 } }),
     enabled: enabled && scope !== "service",
     staleTime: 60_000,
+    retry: 1,
   });
+  const showSkeleton = isFetching && !data;
 
   const rows = useMemo(() => {
     if (!enabled || scope === "service") return [];
@@ -212,7 +214,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
           goSearch(q);
         }}
         role="search"
-        className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2.5 focus-within:border-primary focus-within:bg-card"
+        className="flex items-center gap-2 rounded-full border border-border bg-muted py-1.5 pl-3.5 pr-1.5 shadow-sm transition focus-within:border-primary focus-within:bg-card focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_18%,transparent)] sm:gap-2.5"
       >
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
@@ -230,12 +232,15 @@ export function SearchBox({ className = "" }: { className?: string }) {
           aria-controls="search-suggestions"
           aria-activedescendant={active >= 0 ? `search-opt-${active}` : undefined}
           aria-autocomplete="list"
-
-          className="w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          enterKeyHint="search"
+          className="h-9 w-full min-w-0 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground sm:text-sm"
           placeholder={en ? "Search medicine, brand or generic..." : "ঔষধ, ব্র্যান্ড বা জেনেরিক খুঁজুন..."}
           aria-label={en ? "Search" : "সার্চ"}
         />
-        {isFetching && enabled && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />}
+        {isFetching && enabled && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />}
+        <span className="sr-only" role="status" aria-live="polite">
+          {enabled && isFetching ? (en ? "Searching" : "খোঁজা হচ্ছে") : ""}
+        </span>
         {q && (
           <button
             type="button"
@@ -245,14 +250,14 @@ export function SearchBox({ className = "" }: { className?: string }) {
               inputRef.current?.focus();
             }}
             aria-label={en ? "Clear" : "মুছুন"}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
         )}
         <button
           type="submit"
-          className="hidden shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground sm:block"
+          className="hidden h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground transition hover:opacity-90 sm:block"
         >
           {en ? "Search" : "খুঁজুন"}
         </button>
@@ -263,7 +268,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
           ref={listRef}
           id="search-suggestions"
           role="listbox"
-          className="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elevated)]"
+          className="absolute inset-x-0 top-full z-50 mt-2 max-h-[65vh] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-elevated)]"
         >
           <div className="mb-1.5 flex gap-1.5 px-1">
             {(
@@ -371,8 +376,33 @@ export function SearchBox({ className = "" }: { className?: string }) {
                   </button>
                 )}
               </>
+            ) : isError && scope !== "service" ? (
+              <div className="px-3 py-6 text-center">
+                <p className="text-xs font-semibold text-sale">
+                  {en ? "Search failed. Please check your connection." : "সার্চ ব্যর্থ হয়েছে। ইন্টারনেট সংযোগ দেখুন।"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void refetch()}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-[11px] font-bold text-primary"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> {en ? "Try again" : "আবার চেষ্টা করুন"}
+                </button>
+              </div>
+            ) : showSkeleton ? (
+              <div className="space-y-1.5 p-1" aria-busy="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-xl p-2">
+                    <span className="h-11 w-11 shrink-0 animate-pulse rounded-lg bg-muted" />
+                    <span className="min-w-0 flex-1 space-y-1.5">
+                      <span className="block h-2.5 w-3/5 animate-pulse rounded bg-muted" />
+                      <span className="block h-2 w-2/5 animate-pulse rounded bg-muted" />
+                    </span>
+                    <span className="h-2.5 w-10 shrink-0 animate-pulse rounded bg-muted" />
+                  </div>
+                ))}
+              </div>
             ) : (
-
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
                 {isFetching
                   ? en

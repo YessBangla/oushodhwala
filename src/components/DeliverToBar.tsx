@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useDismissable } from "@/hooks/useDismissable";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, ChevronDown, Check, Trash2, Plus, Navigation, Truck } from "lucide-react";
@@ -25,7 +26,7 @@ type LiveDelivery = {
 };
 
 /** হেডারের "ডেলিভারি" বার — হাইড/আনহাইড প্যানেলসহ, লগইন ছাড়াই ঠিকানা বদলানো যায় */
-export function DeliverToBar() {
+export function DeliverToBar({ full = false }: { full?: boolean }) {
   const t = useT();
   const navigate = useNavigate();
   const { addresses, activeAddress, setActiveAddress, addAddress, removeAddress } = useStore();
@@ -44,16 +45,18 @@ export function DeliverToBar() {
     }
   }, []);
 
-  const toggle = () => {
-    setOpen((o) => {
-      try {
-        localStorage.setItem(OPEN_KEY, o ? "0" : "1");
-      } catch {
-        /* ignore */
-      }
-      return !o;
-    });
-  };
+  const setOpenPersist = useCallback((next: boolean) => {
+    setOpen(next);
+    try {
+      localStorage.setItem(OPEN_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const close = useCallback(() => setOpenPersist(false), [setOpenPersist]);
+  const toggle = () => setOpenPersist(!open);
+  const { ref: wrapRef, triggerRef } = useDismissable<HTMLDivElement>(open, close);
 
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
@@ -102,28 +105,40 @@ export function DeliverToBar() {
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${full ? "w-full" : ""}`} ref={wrapRef}>
       <button
         type="button"
+        ref={triggerRef}
         onClick={toggle}
         aria-expanded={open}
-        className="flex max-w-[190px] items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1.5 text-[11px] text-navy hover:border-primary"
+        aria-haspopup="dialog"
+        className={`flex items-center gap-1.5 rounded-full border border-border bg-muted text-navy transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 ${
+          full
+            ? "min-h-11 w-full px-3.5 py-2 text-xs"
+            : "max-w-[190px] px-2.5 py-1.5 text-[11px]"
+        }`}
       >
-        <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-        <span className="truncate">{addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}</span>
-        <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <MapPin className="h-4 w-4 shrink-0 text-primary" />
+        <span className="shrink-0 font-semibold text-muted-foreground">{t("ডেলিভারি:", "Deliver to:")}</span>
+        <span className="min-w-0 flex-1 truncate text-left font-semibold">
+          {addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-
 
       {open && (
         <>
           <button
             type="button"
             aria-label={t("বন্ধ", "Close")}
-            onClick={toggle}
+            onClick={close}
             className="fixed inset-0 z-30 cursor-default bg-navy/20"
           />
-          <div className="fixed inset-x-3 top-24 z-40 max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card px-4 py-3 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]">
+          <div
+            role="dialog"
+            aria-label={t("ডেলিভারি ঠিকানা", "Delivery address")}
+            className="fixed inset-x-3 top-24 z-40 max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card px-4 py-3 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]"
+          >
           <p className="text-[11px] font-bold text-navy">{t("ডেলিভারি ঠিকানা", "Delivery address")}</p>
           <ul className="mt-2 space-y-1.5">
             {addresses.map((a) => (
