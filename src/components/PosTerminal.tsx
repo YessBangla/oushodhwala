@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle } from "lucide-react";
+import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle, ChevronsUpDown, Check, Clock, SlidersHorizontal, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { ProductImage } from "@/components/ProductImage";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
@@ -32,6 +36,17 @@ const METHODS = [
   { v: "due", t: "বাকি" },
 ];
 
+const RECENT_CATS_KEY = "pos-recent-cats";
+const LOW_STOCK = 10;
+
+/** প্যাক স্ট্রিং থেকে ইউনিট সংখ্যা (যেমন "১০ পিস" / "10 x 10") */
+function packSize(pack?: string) {
+  const m = (pack ?? "").match(/\d+/);
+  const n = m ? Number(m[0]) : 1;
+  return n > 0 && n <= 1000 ? n : 1;
+}
+
+
 
 /** কাউন্টার/সরাসরি বিক্রয় টার্মিনাল */
 export function PosTerminal() {
@@ -45,9 +60,39 @@ export function PosTerminal() {
   const [vat, setVat] = useState("0");
   const [barcode, setBarcode] = useState("");
   const [cat, setCat] = useState("all");
+  const [recentCats, setRecentCats] = useState<string[]>([]);
+  const [sort, setSort] = useState<"stock" | "price_low" | "price_high" | "brand" | "name">("stock");
+  const [stockFilter, setStockFilter] = useState<"all" | "in" | "low">("all");
+  const [brand, setBrand] = useState("all");
+  const [picker, setPicker] = useState<{ p: P; qty: number; unit: "piece" | "pack" } | null>(null);
   const [held, setHeld] = useState<{ id: string; name: string; lines: Line[] }[]>([]);
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("cash");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_CATS_KEY);
+      if (raw) setRecentCats(JSON.parse(raw) as string[]);
+    } catch {
+      /* উপেক্ষা */
+    }
+  }, []);
+
+  /** ক্যাটাগরি বাছাই — সাম্প্রতিক তালিকায় সংরক্ষণ */
+  const chooseCat = (slug: string) => {
+    setCat(slug);
+    setBrand("all");
+    if (slug === "all") return;
+    setRecentCats((prev) => {
+      const next = [slug, ...prev.filter((s) => s !== slug)].slice(0, 5);
+      try {
+        localStorage.setItem(RECENT_CATS_KEY, JSON.stringify(next));
+      } catch {
+        /* উপেক্ষা */
+      }
+      return next;
+    });
+  };
 
   const { data: results, isFetching } = useQuery({
     queryKey: ["pos-search", q, cat],
@@ -58,11 +103,32 @@ export function PosTerminal() {
         .eq("active", true);
       if (q.trim().length > 1) query = query.or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`);
       if (cat !== "all") query = query.eq("category", cat);
-      const { data, error } = await query.order("stock", { ascending: false }).limit(24);
+      const { data, error } = await query.order("stock", { ascending: false }).limit(80);
       if (error) throw error;
       return (data ?? []) as P[];
     },
   });
+
+  const brands = useMemo(
+    () => Array.from(new Set((results ?? []).map((p) => p.brand).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [results],
+  );
+
+  const shown = useMemo(() => {
+    let list = (results ?? []).slice();
+    if (brand !== "all") list = list.filter((p) => p.brand === brand);
+    if (stockFilter === "in") list = list.filter((p) => (p.stock ?? 0) > 0);
+    if (stockFilter === "low") list = list.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= LOW_STOCK);
+    list.sort((a, b) => {
+      if (sort === "price_low") return a.price - b.price;
+      if (sort === "price_high") return b.price - a.price;
+      if (sort === "brand") return (a.brand || "").localeCompare(b.brand || "") || a.name.localeCompare(b.name);
+      if (sort === "name") return a.name.localeCompare(b.name);
+      return (b.stock ?? 0) - (a.stock ?? 0);
+    });
+    return list.slice(0, 48);
+  }, [results, brand, stockFilter, sort]);
+
 
   const { data: cats = [] } = useQuery({
     queryKey: ["pos-cats"],
@@ -72,6 +138,10 @@ export function PosTerminal() {
       return (data ?? []) as { slug: string; bn: string }[];
     },
   });
+
+  const [catOpen, setCatOpen] = useState(false);
+  const catName = (slug: string) => cats.find((c) => c.slug === slug)?.bn ?? slug;
+
 
   const { data: recent } = useQuery({
     queryKey: ["pos-recent"],
@@ -86,16 +156,19 @@ export function PosTerminal() {
     },
   });
 
-  const add = (p: P) =>
+  const add = (p: P, qty = 1, unit: "piece" | "pack" = "piece") => {
+    const units = unit === "pack" ? qty * packSize(p.pack) : qty;
     setLines((ls) => {
       const i = ls.findIndex((l) => l.product_id === p.id);
       if (i >= 0) {
         const copy = [...ls];
-        copy[i] = { ...copy[i]!, qty: copy[i]!.qty + 1 };
+        copy[i] = { ...copy[i]!, qty: copy[i]!.qty + units };
         return copy;
       }
-      return [...ls, { product_id: p.id, product_name: p.name, price: Number(p.price), qty: 1 }];
+      return [...ls, { product_id: p.id, product_name: p.name, price: Number(p.price), qty: units }];
     });
+  };
+
 
   const setQty = (id: string, qty: number) =>
     setLines((ls) => ls.map((l) => (l.product_id === id ? { ...l, qty: Math.max(1, qty) } : l)));
@@ -258,25 +331,134 @@ export function PosTerminal() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">ক্যাটাগরি</p>
-          <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="h-10 min-w-[200px] flex-1 rounded-lg text-xs font-semibold sm:max-w-xs">
-              <SelectValue placeholder="সব ক্যাটাগরি" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              <SelectItem value="all">সব ক্যাটাগরি</SelectItem>
-              {cats.map((c) => (
-                <SelectItem key={c.slug} value={c.slug}>
-                  {c.bn}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold text-primary-dark">
-            {bn((results ?? []).length)} পণ্য
-          </span>
+        <div className="space-y-2 rounded-xl border border-border bg-card px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">ক্যাটাগরি</p>
+            <Popover open={catOpen} onOpenChange={setCatOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  role="combobox"
+                  aria-expanded={catOpen}
+                  className="flex h-10 min-w-[200px] flex-1 items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold sm:max-w-xs"
+                >
+                  <span className="truncate">{cat === "all" ? "সব ক্যাটাগরি" : catName(cat)}</span>
+                  <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[280px] p-0">
+                <Command>
+                  <CommandInput placeholder="ক্যাটাগরি লিখে খুঁজুন…" className="text-xs" />
+                  <CommandList className="max-h-72">
+                    <CommandEmpty className="p-3 text-xs text-muted-foreground">কিছু মেলেনি</CommandEmpty>
+                    {recentCats.length > 0 && (
+                      <CommandGroup heading="সাম্প্রতিক">
+                        {recentCats.map((slug) => (
+                          <CommandItem
+                            key={`recent-${slug}`}
+                            value={`${catName(slug)} ${slug}`}
+                            onSelect={() => {
+                              chooseCat(slug);
+                              setCatOpen(false);
+                            }}
+                            className="text-xs"
+                          >
+                            <Clock className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                            {catName(slug)}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                    <CommandGroup heading="সব">
+                      <CommandItem
+                        value="সব ক্যাটাগরি all"
+                        onSelect={() => {
+                          chooseCat("all");
+                          setCatOpen(false);
+                        }}
+                        className="text-xs"
+                      >
+                        <Check className={`mr-2 h-3.5 w-3.5 ${cat === "all" ? "opacity-100" : "opacity-0"}`} />
+                        সব ক্যাটাগরি
+                      </CommandItem>
+                      {cats.map((c) => (
+                        <CommandItem
+                          key={c.slug}
+                          value={`${c.bn} ${c.slug}`}
+                          onSelect={() => {
+                            chooseCat(c.slug);
+                            setCatOpen(false);
+                          }}
+                          className="text-xs"
+                        >
+                          <Check className={`mr-2 h-3.5 w-3.5 ${cat === c.slug ? "opacity-100" : "opacity-0"}`} />
+                          {c.bn}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold text-primary-dark">
+              {bn(shown.length)} পণ্য
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
+            <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> ফিল্টার
+            </span>
+            <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+              <SelectTrigger className="h-9 w-[150px] rounded-lg text-xs font-semibold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="stock">স্টক (বেশি আগে)</SelectItem>
+                <SelectItem value="price_low">দাম (কম আগে)</SelectItem>
+                <SelectItem value="price_high">দাম (বেশি আগে)</SelectItem>
+                <SelectItem value="brand">ব্র্যান্ড (অ–ক্রম)</SelectItem>
+                <SelectItem value="name">নাম (অ–ক্রম)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as typeof stockFilter)}>
+              <SelectTrigger className="h-9 w-[140px] rounded-lg text-xs font-semibold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">সব স্টক</SelectItem>
+                <SelectItem value="in">শুধু ইন-স্টক</SelectItem>
+                <SelectItem value="low">লো স্টক (≤{bn(LOW_STOCK)})</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={brand} onValueChange={setBrand}>
+              <SelectTrigger className="h-9 w-[170px] rounded-lg text-xs font-semibold">
+                <SelectValue placeholder="সব ব্র্যান্ড" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">সব ব্র্যান্ড</SelectItem>
+                {brands.map((b) => (
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(sort !== "stock" || stockFilter !== "all" || brand !== "all") && (
+              <button
+                onClick={() => {
+                  setSort("stock");
+                  setStockFilter("all");
+                  setBrand("all");
+                }}
+                className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-semibold"
+              >
+                রিসেট
+              </button>
+            )}
+          </div>
         </div>
+
+
 
 
 
@@ -298,10 +480,15 @@ export function PosTerminal() {
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
           {isFetching && <p className="col-span-full text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
-          {(results ?? []).map((p) => (
+          {!isFetching && shown.length === 0 && (
+            <p className="col-span-full rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              এই ফিল্টারে কোনো পণ্য নেই
+            </p>
+          )}
+          {shown.map((p) => (
             <button
               key={p.id}
-              onClick={() => add(p)}
+              onClick={() => setPicker({ p, qty: 1, unit: "piece" })}
               className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
             >
               <div className="relative bg-secondary/40 p-2">
@@ -315,14 +502,22 @@ export function PosTerminal() {
                     emojiClassName="text-2xl"
                   />
                 </div>
-                <span className="absolute right-2 top-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                <span
+                  className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    p.stock <= 0
+                      ? "bg-sale/10 text-sale"
+                      : p.stock <= LOW_STOCK
+                        ? "bg-amber-500/15 text-amber-700"
+                        : "bg-primary/10 text-primary"
+                  }`}
+                >
                   {bn(p.stock)}
                 </span>
               </div>
               <div className="min-w-0 flex-1 space-y-1 border-t border-border p-2.5">
                 {p.category && (
                   <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {cats.find((c) => c.slug === p.category)?.bn ?? p.category}
+                    {catName(p.category)}
                   </p>
                 )}
                 <p className="truncate text-xs font-bold leading-tight text-navy">{p.name}</p>
@@ -342,6 +537,119 @@ export function PosTerminal() {
             </button>
           ))}
         </div>
+
+        <Dialog open={!!picker} onOpenChange={(o) => !o && setPicker(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-sm">পরিমাণ নির্বাচন</DialogTitle>
+            </DialogHeader>
+            {picker && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 rounded-xl border border-border p-2">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-secondary/40">
+                    <ProductImage
+                      src={picker.p.image_url || picker.p.medicine_image_url}
+                      alt={picker.p.name}
+                      emoji={picker.p.emoji || "💊"}
+                      ratio="square"
+                      imgClassName="p-1"
+                      emojiClassName="text-xl"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold">{picker.p.name}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {picker.p.pack} · স্টক {bn(picker.p.stock)}
+                    </p>
+                    <p className="text-xs font-extrabold text-primary">৳{bn(picker.p.price)} / পিস</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-bold text-muted-foreground">ইউনিট</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["piece", "pack"] as const).map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => setPicker((s) => (s ? { ...s, unit: u } : s))}
+                        className={`rounded-lg border px-2 py-2 text-[11px] font-bold ${
+                          picker.unit === u ? "border-primary bg-primary/10 text-primary" : "border-border"
+                        }`}
+                      >
+                        {u === "piece" ? "পিস" : `প্যাক (${bn(packSize(picker.p.pack))} পিস)`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-bold text-muted-foreground">পরিমাণ</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPicker((s) => (s ? { ...s, qty: Math.max(1, s.qty - 1) } : s))}
+                      aria-label="কমান"
+                      className="grid h-11 w-11 place-items-center rounded-lg border border-border"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={picker.qty}
+                      onChange={(e) =>
+                        setPicker((s) => (s ? { ...s, qty: Math.max(1, Number(e.target.value) || 1) } : s))
+                      }
+                      className="h-11 flex-1 rounded-lg border border-border bg-background text-center text-sm font-bold"
+                    />
+                    <button
+                      onClick={() => setPicker((s) => (s ? { ...s, qty: s.qty + 1 } : s))}
+                      aria-label="বাড়ান"
+                      className="grid h-11 w-11 place-items-center rounded-lg border border-border"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {[2, 5, 10, 20].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setPicker((s) => (s ? { ...s, qty: n } : s))}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold"
+                      >
+                        {bn(n)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {(() => {
+                  const units = picker.unit === "pack" ? picker.qty * packSize(picker.p.pack) : picker.qty;
+                  return (
+                    <>
+                      <p className="rounded-lg bg-secondary px-3 py-2 text-[11px] font-bold text-primary-dark">
+                        মোট {bn(units)} পিস · ৳{bn(units * Number(picker.p.price))}
+                        {picker.p.stock > 0 && units > picker.p.stock && (
+                          <span className="ml-1 text-sale">(স্টকের বেশি!)</span>
+                        )}
+                      </p>
+                      <button
+                        onClick={() => {
+                          add(picker.p, picker.qty, picker.unit);
+                          toast.success(`${picker.p.name} — ${bn(units)} পিস যোগ হয়েছে`);
+                          setPicker(null);
+                        }}
+                        className="min-h-11 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground"
+                      >
+                        কার্টে যোগ করুন
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
 
 
 
