@@ -27,6 +27,24 @@ export type Address = {
   lng?: number | null;
 };
 
+export type DeliveryPrefs = {
+  slot: string;
+  express: boolean;
+  contactless: boolean;
+  note: string;
+  notifySms: boolean;
+  notifyEmail: boolean;
+};
+
+export const defaultPrefs: DeliveryPrefs = {
+  slot: "",
+  express: false,
+  contactless: false,
+  note: "",
+  notifySms: true,
+  notifyEmail: true,
+};
+
 type Store = {
   cart: CartLine[];
   add: (line: Omit<CartLine, "qty">, qty?: number) => void;
@@ -51,6 +69,8 @@ type Store = {
   login: (name: string, phone: string) => void;
   logout: () => void;
   couponCode: string | null;
+  prefs: DeliveryPrefs;
+  setPrefs: (p: Partial<DeliveryPrefs>) => void;
   setCouponCode: (c: string | null) => void;
 };
 
@@ -67,6 +87,7 @@ type Persisted = {
   prescriptions: { id: string; name: string; date: string; status: string }[];
   user: { name: string; phone: string } | null;
   couponCode: string | null;
+  prefs: DeliveryPrefs;
 };
 
 const empty: Persisted = {
@@ -80,6 +101,7 @@ const empty: Persisted = {
   prescriptions: [],
   user: null,
   couponCode: null,
+  prefs: defaultPrefs,
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -169,6 +191,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       logout: () => patch({ user: null }),
       couponCode: state.couponCode,
       setCouponCode: (c) => patch({ couponCode: c }),
+      prefs: state.prefs ?? defaultPrefs,
+      setPrefs: (p) => setState((s) => ({ ...s, prefs: { ...defaultPrefs, ...s.prefs, ...p } })),
     };
   }, [state]);
 
