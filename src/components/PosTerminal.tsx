@@ -313,14 +313,15 @@ export function PosTerminal() {
               onClick={() => add(p)}
               className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-border bg-card p-2 text-left transition-colors hover:border-primary"
             >
-              <ProductImage
-                src={p.image_url || p.medicine_image_url}
-                alt={p.name}
-                emoji={p.emoji || "💊"}
-                ratio="square"
-                className="h-11 w-11 shrink-0 rounded-lg"
-                imgClassName="p-0.5"
-              />
+              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg">
+                <ProductImage
+                  src={p.image_url || p.medicine_image_url}
+                  alt={p.name}
+                  emoji={p.emoji || "💊"}
+                  ratio="square"
+                  imgClassName="p-0.5"
+                />
+              </div>
               <div className="min-w-0 flex-1 space-y-0.5">
                 <p className="truncate text-[11px] font-semibold leading-tight">{p.name}</p>
                 <p className="truncate text-[10px] text-muted-foreground">
