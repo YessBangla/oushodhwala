@@ -656,8 +656,8 @@ export function PartyStatement() {
       const { data, error } = await supabase.rpc("party_statement", {
         _kind: kind,
         _party_id: party,
-        _from: null,
-        _to: null,
+        _from: new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10),
+        _to: today(),
       });
       if (error) throw error;
       return data as unknown as Stmt;
