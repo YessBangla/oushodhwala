@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { runApiTest, type ApiTestResult } from "@/lib/api-hub.functions";
 import { downloadCsv } from "@/lib/erp-report";
+import { ApiIntegrations } from "@/components/ApiIntegrations";
 
 type Endpoint = {
   id: string;
@@ -102,6 +103,7 @@ export function ApiHub() {
   const [filter, setFilter] = useState("all");
   const [result, setResult] = useState<(ApiTestResult & { name: string }) | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"integrations" | "endpoints">("integrations");
   const [env, setEnv] = useState<EnvId>("prod");
   const [baseDraft, setBaseDraft] = useState<string | null>(null);
 
