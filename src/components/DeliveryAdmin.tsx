@@ -409,6 +409,145 @@ export function DeliveryAdmin() {
   );
 }
 
+/** এক ডেলিভারির রুট/মুভমেন্ট ম্যাপ, ETA এবং ট্র্যাকিং লিংক নিয়ন্ত্রণ */
+function DeliveryDetail({ delivery }: { delivery: Delivery }) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState("");
+  const [eta, setEta] = useState(String(delivery.eta_minutes ?? ""));
+  const [hours, setHours] = useState("48");
+  const [scope, setScope] = useState(delivery.token_scope || "public");
+
+  const { data: path = [] } = useQuery({
+    queryKey: ["delivery-path", delivery.id],
+    refetchInterval: 20000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("delivery_events")
+        .select("lat, lng, created_at")
+        .eq("delivery_id", delivery.id)
+        .not("lat", "is", null)
+        .order("created_at");
+      if (error) throw error;
+      const pts = (data ?? [])
+        .filter((r) => r.lat != null && r.lng != null)
+        .map((r) => ({ lat: Number(r.lat), lng: Number(r.lng), at: r.created_at as string }));
+      if (delivery.last_lat != null && delivery.last_lng != null) {
+        pts.push({ lat: Number(delivery.last_lat), lng: Number(delivery.last_lng), at: delivery.last_seen_at ?? "" });
+      }
+      return pts as PathPoint[];
+    },
+  });
+
+  const refresh = () => void qc.invalidateQueries({ queryKey: ["admin-deliveries"] });
+
+  const saveEta = async () => {
+    const n = Number(eta);
+    if (!Number.isFinite(n) || n <= 0) return toast.error("সঠিক ETA দিন");
+    setBusy("eta");
+    const { error } = await supabase.rpc("admin_set_delivery_eta", { _delivery_id: delivery.id, _eta: Math.round(n) });
+    setBusy("");
+    if (error) return toast.error(error.message);
+    toast.success("ETA হালনাগাদ হয়েছে — গ্রাহককে নোটিফিকেশন পাঠানো হয়েছে");
+    refresh();
+  };
+
+  const setLink = async (args: { _hours?: number; _revoked?: boolean; _rotate?: boolean; _scope?: string }, msg: string) => {
+    setBusy("link");
+    const { error } = await supabase.rpc("admin_set_track_link", { _delivery_id: delivery.id, ...args });
+    setBusy("");
+    if (error) return toast.error(error.message);
+    toast.success(msg);
+    refresh();
+  };
+
+  const expired = delivery.token_expires_at ? new Date(delivery.token_expires_at).getTime() < Date.now() : false;
+
+  return (
+    <div className="space-y-3">
+      <RouteMap path={path} lastSeen={delivery.last_seen_at} height="h-56" />
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px]">
+        <span className="flex items-center gap-1 font-bold text-navy">
+          <Timer className="h-3.5 w-3.5 text-primary" /> ETA
+        </span>
+        <input
+          value={eta}
+          onChange={(e) => setEta(e.target.value)}
+          inputMode="numeric"
+          className="min-h-9 w-20 rounded-lg border border-border bg-card px-2 text-center"
+          aria-label="ETA মিনিট"
+        />
+        <span className="text-muted-foreground">মিনিট</span>
+        <button
+          onClick={() => void saveEta()}
+          disabled={busy === "eta"}
+          className="min-h-9 rounded-lg bg-primary px-3 font-semibold text-primary-foreground disabled:opacity-60"
+        >
+          সংরক্ষণ ও নোটিফাই
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-3">
+        <p className="flex items-center gap-1.5 text-xs font-bold">
+          <Link2 className="h-3.5 w-3.5 text-primary" /> শেয়ারেবল ট্র্যাকিং লিংক
+        </p>
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          অবস্থা:{" "}
+          <strong className={delivery.token_revoked || expired ? "text-destructive" : "text-primary"}>
+            {delivery.token_revoked ? "বাতিল করা হয়েছে" : expired ? "মেয়াদোত্তীর্ণ" : "সক্রিয়"}
+          </strong>
+          {delivery.token_expires_at ? ` · মেয়াদ ${fmtTime(delivery.token_expires_at)}` : " · মেয়াদহীন"} ·{" "}
+          {delivery.token_scope === "staff" ? "শুধু স্টাফ" : delivery.token_scope === "authenticated" ? "লগইন করা ব্যবহারকারী" : "সবার জন্য উন্মুক্ত"}
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+          <select value={scope} onChange={(e) => setScope(e.target.value)} className="min-h-9 rounded-lg border border-border bg-muted px-2" aria-label="অ্যাক্সেস">
+            <option value="public">সবার জন্য উন্মুক্ত</option>
+            <option value="authenticated">লগইন করা ব্যবহারকারী</option>
+            <option value="staff">শুধু স্টাফ</option>
+          </select>
+          <select value={hours} onChange={(e) => setHours(e.target.value)} className="min-h-9 rounded-lg border border-border bg-muted px-2" aria-label="মেয়াদ">
+            <option value="6">৬ ঘণ্টা</option>
+            <option value="24">২৪ ঘণ্টা</option>
+            <option value="48">৪৮ ঘণ্টা</option>
+            <option value="168">৭ দিন</option>
+            <option value="0">মেয়াদহীন</option>
+          </select>
+          <button
+            onClick={() => void setLink({ _hours: Number(hours), _scope: scope, _revoked: false }, "লিংক সেটিংস সংরক্ষিত হয়েছে")}
+            disabled={busy === "link"}
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-primary px-3 font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" /> প্রয়োগ করুন
+          </button>
+          <button
+            onClick={() => void copyTrackLink(delivery.public_token)}
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-muted px-3 font-semibold"
+          >
+            <Share2 className="h-3.5 w-3.5 text-primary" /> লিংক কপি
+          </button>
+          <button
+            onClick={() => void setLink({ _rotate: true }, "নতুন লিংক তৈরি হয়েছে — পুরোনো লিংক আর কাজ করবে না")}
+            disabled={busy === "link"}
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-muted px-3 font-semibold disabled:opacity-60"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> নতুন লিংক
+          </button>
+          <button
+            onClick={() => void setLink({ _revoked: !delivery.token_revoked }, delivery.token_revoked ? "লিংক আবার চালু হয়েছে" : "লিংক বাতিল হয়েছে")}
+            disabled={busy === "link"}
+            className={`flex min-h-9 items-center gap-1 rounded-lg px-3 font-semibold disabled:opacity-60 ${delivery.token_revoked ? "bg-secondary text-primary-dark" : "bg-destructive/10 text-destructive"}`}
+          >
+            <XCircle className="h-3.5 w-3.5" /> {delivery.token_revoked ? "পুনরায় চালু" : "লিংক বাতিল"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 /** ডেমো ডাটা কন্ট্রোল — mock ডেলিভারি অর্ডার তৈরি, বাতিল ও রিসেট */
 function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: Rider[] }) {
   const qc = useQueryClient();
