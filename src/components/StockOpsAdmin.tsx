@@ -321,10 +321,105 @@ export function StockCount() {
 export function LabelPrint() {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<{ p: P; copies: number }[]>([]);
+  const [cfg, setCfg] = useState<LabelSettings>(DEFAULT_LABEL_SETTINGS);
   const { data: found } = useProductSearch(q);
+
+  useEffect(() => setCfg(loadLabelSettings()), []);
+
+  const set = (patch: Partial<LabelSettings>) => {
+    const next = { ...cfg, ...patch };
+    setCfg(next);
+    saveLabelSettings(next);
+  };
+
+  const applyPreset = (v: string) => {
+    const p = LABEL_PRESETS.find((x) => x.v === v);
+    if (!p) return;
+    set(v === "custom" ? { preset: v } : { preset: v, widthMm: p.w, heightMm: p.h, columns: p.cols });
+  };
+
+  const totalLabels = sel.reduce((a, s) => a + s.copies, 0);
 
   return (
     <div className="space-y-4">
+      <style>{`@media print{
+        body *{visibility:hidden}
+        #label-sheet,#label-sheet *{visibility:visible}
+        #label-sheet{position:absolute;left:0;top:0;width:100%}
+        @page{size:auto;margin:4mm}
+      }`}</style>
+
+      <div className="rounded-xl border border-border bg-card p-3 print:hidden">
+        <p className="mb-2 flex items-center gap-2 text-xs font-bold">
+          <SlidersHorizontal className="h-4 w-4 text-primary" /> প্রিন্টার ও লেবেল সাইজ সেটিংস (এই ডিভাইসে সেভ থাকে)
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <label className="text-[11px] font-semibold text-muted-foreground">
+            লেবেল প্রিসেট
+            <select value={cfg.preset} onChange={(e) => applyPreset(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-2 text-sm">
+              {LABEL_PRESETS.map((p) => (
+                <option key={p.v} value={p.v}>
+                  {p.t}
+                </option>
+              ))}
+            </select>
+          </label>
+          {(
+            [
+              { k: "widthMm" as const, t: "প্রস্থ (মিমি)" },
+              { k: "heightMm" as const, t: "উচ্চতা (মিমি)" },
+              { k: "gapMm" as const, t: "গ্যাপ (মিমি)" },
+              { k: "columns" as const, t: "কলাম" },
+              { k: "fontPt" as const, t: "ফন্ট (pt)" },
+            ]
+          ).map((fld) => (
+            <label key={fld.k} className="text-[11px] font-semibold text-muted-foreground">
+              {fld.t}
+              <input
+                type="number"
+                min={1}
+                value={cfg[fld.k]}
+                onChange={(e) => set({ [fld.k]: Math.max(1, Number(e.target.value)), preset: "custom" } as Partial<LabelSettings>)}
+                className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-2 text-sm"
+              />
+            </label>
+          ))}
+          <label className="text-[11px] font-semibold text-muted-foreground sm:col-span-2">
+            প্রিন্টারের নাম (রেফারেন্স)
+            <input
+              value={cfg.printerName}
+              onChange={(e) => set({ printerName: e.target.value })}
+              placeholder="যেমন: Xprinter XP-365B"
+              className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-2 text-sm"
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold sm:col-span-3">
+            {(
+              [
+                { k: "showPrice" as const, t: "মূল্য" },
+                { k: "showPack" as const, t: "প্যাক" },
+                { k: "showBarcode" as const, t: "বারকোড" },
+                { k: "showShop" as const, t: "দোকানের নাম" },
+              ]
+            ).map((o) => (
+              <label key={o.k} className="flex items-center gap-1.5">
+                <input type="checkbox" checked={cfg[o.k]} onChange={(e) => set({ [o.k]: e.target.checked } as Partial<LabelSettings>)} /> {o.t}
+              </label>
+            ))}
+            <button
+              onClick={() => {
+                saveLabelSettings(DEFAULT_LABEL_SETTINGS);
+                setCfg(DEFAULT_LABEL_SETTINGS);
+                toast.success("ডিফল্ট সেটিংস ফিরিয়ে আনা হয়েছে");
+              }}
+              className="rounded-lg border border-border px-3 py-2"
+            >
+              রিসেট
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-border bg-card p-3 print:hidden">
         <div className="relative mb-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -364,23 +459,41 @@ export function LabelPrint() {
           onClick={() => window.print()}
           className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
-          <Printer className="h-4 w-4" /> লেবেল প্রিন্ট করুন
+          <Printer className="h-4 w-4" /> {bn(totalLabels)} টি লেবেল প্রিন্ট করুন
+          {cfg.printerName ? ` · ${cfg.printerName}` : ""}
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+      <div
+        id="label-sheet"
+        className="grid"
+        style={{
+          gridTemplateColumns: `repeat(${cfg.columns}, ${cfg.widthMm}mm)`,
+          gap: `${cfg.gapMm}mm`,
+          fontSize: `${cfg.fontPt}pt`,
+        }}
+      >
         {sel.flatMap((s) =>
           Array.from({ length: s.copies }, (_, i) => (
-            <div key={`${s.p.id}-${i}`} className="rounded-lg border border-border bg-card p-2 text-center">
-              <p className="truncate text-[11px] font-bold">{s.p.name}</p>
-              <p className="text-[9px] text-muted-foreground">{s.p.pack}</p>
-              <p className="text-sm font-bold text-primary">৳{bn(Number(s.p.price))}</p>
-              <p className="mt-1 font-mono text-[8px] tracking-[0.2em]">{s.p.id.slice(0, 14).toUpperCase()}</p>
-              <div className="mx-auto mt-1 flex h-7 w-full items-end justify-center gap-[1px]">
-                {Array.from({ length: 28 }, (_, b) => (
-                  <span key={b} className="w-[2px] bg-navy" style={{ height: `${40 + ((s.p.id.charCodeAt(b % s.p.id.length) * (b + 3)) % 60)}%` }} />
-                ))}
-              </div>
+            <div
+              key={`${s.p.id}-${i}`}
+              className="flex flex-col justify-between overflow-hidden rounded border border-border bg-card p-1 text-center"
+              style={{ width: `${cfg.widthMm}mm`, height: `${cfg.heightMm}mm` }}
+            >
+              {cfg.showShop && <p className="truncate text-[0.7em] text-muted-foreground">ঔষধওয়ালা</p>}
+              <p className="truncate font-bold leading-tight">{s.p.name}</p>
+              {cfg.showPack && <p className="truncate text-[0.75em] text-muted-foreground">{s.p.pack}</p>}
+              {cfg.showPrice && <p className="font-bold text-primary">৳{bn(Number(s.p.price))}</p>}
+              {cfg.showBarcode && (
+                <>
+                  <div className="mx-auto flex h-[22%] w-full items-end justify-center gap-[1px]">
+                    {barPattern(s.p.id).map((w, b) => (
+                      <span key={b} className="bg-navy" style={{ width: `${w}px`, height: "100%" }} />
+                    ))}
+                  </div>
+                  <p className="truncate font-mono text-[0.65em] tracking-[0.15em]">{s.p.id.slice(0, 14).toUpperCase()}</p>
+                </>
+              )}
             </div>
           )),
         )}
@@ -388,3 +501,4 @@ export function LabelPrint() {
     </div>
   );
 }
+
