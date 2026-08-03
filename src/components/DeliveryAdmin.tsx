@@ -593,8 +593,25 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
 
   const create = async () => {
     setBusy("create");
-    for (let i = 0; i < count; i++) {
-      const { error } = await supabase.rpc("demo_seed_delivery", { _zone: zone });
+    const { data, error } = await supabase.rpc("demo_seed_bulk", { _zone: zone, _count: count, _scenario: scenario });
+    setBusy("");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${bn(Number(data ?? count))} টি ডেমো ডেলিভারি তৈরি হয়েছে`);
+    refresh();
+  };
+
+  const cancelAll = async () => {
+    const open = demo.filter((d) => !["delivered", "failed"].includes(d.status));
+    if (open.length === 0) {
+      toast.info("বাতিল করার মতো চলমান ডেমো ডেলিভারি নেই");
+      return;
+    }
+    setBusy("cancel-all");
+    for (const d of open) {
+      const { error } = await supabase.rpc("demo_cancel_delivery", { _delivery_id: d.id });
       if (error) {
         setBusy("");
         toast.error(error.message);
@@ -602,9 +619,10 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
       }
     }
     setBusy("");
-    toast.success(`${bn(count)} টি ডেমো ডেলিভারি তৈরি হয়েছে`);
+    toast.success(`${bn(open.length)} টি ডেমো ডেলিভারি বাতিল হয়েছে`);
     refresh();
   };
+
 
   const cancel = async (id: string) => {
     setBusy(id);
