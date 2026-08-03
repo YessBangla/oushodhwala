@@ -299,7 +299,8 @@ export function DeliveryAdmin() {
                 {list.map((o) => {
                   const d = byOrder.get(o.id);
                   return (
-                    <tr key={o.id} className="border-t border-border align-top">
+                    <Fragment key={o.id}>
+                    <tr className="border-t border-border align-top">
                       <td className="px-3 py-2 font-bold">
                         #{o.order_no}
                         {d && (
