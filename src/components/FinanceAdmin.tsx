@@ -412,33 +412,8 @@ export function JournalAdmin() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card">
-        <p className="border-b border-border px-3 py-2 text-xs font-bold">সাম্প্রতিক এন্ট্রি</p>
-        <ul className="divide-y divide-border text-xs">
-          {(entries ?? []).map((e) => (
-            <li key={e.id} className="px-3 py-2">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-muted-foreground">{e.entry_no}</span>
-                <span className="font-semibold">{e.memo || "—"}</span>
-                <span className="ml-auto font-bold text-primary">৳{bn(Number(e.total))}</span>
-                <span className="text-muted-foreground">{e.entry_date}</span>
-              </div>
-              <div className="mt-1 space-y-0.5 pl-2 text-[11px] text-muted-foreground">
-                {(e.journal_lines ?? []).map((l: { id: string; account_code: string; account_name: string; debit: number; credit: number }) => (
-                  <div key={l.id} className="flex gap-2">
-                    <span className="w-32 truncate">
-                      {l.account_code} {l.account_name}
-                    </span>
-                    <span className="w-20 text-right">{Number(l.debit) ? `ডেঃ ৳${bn(Number(l.debit))}` : ""}</span>
-                    <span className="w-20 text-right">{Number(l.credit) ? `ক্রেঃ ৳${bn(Number(l.credit))}` : ""}</span>
-                  </div>
-                ))}
-              </div>
-            </li>
-          ))}
-          {(entries ?? []).length === 0 && <li className="p-4 text-center text-muted-foreground">কোনো এন্ট্রি নেই</li>}
-        </ul>
-      </div>
+      <JournalList entries={(entries ?? []) as JEntry[]} />
+
     </div>
   );
 }
