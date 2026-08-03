@@ -20,6 +20,7 @@ export function ProductImage({
   ratio = "card",
   className = "",
   imgClassName = "",
+  emojiClassName = "text-3xl",
   eager = false,
 }: {
   src?: string | null | undefined;
@@ -28,6 +29,7 @@ export function ProductImage({
   ratio?: Ratio;
   className?: string;
   imgClassName?: string;
+  emojiClassName?: string;
   eager?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
@@ -49,7 +51,7 @@ export function ProductImage({
         />
 
       ) : (
-        <span className="absolute inset-0 grid place-items-center text-3xl">{emoji}</span>
+        <span className={`absolute inset-0 grid place-items-center ${emojiClassName}`}>{emoji}</span>
       )}
     </div>
   );

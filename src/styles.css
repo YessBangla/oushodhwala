@@ -206,3 +206,9 @@
     background-position: right 0.6rem center;
   }
 }
+
+/* auto-fit: কোনো পেজেই যেন আড়াআড়ি স্ক্রল/ওভারফ্লো না হয় */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+img, svg, video, canvas, iframe { max-width: 100%; }
+table { width: 100%; }
