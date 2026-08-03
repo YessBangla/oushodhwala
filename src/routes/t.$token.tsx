@@ -115,7 +115,7 @@ function PublicTrack() {
       login_required: ["এই লিংক দেখতে লগইন করতে হবে", "You must log in to view this link"],
       staff_only: ["এই লিংক শুধু অনুমোদিত স্টাফের জন্য", "This link is restricted to authorised staff"],
     };
-    const [bnMsg, enMsg] = msg[reason] ?? msg.invalid!;
+    const [bnMsg, enMsg] = msg[reason] ?? msg["invalid"]!;
     return (
       <div className="pt-16 text-center">
         <Icon className="mx-auto h-8 w-8 text-muted-foreground" />
