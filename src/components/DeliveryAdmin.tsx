@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Truck, Bike, Plus, Trash2, Send, Search, Share2, Wifi, Check, FlaskConical, RotateCcw, XCircle } from "lucide-react";
+import {
+  Truck, Bike, Plus, Trash2, Send, Search, Share2, Wifi, Check, FlaskConical, RotateCcw, XCircle,
+  Link2, ShieldCheck, Timer, Map as MapIcon, Bell, BellOff,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
 import { copyTrackLink } from "@/lib/track-link";
 import { CHANNEL_LABEL, notifyLink, withAbsoluteLinks, type NotifyChannel } from "@/lib/notify";
+import { RouteMap, type PathPoint } from "@/components/RouteMap";
+import { enablePush, disablePush, notifyPush, pushEnabled, pushSupported } from "@/lib/webpush";
 
 type Delivery = {
   id: string;
@@ -18,12 +23,18 @@ type Delivery = {
   rider_id: string | null;
   eta_minutes: number;
   public_token: string;
+  token_expires_at: string | null;
+  token_revoked: boolean;
+  token_scope: string;
+  last_lat: number | null;
+  last_lng: number | null;
   last_seen_at: string | null;
   pod_photo_url: string;
   pod_signature_url: string;
   pod_receiver_name: string;
   riders: { name: string; phone: string } | null;
 };
+
 
 type Rider = { id: string; name: string; phone: string; vehicle: string; zone: string; active: boolean; user_id: string | null };
 
@@ -60,6 +71,11 @@ export function DeliveryAdmin() {
   const [fArea, setFArea] = useState("all");
   const [fPriority, setFPriority] = useState<"all" | "unassigned" | "active" | "urgent">("all");
   const [copied, setCopied] = useState("");
+  const [openRow, setOpenRow] = useState("");
+  const [push, setPush] = useState(false);
+
+  useEffect(() => setPush(pushEnabled()), []);
+
 
   const { data: riders = [] } = useQuery({
     queryKey: ["admin-riders"],
@@ -119,7 +135,27 @@ export function DeliveryAdmin() {
     };
   }, [qc]);
 
+  // স্ট্যাটাস বা ETA বদলালে অ্যাডমিনকে ব্রাউজার নোটিফিকেশন
+  const prevRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    const prev = prevRef.current;
+    const next = new Map<string, string>();
+    deliveries.forEach((d) => {
+      const key = `${d.status}|${d.eta_minutes}`;
+      next.set(d.id, key);
+      const old = prev.get(d.id);
+      if (prev.size > 0 && old && old !== key) {
+        notifyPush(
+          `#${d.order_no} — ${DELIVERY_STATUS[d.status]?.bn ?? d.status}`,
+          `ETA ${bn(d.eta_minutes)} মিনিট${d.riders?.name ? ` · ${d.riders.name}` : ""}`,
+        );
+      }
+    });
+    prevRef.current = next;
+  }, [deliveries]);
+
   const byOrder = useMemo(() => new Map(deliveries.map((d) => [d.order_id, d])), [deliveries]);
+
 
   const areaOf = (o: OrderRow) => (o.area || o.thana || (o.address ?? "").split(",")[0] || "").trim();
   const areas = Array.from(new Set(orders.map(areaOf).filter(Boolean))).sort();
@@ -178,11 +214,30 @@ export function DeliveryAdmin() {
             <x.icon className="h-3.5 w-3.5" /> {x.t}
           </button>
         ))}
-        <span className="ml-auto flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
+        {pushSupported() && (
+          <button
+            onClick={async () => {
+              if (push) {
+                disablePush();
+                setPush(false);
+                return;
+              }
+              const ok = await enablePush();
+              setPush(ok);
+              if (!ok) toast.error("ব্রাউজার নোটিফিকেশনের অনুমতি পাওয়া যায়নি");
+            }}
+            className={`ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold ${push ? "bg-secondary text-primary-dark" : "bg-muted"}`}
+          >
+            {push ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+            {push ? "পুশ অ্যালার্ট চালু" : "পুশ অ্যালার্ট"}
+          </button>
+        )}
+        <span className={`flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground ${pushSupported() ? "" : "ml-auto"}`}>
           <Wifi className={`h-3.5 w-3.5 ${live ? "text-primary" : ""}`} />
           {live ? "লাইভ সিঙ্ক চালু" : "প্রতি ১৫ সেকেন্ডে রিফ্রেশ"}
           {dataUpdatedAt > 0 && ` · সর্বশেষ ${fmtTime(new Date(dataUpdatedAt).toISOString())}`}
         </span>
+
       </div>
 
       {tab === "deliveries" && (
@@ -263,7 +318,8 @@ export function DeliveryAdmin() {
                 {list.map((o) => {
                   const d = byOrder.get(o.id);
                   return (
-                    <tr key={o.id} className="border-t border-border align-top">
+                    <Fragment key={o.id}>
+                    <tr className="border-t border-border align-top">
                       <td className="px-3 py-2 font-bold">
                         #{o.order_no}
                         {d && (
@@ -318,22 +374,39 @@ export function DeliveryAdmin() {
                       <td className="px-3 py-2 font-mono text-[11px]">{d?.otp ?? "—"}</td>
                       <td className="px-3 py-2">
                         {d && (
-                          <select
-                            value=""
-                            onChange={(e) => e.target.value && void force(d.id, e.target.value)}
-                            className="rounded-lg border border-border bg-card px-2 py-1 text-[11px]"
-                          >
-                            <option value="">অবস্থা বদলান</option>
-                            {["picked", "on_the_way", "arrived", "delivered", "failed"].map((s) => (
-                              <option key={s} value={s}>
-                                {DELIVERY_STATUS[s]?.bn ?? s}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex flex-col gap-1">
+                            <select
+                              value=""
+                              onChange={(e) => e.target.value && void force(d.id, e.target.value)}
+                              className="rounded-lg border border-border bg-card px-2 py-1 text-[11px]"
+                            >
+                              <option value="">অবস্থা বদলান</option>
+                              {["picked", "on_the_way", "arrived", "delivered", "failed"].map((s) => (
+                                <option key={s} value={s}>
+                                  {DELIVERY_STATUS[s]?.bn ?? s}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => setOpenRow(openRow === d.id ? "" : d.id)}
+                              className="flex items-center gap-1 text-[10px] font-semibold text-primary"
+                            >
+                              <MapIcon className="h-3 w-3" /> {openRow === d.id ? "বন্ধ করুন" : "ম্যাপ ও লিংক"}
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
+                    {d && openRow === d.id && (
+                      <tr className="border-t border-border bg-muted/40">
+                        <td colSpan={7} className="px-3 py-3">
+                          <DeliveryDetail delivery={d} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
+
                 })}
                 {list.length === 0 && (
                   <tr>
@@ -355,11 +428,160 @@ export function DeliveryAdmin() {
   );
 }
 
+/** এক ডেলিভারির রুট/মুভমেন্ট ম্যাপ, ETA এবং ট্র্যাকিং লিংক নিয়ন্ত্রণ */
+function DeliveryDetail({ delivery }: { delivery: Delivery }) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState("");
+  const [eta, setEta] = useState(String(delivery.eta_minutes ?? ""));
+  const [hours, setHours] = useState("48");
+  const [scope, setScope] = useState(delivery.token_scope || "public");
+
+  const { data: path = [] } = useQuery({
+    queryKey: ["delivery-path", delivery.id],
+    refetchInterval: 20000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("delivery_events")
+        .select("lat, lng, created_at")
+        .eq("delivery_id", delivery.id)
+        .not("lat", "is", null)
+        .order("created_at");
+      if (error) throw error;
+      const pts = (data ?? [])
+        .filter((r) => r.lat != null && r.lng != null)
+        .map((r) => ({ lat: Number(r.lat), lng: Number(r.lng), at: r.created_at as string }));
+      if (delivery.last_lat != null && delivery.last_lng != null) {
+        pts.push({ lat: Number(delivery.last_lat), lng: Number(delivery.last_lng), at: delivery.last_seen_at ?? "" });
+      }
+      return pts as PathPoint[];
+    },
+  });
+
+  const refresh = () => void qc.invalidateQueries({ queryKey: ["admin-deliveries"] });
+
+  const saveEta = async () => {
+    const n = Number(eta);
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("সঠিক ETA দিন");
+      return;
+    }
+    setBusy("eta");
+    const { error } = await supabase.rpc("admin_set_delivery_eta", { _delivery_id: delivery.id, _eta: Math.round(n) });
+    setBusy("");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("ETA হালনাগাদ হয়েছে — গ্রাহককে নোটিফিকেশন পাঠানো হয়েছে");
+    refresh();
+  };
+
+  const setLink = async (args: { _hours?: number; _revoked?: boolean; _rotate?: boolean; _scope?: string }, msg: string) => {
+    setBusy("link");
+    const { error } = await supabase.rpc("admin_set_track_link", { _delivery_id: delivery.id, ...args });
+    setBusy("");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(msg);
+    refresh();
+  };
+
+  const expired = delivery.token_expires_at ? new Date(delivery.token_expires_at).getTime() < Date.now() : false;
+
+  return (
+    <div className="space-y-3">
+      <RouteMap path={path} lastSeen={delivery.last_seen_at} height="h-56" />
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px]">
+        <span className="flex items-center gap-1 font-bold text-navy">
+          <Timer className="h-3.5 w-3.5 text-primary" /> ETA
+        </span>
+        <input
+          value={eta}
+          onChange={(e) => setEta(e.target.value)}
+          inputMode="numeric"
+          className="min-h-9 w-20 rounded-lg border border-border bg-card px-2 text-center"
+          aria-label="ETA মিনিট"
+        />
+        <span className="text-muted-foreground">মিনিট</span>
+        <button
+          onClick={() => void saveEta()}
+          disabled={busy === "eta"}
+          className="min-h-9 rounded-lg bg-primary px-3 font-semibold text-primary-foreground disabled:opacity-60"
+        >
+          সংরক্ষণ ও নোটিফাই
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-3">
+        <p className="flex items-center gap-1.5 text-xs font-bold">
+          <Link2 className="h-3.5 w-3.5 text-primary" /> শেয়ারেবল ট্র্যাকিং লিংক
+        </p>
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          অবস্থা:{" "}
+          <strong className={delivery.token_revoked || expired ? "text-destructive" : "text-primary"}>
+            {delivery.token_revoked ? "বাতিল করা হয়েছে" : expired ? "মেয়াদোত্তীর্ণ" : "সক্রিয়"}
+          </strong>
+          {delivery.token_expires_at ? ` · মেয়াদ ${fmtTime(delivery.token_expires_at)}` : " · মেয়াদহীন"} ·{" "}
+          {delivery.token_scope === "staff" ? "শুধু স্টাফ" : delivery.token_scope === "authenticated" ? "লগইন করা ব্যবহারকারী" : "সবার জন্য উন্মুক্ত"}
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+          <select value={scope} onChange={(e) => setScope(e.target.value)} className="min-h-9 rounded-lg border border-border bg-muted px-2" aria-label="অ্যাক্সেস">
+            <option value="public">সবার জন্য উন্মুক্ত</option>
+            <option value="authenticated">লগইন করা ব্যবহারকারী</option>
+            <option value="staff">শুধু স্টাফ</option>
+          </select>
+          <select value={hours} onChange={(e) => setHours(e.target.value)} className="min-h-9 rounded-lg border border-border bg-muted px-2" aria-label="মেয়াদ">
+            <option value="6">৬ ঘণ্টা</option>
+            <option value="24">২৪ ঘণ্টা</option>
+            <option value="48">৪৮ ঘণ্টা</option>
+            <option value="168">৭ দিন</option>
+            <option value="0">মেয়াদহীন</option>
+          </select>
+          <button
+            onClick={() => void setLink({ _hours: Number(hours), _scope: scope, _revoked: false }, "লিংক সেটিংস সংরক্ষিত হয়েছে")}
+            disabled={busy === "link"}
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-primary px-3 font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" /> প্রয়োগ করুন
+          </button>
+          <button
+            onClick={() => void copyTrackLink(delivery.public_token)}
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-muted px-3 font-semibold"
+          >
+            <Share2 className="h-3.5 w-3.5 text-primary" /> লিংক কপি
+          </button>
+          <button
+            onClick={() => void setLink({ _rotate: true }, "নতুন লিংক তৈরি হয়েছে — পুরোনো লিংক আর কাজ করবে না")}
+            disabled={busy === "link"}
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-muted px-3 font-semibold disabled:opacity-60"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> নতুন লিংক
+          </button>
+          <button
+            onClick={() => void setLink({ _revoked: !delivery.token_revoked }, delivery.token_revoked ? "লিংক আবার চালু হয়েছে" : "লিংক বাতিল হয়েছে")}
+            disabled={busy === "link"}
+            className={`flex min-h-9 items-center gap-1 rounded-lg px-3 font-semibold disabled:opacity-60 ${delivery.token_revoked ? "bg-secondary text-primary-dark" : "bg-destructive/10 text-destructive"}`}
+          >
+            <XCircle className="h-3.5 w-3.5" /> {delivery.token_revoked ? "পুনরায় চালু" : "লিংক বাতিল"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 /** ডেমো ডাটা কন্ট্রোল — mock ডেলিভারি অর্ডার তৈরি, বাতিল ও রিসেট */
 function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: Rider[] }) {
   const qc = useQueryClient();
   const [zone, setZone] = useState("");
   const [count, setCount] = useState(1);
+  const [scenario, setScenario] = useState("mixed");
   const [busy, setBusy] = useState("");
 
   const zones = Array.from(new Set(riders.map((r) => r.zone).filter(Boolean)));
@@ -372,8 +594,25 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
 
   const create = async () => {
     setBusy("create");
-    for (let i = 0; i < count; i++) {
-      const { error } = await supabase.rpc("demo_seed_delivery", { _zone: zone });
+    const { data, error } = await supabase.rpc("demo_seed_bulk", { _zone: zone, _count: count, _scenario: scenario });
+    setBusy("");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${bn(Number(data ?? count))} টি ডেমো ডেলিভারি তৈরি হয়েছে`);
+    refresh();
+  };
+
+  const cancelAll = async () => {
+    const open = demo.filter((d) => !["delivered", "failed"].includes(d.status));
+    if (open.length === 0) {
+      toast.info("বাতিল করার মতো চলমান ডেমো ডেলিভারি নেই");
+      return;
+    }
+    setBusy("cancel-all");
+    for (const d of open) {
+      const { error } = await supabase.rpc("demo_cancel_delivery", { _delivery_id: d.id });
       if (error) {
         setBusy("");
         toast.error(error.message);
@@ -381,9 +620,10 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
       }
     }
     setBusy("");
-    toast.success(`${bn(count)} টি ডেমো ডেলিভারি তৈরি হয়েছে`);
+    toast.success(`${bn(open.length)} টি ডেমো ডেলিভারি বাতিল হয়েছে`);
     refresh();
   };
+
 
   const cancel = async (id: string) => {
     setBusy(id);
@@ -429,12 +669,26 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
             ))}
           </select>
           <select
+            value={scenario}
+            onChange={(e) => setScenario(e.target.value)}
+            className="min-h-9 rounded-lg border border-border bg-muted px-2"
+            aria-label="স্টেট সিনারিও"
+          >
+            <option value="mixed">মিশ্র অবস্থা</option>
+            <option value="assigned">নিয়োগ হয়েছে</option>
+            <option value="picked">পিকআপ হয়েছে</option>
+            <option value="on_the_way">পথে আছে</option>
+            <option value="arrived">পৌঁছে গেছে</option>
+            <option value="delivered">ডেলিভারি সম্পন্ন</option>
+            <option value="failed">ব্যর্থ ডেলিভারি</option>
+          </select>
+          <select
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
             className="min-h-9 rounded-lg border border-border bg-muted px-2"
             aria-label="সংখ্যা"
           >
-            {[1, 3, 5].map((c) => (
+            {[1, 3, 5, 10, 20].map((c) => (
               <option key={c} value={c}>
                 {bn(c)} টি
               </option>
@@ -445,15 +699,23 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
             disabled={busy === "create"}
             className="flex min-h-9 items-center gap-1 rounded-lg bg-primary px-3 font-semibold text-primary-foreground disabled:opacity-60"
           >
-            <Plus className="h-3.5 w-3.5" /> তৈরি করুন
+            <Plus className="h-3.5 w-3.5" /> {busy === "create" ? "তৈরি হচ্ছে..." : "বাল্ক তৈরি করুন"}
+          </button>
+          <button
+            onClick={() => void cancelAll()}
+            disabled={busy === "cancel-all"}
+            className="ml-auto flex min-h-9 items-center gap-1 rounded-lg bg-muted px-3 font-semibold disabled:opacity-60"
+          >
+            <XCircle className="h-3.5 w-3.5 text-destructive" /> সব চলমান বাতিল
           </button>
           <button
             onClick={() => void reset()}
             disabled={busy === "reset"}
-            className="ml-auto flex min-h-9 items-center gap-1 rounded-lg bg-destructive/10 px-3 font-semibold text-destructive disabled:opacity-60"
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-destructive/10 px-3 font-semibold text-destructive disabled:opacity-60"
           >
             <RotateCcw className="h-3.5 w-3.5" /> ডেমো ডাটা রিসেট
           </button>
+
         </div>
       </div>
 

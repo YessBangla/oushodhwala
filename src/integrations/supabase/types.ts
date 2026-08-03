@@ -489,6 +489,9 @@ export type Database = {
           public_token: string
           rider_id: string | null
           status: string
+          token_expires_at: string | null
+          token_revoked: boolean
+          token_scope: string
           updated_at: string
           user_id: string
         }
@@ -513,6 +516,9 @@ export type Database = {
           public_token?: string
           rider_id?: string | null
           status?: string
+          token_expires_at?: string | null
+          token_revoked?: boolean
+          token_scope?: string
           updated_at?: string
           user_id: string
         }
@@ -537,6 +543,9 @@ export type Database = {
           public_token?: string
           rider_id?: string | null
           status?: string
+          token_expires_at?: string | null
+          token_revoked?: boolean
+          token_scope?: string
           updated_at?: string
           user_id?: string
         }
@@ -2535,6 +2544,9 @@ export type Database = {
           public_token: string
           rider_id: string | null
           status: string
+          token_expires_at: string | null
+          token_revoked: boolean
+          token_scope: string
           updated_at: string
           user_id: string
         }
@@ -2655,6 +2667,42 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "purchase_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_delivery_eta: {
+        Args: { _delivery_id: string; _eta: number }
+        Returns: {
+          assigned_at: string | null
+          created_at: string
+          delivered_at: string | null
+          eta_minutes: number
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          note: string
+          order_id: string
+          order_no: string
+          otp: string
+          picked_at: string | null
+          pod_at: string | null
+          pod_photo_url: string
+          pod_receiver_name: string
+          pod_signature_url: string
+          public_token: string
+          rider_id: string | null
+          status: string
+          token_expires_at: string | null
+          token_revoked: boolean
+          token_scope: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2825,6 +2873,48 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "service_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_track_link: {
+        Args: {
+          _delivery_id: string
+          _hours?: number
+          _revoked?: boolean
+          _rotate?: boolean
+          _scope?: string
+        }
+        Returns: {
+          assigned_at: string | null
+          created_at: string
+          delivered_at: string | null
+          eta_minutes: number
+          id: string
+          last_lat: number | null
+          last_lng: number | null
+          last_seen_at: string | null
+          note: string
+          order_id: string
+          order_no: string
+          otp: string
+          picked_at: string | null
+          pod_at: string | null
+          pod_photo_url: string
+          pod_receiver_name: string
+          pod_signature_url: string
+          public_token: string
+          rider_id: string | null
+          status: string
+          token_expires_at: string | null
+          token_revoked: boolean
+          token_scope: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3021,6 +3111,10 @@ export type Database = {
       claim_first_admin: { Args: never; Returns: boolean }
       demo_cancel_delivery: { Args: { _delivery_id: string }; Returns: boolean }
       demo_reset_deliveries: { Args: never; Returns: number }
+      demo_seed_bulk: {
+        Args: { _count?: number; _scenario?: string; _zone?: string }
+        Returns: number
+      }
       demo_seed_delivery: {
         Args: { _zone?: string }
         Returns: {
@@ -3044,6 +3138,9 @@ export type Database = {
           public_token: string
           rider_id: string | null
           status: string
+          token_expires_at: string | null
+          token_revoked: boolean
+          token_scope: string
           updated_at: string
           user_id: string
         }
@@ -3259,6 +3356,9 @@ export type Database = {
               public_token: string
               rider_id: string | null
               status: string
+              token_expires_at: string | null
+              token_revoked: boolean
+              token_scope: string
               updated_at: string
               user_id: string
             }
@@ -3302,6 +3402,9 @@ export type Database = {
               public_token: string
               rider_id: string | null
               status: string
+              token_expires_at: string | null
+              token_revoked: boolean
+              token_scope: string
               updated_at: string
               user_id: string
             }
