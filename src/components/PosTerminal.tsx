@@ -45,9 +45,39 @@ export function PosTerminal() {
   const [vat, setVat] = useState("0");
   const [barcode, setBarcode] = useState("");
   const [cat, setCat] = useState("all");
+  const [recentCats, setRecentCats] = useState<string[]>([]);
+  const [sort, setSort] = useState<"stock" | "price_low" | "price_high" | "brand" | "name">("stock");
+  const [stockFilter, setStockFilter] = useState<"all" | "in" | "low">("all");
+  const [brand, setBrand] = useState("all");
+  const [picker, setPicker] = useState<{ p: P; qty: number; unit: "piece" | "pack" } | null>(null);
   const [held, setHeld] = useState<{ id: string; name: string; lines: Line[] }[]>([]);
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("cash");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_CATS_KEY);
+      if (raw) setRecentCats(JSON.parse(raw) as string[]);
+    } catch {
+      /* উপেক্ষা */
+    }
+  }, []);
+
+  /** ক্যাটাগরি বাছাই — সাম্প্রতিক তালিকায় সংরক্ষণ */
+  const chooseCat = (slug: string) => {
+    setCat(slug);
+    setBrand("all");
+    if (slug === "all") return;
+    setRecentCats((prev) => {
+      const next = [slug, ...prev.filter((s) => s !== slug)].slice(0, 5);
+      try {
+        localStorage.setItem(RECENT_CATS_KEY, JSON.stringify(next));
+      } catch {
+        /* উপেক্ষা */
+      }
+      return next;
+    });
+  };
 
   const { data: results, isFetching } = useQuery({
     queryKey: ["pos-search", q, cat],
@@ -58,11 +88,32 @@ export function PosTerminal() {
         .eq("active", true);
       if (q.trim().length > 1) query = query.or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`);
       if (cat !== "all") query = query.eq("category", cat);
-      const { data, error } = await query.order("stock", { ascending: false }).limit(24);
+      const { data, error } = await query.order("stock", { ascending: false }).limit(80);
       if (error) throw error;
       return (data ?? []) as P[];
     },
   });
+
+  const brands = useMemo(
+    () => Array.from(new Set((results ?? []).map((p) => p.brand).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [results],
+  );
+
+  const shown = useMemo(() => {
+    let list = (results ?? []).slice();
+    if (brand !== "all") list = list.filter((p) => p.brand === brand);
+    if (stockFilter === "in") list = list.filter((p) => (p.stock ?? 0) > 0);
+    if (stockFilter === "low") list = list.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= LOW_STOCK);
+    list.sort((a, b) => {
+      if (sort === "price_low") return a.price - b.price;
+      if (sort === "price_high") return b.price - a.price;
+      if (sort === "brand") return (a.brand || "").localeCompare(b.brand || "") || a.name.localeCompare(b.name);
+      if (sort === "name") return a.name.localeCompare(b.name);
+      return (b.stock ?? 0) - (a.stock ?? 0);
+    });
+    return list.slice(0, 48);
+  }, [results, brand, stockFilter, sort]);
+
 
   const { data: cats = [] } = useQuery({
     queryKey: ["pos-cats"],
