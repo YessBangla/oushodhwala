@@ -40,11 +40,12 @@ function ResetPasswordPage() {
     let alive = true;
     const hash = window.location.hash || "";
     const err = /error_description=([^&]+)/.exec(hash);
-    if (err) {
+    if (err?.[1]) {
       setReady("invalid");
       setStatus({ kind: "error", text: decodeURIComponent(err[1].replace(/\+/g, " ")) });
       return;
     }
+
     const check = async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive) return;
