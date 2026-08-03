@@ -230,6 +230,57 @@ export function PosTerminal() {
           />
         </div>
 
+        <div className="relative">
+          <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+          <input
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void scan(barcode);
+            }}
+            placeholder="বারকোড স্ক্যান বা SKU লিখে এন্টার…"
+            className="min-h-11 w-full rounded-xl border border-primary/40 bg-card pl-9 pr-3 font-mono text-sm"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setCat("all")}
+            className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${
+              cat === "all" ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+            }`}
+          >
+            সব
+          </button>
+          {cats.map((c) => (
+            <button
+              key={c.slug}
+              onClick={() => setCat(c.slug)}
+              className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${
+                cat === c.slug ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+              }`}
+            >
+              {c.bn}
+            </button>
+          ))}
+        </div>
+
+        {held.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-2">
+            <span className="text-[11px] font-bold text-muted-foreground">হোল্ড করা বিক্রয়:</span>
+            {held.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => resume(h.id)}
+                className="flex items-center gap-1.5 rounded-lg bg-secondary px-2.5 py-1.5 text-[11px] font-bold text-primary-dark"
+              >
+                <PlayCircle className="h-3.5 w-3.5" /> {h.name} · {bn(h.lines.length)}
+              </button>
+            ))}
+          </div>
+        )}
+
+
         <div className="grid gap-2 sm:grid-cols-2">
           {isFetching && <p className="text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
           {(results ?? []).map((p) => (
