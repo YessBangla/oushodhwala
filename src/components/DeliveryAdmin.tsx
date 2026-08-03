@@ -669,12 +669,26 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
             ))}
           </select>
           <select
+            value={scenario}
+            onChange={(e) => setScenario(e.target.value)}
+            className="min-h-9 rounded-lg border border-border bg-muted px-2"
+            aria-label="স্টেট সিনারিও"
+          >
+            <option value="mixed">মিশ্র অবস্থা</option>
+            <option value="assigned">নিয়োগ হয়েছে</option>
+            <option value="picked">পিকআপ হয়েছে</option>
+            <option value="on_the_way">পথে আছে</option>
+            <option value="arrived">পৌঁছে গেছে</option>
+            <option value="delivered">ডেলিভারি সম্পন্ন</option>
+            <option value="failed">ব্যর্থ ডেলিভারি</option>
+          </select>
+          <select
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
             className="min-h-9 rounded-lg border border-border bg-muted px-2"
             aria-label="সংখ্যা"
           >
-            {[1, 3, 5].map((c) => (
+            {[1, 3, 5, 10, 20].map((c) => (
               <option key={c} value={c}>
                 {bn(c)} টি
               </option>
@@ -685,15 +699,23 @@ function DemoControls({ deliveries, riders }: { deliveries: Delivery[]; riders: 
             disabled={busy === "create"}
             className="flex min-h-9 items-center gap-1 rounded-lg bg-primary px-3 font-semibold text-primary-foreground disabled:opacity-60"
           >
-            <Plus className="h-3.5 w-3.5" /> তৈরি করুন
+            <Plus className="h-3.5 w-3.5" /> {busy === "create" ? "তৈরি হচ্ছে..." : "বাল্ক তৈরি করুন"}
+          </button>
+          <button
+            onClick={() => void cancelAll()}
+            disabled={busy === "cancel-all"}
+            className="ml-auto flex min-h-9 items-center gap-1 rounded-lg bg-muted px-3 font-semibold disabled:opacity-60"
+          >
+            <XCircle className="h-3.5 w-3.5 text-destructive" /> সব চলমান বাতিল
           </button>
           <button
             onClick={() => void reset()}
             disabled={busy === "reset"}
-            className="ml-auto flex min-h-9 items-center gap-1 rounded-lg bg-destructive/10 px-3 font-semibold text-destructive disabled:opacity-60"
+            className="flex min-h-9 items-center gap-1 rounded-lg bg-destructive/10 px-3 font-semibold text-destructive disabled:opacity-60"
           >
             <RotateCcw className="h-3.5 w-3.5" /> ডেমো ডাটা রিসেট
           </button>
+
         </div>
       </div>
 
