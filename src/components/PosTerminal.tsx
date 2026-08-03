@@ -480,10 +480,15 @@ export function PosTerminal() {
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
           {isFetching && <p className="col-span-full text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
-          {(results ?? []).map((p) => (
+          {!isFetching && shown.length === 0 && (
+            <p className="col-span-full rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              এই ফিল্টারে কোনো পণ্য নেই
+            </p>
+          )}
+          {shown.map((p) => (
             <button
               key={p.id}
-              onClick={() => add(p)}
+              onClick={() => setPicker({ p, qty: 1, unit: "piece" })}
               className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
             >
               <div className="relative bg-secondary/40 p-2">
@@ -497,14 +502,22 @@ export function PosTerminal() {
                     emojiClassName="text-2xl"
                   />
                 </div>
-                <span className="absolute right-2 top-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                <span
+                  className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    p.stock <= 0
+                      ? "bg-sale/10 text-sale"
+                      : p.stock <= LOW_STOCK
+                        ? "bg-amber-500/15 text-amber-700"
+                        : "bg-primary/10 text-primary"
+                  }`}
+                >
                   {bn(p.stock)}
                 </span>
               </div>
               <div className="min-w-0 flex-1 space-y-1 border-t border-border p-2.5">
                 {p.category && (
                   <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {cats.find((c) => c.slug === p.category)?.bn ?? p.category}
+                    {catName(p.category)}
                   </p>
                 )}
                 <p className="truncate text-xs font-bold leading-tight text-navy">{p.name}</p>
@@ -524,6 +537,119 @@ export function PosTerminal() {
             </button>
           ))}
         </div>
+
+        <Dialog open={!!picker} onOpenChange={(o) => !o && setPicker(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-sm">পরিমাণ নির্বাচন</DialogTitle>
+            </DialogHeader>
+            {picker && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 rounded-xl border border-border p-2">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-secondary/40">
+                    <ProductImage
+                      src={picker.p.image_url || picker.p.medicine_image_url}
+                      alt={picker.p.name}
+                      emoji={picker.p.emoji || "💊"}
+                      ratio="square"
+                      imgClassName="p-1"
+                      emojiClassName="text-xl"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold">{picker.p.name}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {picker.p.pack} · স্টক {bn(picker.p.stock)}
+                    </p>
+                    <p className="text-xs font-extrabold text-primary">৳{bn(picker.p.price)} / পিস</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-bold text-muted-foreground">ইউনিট</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["piece", "pack"] as const).map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => setPicker((s) => (s ? { ...s, unit: u } : s))}
+                        className={`rounded-lg border px-2 py-2 text-[11px] font-bold ${
+                          picker.unit === u ? "border-primary bg-primary/10 text-primary" : "border-border"
+                        }`}
+                      >
+                        {u === "piece" ? "পিস" : `প্যাক (${bn(packSize(picker.p.pack))} পিস)`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[11px] font-bold text-muted-foreground">পরিমাণ</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPicker((s) => (s ? { ...s, qty: Math.max(1, s.qty - 1) } : s))}
+                      aria-label="কমান"
+                      className="grid h-11 w-11 place-items-center rounded-lg border border-border"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      value={picker.qty}
+                      onChange={(e) =>
+                        setPicker((s) => (s ? { ...s, qty: Math.max(1, Number(e.target.value) || 1) } : s))
+                      }
+                      className="h-11 flex-1 rounded-lg border border-border bg-background text-center text-sm font-bold"
+                    />
+                    <button
+                      onClick={() => setPicker((s) => (s ? { ...s, qty: s.qty + 1 } : s))}
+                      aria-label="বাড়ান"
+                      className="grid h-11 w-11 place-items-center rounded-lg border border-border"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {[2, 5, 10, 20].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setPicker((s) => (s ? { ...s, qty: n } : s))}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold"
+                      >
+                        {bn(n)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {(() => {
+                  const units = picker.unit === "pack" ? picker.qty * packSize(picker.p.pack) : picker.qty;
+                  return (
+                    <>
+                      <p className="rounded-lg bg-secondary px-3 py-2 text-[11px] font-bold text-primary-dark">
+                        মোট {bn(units)} পিস · ৳{bn(units * Number(picker.p.price))}
+                        {picker.p.stock > 0 && units > picker.p.stock && (
+                          <span className="ml-1 text-sale">(স্টকের বেশি!)</span>
+                        )}
+                      </p>
+                      <button
+                        onClick={() => {
+                          add(picker.p, picker.qty, picker.unit);
+                          toast.success(`${picker.p.name} — ${bn(units)} পিস যোগ হয়েছে`);
+                          setPicker(null);
+                        }}
+                        className="min-h-11 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground"
+                      >
+                        কার্টে যোগ করুন
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
 
 
 
