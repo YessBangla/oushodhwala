@@ -31,6 +31,7 @@ import { WEEKDAYS } from "@/lib/appointments";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 import { allowedTabs } from "@/lib/roles";
 import { StaffRoles } from "@/components/StaffRoles";
+import { PermissionMatrix } from "@/components/PermissionMatrix";
 import { PosTerminal } from "@/components/PosTerminal";
 import { ExpensesAdmin, ChartOfAccounts, JournalAdmin, DayBook, Financials, PartyStatement } from "@/components/FinanceAdmin";
 import { StockAdjustments, StockCount, LabelPrint } from "@/components/StockOpsAdmin";
@@ -93,6 +94,7 @@ const TABS = [
   { id: "erpreports", t: "ERP রিপোর্ট" },
   { id: "erproles", t: "ERP অ্যাক্সেস" },
   { id: "staff", t: "স্টাফ ও ভূমিকা" },
+  { id: "permissions", t: "পারমিশন ম্যাট্রিক্স" },
 
   { id: "expenses", t: "খরচ" },
   { id: "coa", t: "চার্ট অব অ্যাকাউন্টস" },
@@ -125,7 +127,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["support", "lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
-  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles", "staff"]) },
+  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles", "staff", "permissions"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
 ];
 
@@ -277,6 +279,7 @@ function Admin() {
       {tab === "erpreports" && <ErpReports />}
       {tab === "erproles" && <ErpRoles />}
       {tab === "staff" && <StaffRoles />}
+      {tab === "permissions" && <PermissionMatrix />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
