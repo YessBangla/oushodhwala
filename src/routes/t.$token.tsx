@@ -249,15 +249,13 @@ function PublicTrack() {
           ))}
         </div>
 
-        {data.last_lat != null && data.last_lng != null && (
-          <LiveMap
-            riderLat={Number(data.last_lat)}
-            riderLng={Number(data.last_lng)}
-            destLat={data.dest_lat != null ? Number(data.dest_lat) : null}
-            destLng={data.dest_lng != null ? Number(data.dest_lng) : null}
-            lastSeen={data.last_seen_at ?? null}
-          />
-        )}
+        <RouteMap
+          path={path}
+          destLat={data.dest_lat != null ? Number(data.dest_lat) : null}
+          destLng={data.dest_lng != null ? Number(data.dest_lng) : null}
+          lastSeen={data.last_seen_at ?? null}
+        />
+
 
         <button
           onClick={() => {
