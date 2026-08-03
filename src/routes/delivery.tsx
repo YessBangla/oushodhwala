@@ -541,19 +541,30 @@ function DeliveryPanel() {
 
       {past.length > 0 && (
         <>
-          <h2 className="mt-6 text-sm font-bold text-navy">{t("সম্পন্ন", "Completed")}</h2>
+          <h2 className="mt-6 text-sm font-bold text-navy">
+            {t("সম্পন্ন ও ব্যর্থ", "Completed & failed")} ({t.n(past.length)})
+          </h2>
           <ul className="mt-2 space-y-2">
             {past.map((r) => (
-              <li key={r.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-[11px]">
+              <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-[11px]">
                 <span>{DELIVERY_STATUS[r.status]?.emoji}</span>
                 <span className="font-bold">#{r.order_no}</span>
                 <span className="text-muted-foreground">{r.orders?.customer_name}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    r.status === "delivered" ? "bg-secondary text-primary-dark" : "bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  {t(DELIVERY_STATUS[r.status]?.bn ?? r.status, DELIVERY_STATUS[r.status]?.en ?? r.status)}
+                </span>
+                <span className="font-display font-extrabold text-primary">{t.money(Number(r.orders?.total ?? 0))}</span>
                 <span className="ml-auto text-muted-foreground">{fmtTime(r.created_at, t.en)}</span>
               </li>
             ))}
           </ul>
         </>
       )}
+
     </div>
   );
 }
