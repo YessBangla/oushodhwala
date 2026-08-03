@@ -102,22 +102,29 @@ export function DeliverToBar() {
   };
 
   return (
-    <div className="border-t border-border bg-muted">
+    <div className="relative border-t border-border bg-muted">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className="flex w-full items-center gap-1 px-4 py-1.5 text-[11px] text-muted-foreground"
+        className="flex w-full max-w-md items-center gap-1 px-4 py-1.5 text-[11px] text-muted-foreground"
       >
-        <MapPin className="h-3.5 w-3.5 text-primary" />
+        <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
         <span className="truncate">
           {t("ডেলিভারি", "Deliver to")}: {addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}
         </span>
-        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`ml-1 h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="max-h-[70vh] overflow-y-auto overscroll-contain border-t border-border bg-card px-4 py-3 pb-28 lg:max-h-none lg:pb-3">
+        <>
+          <button
+            type="button"
+            aria-label={t("বন্ধ", "Close")}
+            onClick={toggle}
+            className="fixed inset-0 z-30 cursor-default bg-navy/20"
+          />
+          <div className="absolute left-2 right-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card px-4 py-3 shadow-xl sm:left-4 sm:right-auto sm:w-[420px]">
           <p className="text-[11px] font-bold text-navy">{t("ডেলিভারি ঠিকানা", "Delivery address")}</p>
           <ul className="mt-2 space-y-1.5">
             {addresses.map((a) => (
