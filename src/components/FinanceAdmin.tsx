@@ -793,6 +793,25 @@ export function PartyStatement() {
     },
   });
 
+  const term = q.trim().toLowerCase();
+  const rows = (stmt?.rows ?? []).filter(
+    (r) => !term || [r.ref, r.detail].some((s) => (s ?? "").toLowerCase().includes(term)),
+  );
+  const stmtCols = [
+    { key: "date", label: "তারিখ" },
+    { key: "ref", label: "রেফ" },
+    { key: "detail", label: "বিবরণ" },
+    { key: "debit", label: "ডেবিট" },
+    { key: "credit", label: "ক্রেডিট" },
+  ];
+  const stmtRows = rows.map((r) => ({
+    date: new Date(r.date).toLocaleDateString("bn-BD"),
+    ref: r.ref,
+    detail: r.detail,
+    debit: Number(r.debit),
+    credit: Number(r.credit),
+  }));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -825,7 +844,28 @@ export function PartyStatement() {
                 </option>
               ))}
         </select>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="রেফ/বিবরণ খুঁজুন…"
+          className="min-h-11 min-w-48 flex-1 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+        />
+        <button
+          disabled={!stmt}
+          onClick={() => downloadCsv(`statement-${kind}-${today()}`, stmtCols, stmtRows)}
+          className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+        >
+          CSV
+        </button>
+        <button
+          disabled={!stmt}
+          onClick={() => printReport("পার্টি স্টেটমেন্ট", `${stmt?.name ?? ""} · মোট ৳${Number(stmt?.total ?? 0)}`, stmtCols, stmtRows)}
+          className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+        >
+          PDF
+        </button>
       </div>
+
 
       {isFetching && <p className="text-xs text-muted-foreground">লোড হচ্ছে…</p>}
 
