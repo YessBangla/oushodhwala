@@ -88,16 +88,23 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:flex lg:gap-6">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 lg:flex lg:gap-6">
             <MobileMenu />
             <Link to="/" className="flex min-w-0 items-center" aria-label={t("ঔষধওয়ালা", "Oushodhwala")}>
               <BrandLogo size={40} bn={t("ঔষধওয়ালা", "Oushodhwala")} eager />
             </Link>
 
-            <SearchBox className="order-3 col-span-3 lg:order-none lg:min-w-0 lg:flex-1" />
+            <SearchBox className="order-3 col-span-3 mt-1 lg:order-none lg:mt-0 lg:min-w-0 lg:flex-1" />
 
-            <div className="flex shrink-0 items-center gap-3">
-              <DeliverToBar />
+            {/* মোবাইলে ডেলিভারি চিপ আলাদা সারিতে — পুরো প্রস্থে, ট্যাপ-ফ্রেন্ডলি */}
+            <div className="order-4 col-span-3 lg:hidden">
+              <DeliverToBar full />
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+              <div className="hidden lg:block">
+                <DeliverToBar />
+              </div>
               <div
                 className="flex items-center rounded-full bg-muted p-0.5 text-[11px] font-bold"
                 role="group"
