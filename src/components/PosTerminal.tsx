@@ -35,6 +35,14 @@ const METHODS = [
 const RECENT_CATS_KEY = "pos-recent-cats";
 const LOW_STOCK = 10;
 
+/** প্যাক স্ট্রিং থেকে ইউনিট সংখ্যা (যেমন "১০ পিস" / "10 x 10") */
+function packSize(pack?: string) {
+  const m = (pack ?? "").match(/\d+/);
+  const n = m ? Number(m[0]) : 1;
+  return n > 0 && n <= 1000 ? n : 1;
+}
+
+
 
 /** কাউন্টার/সরাসরি বিক্রয় টার্মিনাল */
 export function PosTerminal() {
