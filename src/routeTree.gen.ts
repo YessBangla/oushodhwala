@@ -40,6 +40,7 @@ import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as RxIdRouteImport } from './routes/rx.$id'
+import { Route as TTokenRouteImport } from './routes/t.$token'
 import { Route as TrackNoRouteImport } from './routes/track.$no'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicSitemapDotxmlRouteImport } from './routes/api/public/sitemap[.]xml'
@@ -200,6 +201,11 @@ const RxIdRoute = RxIdRouteImport.update({
   path: '/rx/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TTokenRoute = TTokenRouteImport.update({
+  id: '/t/$token',
+  path: '/t/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrackNoRoute = TrackNoRouteImport.update({
   id: '/track/$no',
   path: '/track/$no',
@@ -253,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
+  '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
+  '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
@@ -328,6 +336,7 @@ export interface FileRoutesById {
   '/consultation/$id': typeof ConsultationIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
+  '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/product/$id'
     | '/rx/$id'
+    | '/t/$token'
     | '/track/$no'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
@@ -404,6 +414,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/product/$id'
     | '/rx/$id'
+    | '/t/$token'
     | '/track/$no'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
@@ -441,6 +452,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/product/$id'
     | '/rx/$id'
+    | '/t/$token'
     | '/track/$no'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
@@ -479,6 +491,7 @@ export interface RootRouteChildren {
   ConsultationIdRoute: typeof ConsultationIdRoute
   ProductIdRoute: typeof ProductIdRoute
   RxIdRoute: typeof RxIdRoute
+  TTokenRoute: typeof TTokenRoute
   TrackNoRoute: typeof TrackNoRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicSitemapDotxmlRoute: typeof ApiPublicSitemapDotxmlRoute
@@ -704,6 +717,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RxIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/t/$token': {
+      id: '/t/$token'
+      path: '/t/$token'
+      fullPath: '/t/$token'
+      preLoaderRoute: typeof TTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/track/$no': {
       id: '/track/$no'
       path: '/track/$no'
@@ -767,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsultationIdRoute: ConsultationIdRoute,
   ProductIdRoute: ProductIdRoute,
   RxIdRoute: RxIdRoute,
+  TTokenRoute: TTokenRoute,
   TrackNoRoute: TrackNoRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicSitemapDotxmlRoute: ApiPublicSitemapDotxmlRoute,
