@@ -256,37 +256,26 @@ export function PosTerminal() {
           />
         </div>
 
-        <div className="rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-3 py-2">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">ক্যাটাগরি</p>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
-              {cat === "all" ? "সব" : (cats.find((c) => c.slug === cat)?.bn ?? cat)} · {bn((results ?? []).length)} পণ্য
-            </span>
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto px-3 py-2 [scrollbar-width:thin]">
-            <button
-              onClick={() => setCat("all")}
-              className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${
-                cat === "all" ? "bg-primary text-primary-foreground" : "border border-border text-navy hover:border-primary"
-              }`}
-            >
-              সব
-            </button>
-            {cats.map((c) => (
-              <button
-                key={c.slug}
-                onClick={() => setCat(c.slug)}
-                className={`shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${
-                  cat === c.slug
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border text-navy hover:border-primary"
-                }`}
-              >
-                {c.bn}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">ক্যাটাগরি</p>
+          <Select value={cat} onValueChange={setCat}>
+            <SelectTrigger className="h-10 min-w-[200px] flex-1 rounded-lg text-xs font-semibold sm:max-w-xs">
+              <SelectValue placeholder="সব ক্যাটাগরি" />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">সব ক্যাটাগরি</SelectItem>
+              {cats.map((c) => (
+                <SelectItem key={c.slug} value={c.slug}>
+                  {c.bn}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold text-primary-dark">
+            {bn((results ?? []).length)} পণ্য
+          </span>
         </div>
+
 
 
         {held.length > 0 && (
