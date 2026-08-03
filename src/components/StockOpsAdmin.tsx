@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Search, Trash2, Printer, ClipboardCheck, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import {
+  DEFAULT_LABEL_SETTINGS,
+  LABEL_PRESETS,
+  barPattern,
+  loadLabelSettings,
+  saveLabelSettings,
+  type LabelSettings,
+} from "@/lib/label-settings";
+
 
 type P = { id: string; name: string; price: number; stock: number; pack: string; brand: string };
 
