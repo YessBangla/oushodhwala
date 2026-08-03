@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
+import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
-type P = { id: string; name: string; en: string; price: number; stock: number; pack: string };
+type P = { id: string; name: string; en: string; price: number; stock: number; pack: string; category: string; brand: string };
 type Line = { product_id: string; product_name: string; price: number; qty: number };
 
 const METHODS = [
@@ -26,21 +26,35 @@ export function PosTerminal() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [discount, setDiscount] = useState("0");
+  const [discMode, setDiscMode] = useState<"amount" | "percent">("amount");
+  const [vat, setVat] = useState("0");
+  const [barcode, setBarcode] = useState("");
+  const [cat, setCat] = useState("all");
+  const [held, setHeld] = useState<{ id: string; name: string; lines: Line[] }[]>([]);
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("cash");
 
   const { data: results, isFetching } = useQuery({
-    queryKey: ["pos-search", q],
-    enabled: q.trim().length > 1,
+    queryKey: ["pos-search", q, cat],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
-        .select("id,name,en,price,stock,pack")
-        .eq("active", true)
-        .or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`)
-        .limit(12);
+        .select("id,name,en,price,stock,pack,category,brand")
+        .eq("active", true);
+      if (q.trim().length > 1) query = query.or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`);
+      if (cat !== "all") query = query.eq("category", cat);
+      const { data, error } = await query.order("stock", { ascending: false }).limit(24);
       if (error) throw error;
       return (data ?? []) as P[];
+    },
+  });
+
+  const { data: cats = [] } = useQuery({
+    queryKey: ["pos-cats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("slug,bn").limit(40);
+      if (error) throw error;
+      return (data ?? []) as { slug: string; bn: string }[];
     },
   });
 
@@ -72,9 +86,13 @@ export function PosTerminal() {
     setLines((ls) => ls.map((l) => (l.product_id === id ? { ...l, qty: Math.max(1, qty) } : l)));
 
   const sub = useMemo(() => lines.reduce((a, l) => a + l.price * l.qty, 0), [lines]);
-  const disc = Number(discount) || 0;
-  const total = Math.max(sub - disc, 0);
+  const disc = discMode === "percent" ? Math.round(((sub * (Number(discount) || 0)) / 100) * 100) / 100 : Number(discount) || 0;
+  const vatAmt = Math.round(((sub - disc) * (Number(vat) || 0)) / 100 * 100) / 100;
+  const total = Math.max(sub - disc + vatAmt, 0);
   const due = Math.max(total - (Number(paid) || 0), 0);
+  const change = Math.max((Number(paid) || 0) - total, 0);
+  /** সার্ভারে মোট = সাবটোটাল − ডিসকাউন্ট, তাই ভ্যাট নেট অ্যাডজাস্টমেন্ট হিসেবে পাঠানো হয় */
+  const netDiscount = disc - vatAmt;
 
   const [online, setOnline] = useState(true);
   const [queue, setQueue] = useState<QueuedSale[]>([]);
@@ -129,7 +147,42 @@ export function PosTerminal() {
     setName("");
     setPhone("");
     setDiscount("0");
+    setVat("0");
     setPaid("");
+  };
+
+  /** বারকোড/SKU স্ক্যান — এন্টার চাপলে সরাসরি কার্টে যোগ */
+  async function scan(code: string) {
+    const c = code.trim();
+    if (!c) return;
+    const { data } = await supabase
+      .from("products")
+      .select("id,name,en,price,stock,pack,category,brand")
+      .eq("active", true)
+      .or(`id.eq.${/^[0-9a-f-]{36}$/i.test(c) ? c : "00000000-0000-0000-0000-000000000000"},name.ilike.%${c}%,en.ilike.%${c}%`)
+      .limit(1);
+    const p = (data ?? [])[0] as P | undefined;
+    if (!p) {
+      toast.error("পণ্য মেলেনি: " + c);
+      return;
+    }
+    add(p);
+    setBarcode("");
+  }
+
+  const hold = () => {
+    if (!lines.length) return;
+    setHeld((h) => [...h, { id: String(Date.now()), name: name || `হোল্ড ${h.length + 1}`, lines }]);
+    setLines([]);
+    toast.success("বিক্রয় হোল্ড করা হয়েছে");
+  };
+
+  const resume = (id: string) => {
+    const item = held.find((h) => h.id === id);
+    if (!item) return;
+    setLines(item.lines);
+    setName(item.name);
+    setHeld((h) => h.filter((x) => x.id !== id));
   };
 
   const sell = useMutation({
@@ -138,7 +191,7 @@ export function PosTerminal() {
         items: lines,
         customer_name: name,
         phone,
-        discount: disc,
+        discount: netDiscount,
         paid: Number(paid) || total,
         method,
         note: "",
@@ -176,6 +229,57 @@ export function PosTerminal() {
             className="min-h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm"
           />
         </div>
+
+        <div className="relative">
+          <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+          <input
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void scan(barcode);
+            }}
+            placeholder="বারকোড স্ক্যান বা SKU লিখে এন্টার…"
+            className="min-h-11 w-full rounded-xl border border-primary/40 bg-card pl-9 pr-3 font-mono text-sm"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setCat("all")}
+            className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${
+              cat === "all" ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+            }`}
+          >
+            সব
+          </button>
+          {cats.map((c) => (
+            <button
+              key={c.slug}
+              onClick={() => setCat(c.slug)}
+              className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${
+                cat === c.slug ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+              }`}
+            >
+              {c.bn}
+            </button>
+          ))}
+        </div>
+
+        {held.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-card p-2">
+            <span className="text-[11px] font-bold text-muted-foreground">হোল্ড করা বিক্রয়:</span>
+            {held.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => resume(h.id)}
+                className="flex items-center gap-1.5 rounded-lg bg-secondary px-2.5 py-1.5 text-[11px] font-bold text-primary-dark"
+              >
+                <PlayCircle className="h-3.5 w-3.5" /> {h.name} · {bn(h.lines.length)}
+              </button>
+            ))}
+          </div>
+        )}
+
 
         <div className="grid gap-2 sm:grid-cols-2">
           {isFetching && <p className="text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
@@ -336,14 +440,35 @@ export function PosTerminal() {
           placeholder="মোবাইল (ঐচ্ছিক)"
           className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
         />
-        <label className="block text-[11px] font-semibold text-muted-foreground">ছাড় (৳)</label>
-        <input
-          type="number"
-          value={discount}
-          onChange={(e) => setDiscount(e.target.value)}
-          className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
-        />
-        <label className="block text-[11px] font-semibold text-muted-foreground">পরিশোধ (৳)</label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-[11px] font-semibold text-muted-foreground">
+            <span className="flex items-center gap-1">
+              ছাড়
+              <button
+                onClick={() => setDiscMode((m) => (m === "amount" ? "percent" : "amount"))}
+                className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-primary-dark"
+              >
+                {discMode === "amount" ? "৳" : "%"}
+              </button>
+            </span>
+            <input
+              type="number"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
+            />
+          </label>
+          <label className="text-[11px] font-semibold text-muted-foreground">
+            ভ্যাট (%)
+            <input
+              type="number"
+              value={vat}
+              onChange={(e) => setVat(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
+            />
+          </label>
+        </div>
+        <label className="block text-[11px] font-semibold text-muted-foreground">পরিশোধিত (৳)</label>
         <input
           type="number"
           value={paid}
@@ -351,50 +476,72 @@ export function PosTerminal() {
           placeholder={String(total)}
           className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
         />
-        <select
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
-        >
+
+        <p className="text-[11px] font-semibold text-muted-foreground">পেমেন্ট মাধ্যম</p>
+        <div className="grid grid-cols-3 gap-1.5">
           {METHODS.map((m) => (
-            <option key={m.v} value={m.v}>
+            <button
+              key={m.v}
+              onClick={() => setMethod(m.v)}
+              className={`min-h-11 rounded-lg px-2 text-[11px] font-bold ${
+                method === m.v ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+              }`}
+            >
               {m.t}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
 
         <dl className="space-y-1 border-t border-border pt-2 text-xs">
           <div className="flex justify-between">
-            <dt>সাবটোটাল</dt>
+            <dt>সাবটোটাল · {bn(lines.reduce((a, l) => a + l.qty, 0))} আইটেম</dt>
             <dd>৳{bn(sub)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>ছাড়</dt>
             <dd>-৳{bn(disc)}</dd>
           </div>
+          <div className="flex justify-between">
+            <dt>ভ্যাট {bn(Number(vat) || 0)}%</dt>
+            <dd>৳{bn(vatAmt)}</dd>
+          </div>
           <div className="flex justify-between text-sm font-bold text-primary">
-            <dt>মোট</dt>
+            <dt>সর্বমোট</dt>
             <dd>৳{bn(total)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>বাকি</dt>
             <dd>৳{bn(due)}</dd>
           </div>
+          <div className="flex justify-between font-bold">
+            <dt>ফেরত</dt>
+            <dd>৳{bn(change)}</dd>
+          </div>
         </dl>
 
         <button
           disabled={lines.length === 0 || sell.isPending}
           onClick={() => sell.mutate()}
-          className="min-h-11 w-full rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
+          className="min-h-12 w-full rounded-lg bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-50"
         >
-          {sell.isPending ? "প্রক্রিয়াধীন…" : "বিক্রয় সম্পন্ন করুন"}
+          {sell.isPending ? "প্রক্রিয়াধীন…" : `বিল সম্পন্ন করুন · ৳${bn(total)}`}
         </button>
-        <button
-          onClick={() => window.print()}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border text-xs font-semibold"
-        >
-          <Printer className="h-3.5 w-3.5" /> রসিদ প্রিন্ট
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={hold}
+            disabled={lines.length === 0}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border text-xs font-semibold disabled:opacity-50"
+          >
+            <PauseCircle className="h-3.5 w-3.5" /> হোল্ড করুন
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border text-xs font-semibold"
+          >
+            <Printer className="h-3.5 w-3.5" /> রসিদ প্রিন্ট
+          </button>
+        </div>
+
       </aside>
     </div>
   );

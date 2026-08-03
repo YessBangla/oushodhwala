@@ -71,6 +71,63 @@ export type Database = {
         }
         Relationships: []
       }
+      api_integrations: {
+        Row: {
+          active: boolean
+          api_key: string
+          api_secret: string
+          base_url: string
+          category: string
+          config: Json
+          created_at: string
+          id: string
+          last_ok: boolean | null
+          last_status: number | null
+          last_tested_at: string | null
+          name: string
+          note: string
+          provider: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_key?: string
+          api_secret?: string
+          base_url?: string
+          category?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          last_ok?: boolean | null
+          last_status?: number | null
+          last_tested_at?: string | null
+          name: string
+          note?: string
+          provider: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_key?: string
+          api_secret?: string
+          base_url?: string
+          category?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          last_ok?: boolean | null
+          last_status?: number | null
+          last_tested_at?: string | null
+          name?: string
+          note?: string
+          provider?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_test_logs: {
         Row: {
           actor: string | null
