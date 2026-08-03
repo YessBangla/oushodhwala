@@ -76,31 +76,93 @@ export function PosTerminal() {
   const total = Math.max(sub - disc, 0);
   const due = Math.max(total - (Number(paid) || 0), 0);
 
+  const [online, setOnline] = useState(true);
+  const [queue, setQueue] = useState<QueuedSale[]>([]);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    setOnline(isOnline());
+    setQueue(loadQueue());
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  const pending = queue.filter((s) => s.status !== "synced");
+
+  const runSync = async (silent = false) => {
+    if (loadQueue().every((s) => s.status === "synced")) {
+      setQueue(loadQueue());
+      if (!silent) toast.info("সিংক করার মতো কিছু নেই");
+      return;
+    }
+    setSyncing(true);
+    try {
+      const r = await syncQueue();
+      setQueue(loadQueue());
+      void qc.invalidateQueries({ queryKey: ["pos-recent"] });
+      if (!silent || r.synced || r.failed) {
+        toast.success(
+          `সিংক: নতুন ${bn(r.synced)} · আগেই ছিল ${bn(r.duplicate)} · ব্যর্থ ${bn(r.failed)}${
+            r.conflicts ? ` · স্টক কনফ্লিক্ট ${bn(r.conflicts)}` : ""
+          }`,
+        );
+      }
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // অনলাইনে ফিরলে স্বয়ংক্রিয় সিংক
+  useEffect(() => {
+    if (online && loadQueue().some((s) => s.status !== "synced")) void runSync(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online]);
+
+  const reset = () => {
+    setLines([]);
+    setName("");
+    setPhone("");
+    setDiscount("0");
+    setPaid("");
+  };
+
   const sell = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("pos_create_sale", {
-        _items: lines,
-        _customer_name: name,
-        _phone: phone,
-        _discount: disc,
-        _paid: Number(paid) || total,
-        _method: method,
-        _note: "",
+      const sale = enqueue({
+        items: lines,
+        customer_name: name,
+        phone,
+        discount: disc,
+        paid: Number(paid) || total,
+        method,
+        note: "",
       });
-      if (error) throw error;
-      return data as { invoice_no: string };
+      setQueue(loadQueue());
+      if (!isOnline()) return { offline: true as const, invoice_no: "" };
+      const r = await syncQueue();
+      setQueue(loadQueue());
+      const done = loadQueue().find((s) => s.ref === sale.ref);
+      if (done?.status === "failed") throw new Error(done.error || "সিংক ব্যর্থ");
+      return { offline: false as const, invoice_no: done?.invoice_no ?? "", conflicts: done?.conflicts ?? [], r };
     },
     onSuccess: (d) => {
-      toast.success(`বিক্রয় সম্পন্ন — ইনভয়েস ${d.invoice_no}`);
-      setLines([]);
-      setName("");
-      setPhone("");
-      setDiscount("0");
-      setPaid("");
+      if (d.offline) toast.warning("অফলাইন — বিক্রয় কিউতে সংরক্ষিত, অনলাইনে এলে সিংক হবে");
+      else {
+        toast.success(`বিক্রয় সম্পন্ন — ইনভয়েস ${d.invoice_no}`);
+        if (d.conflicts?.length) toast.warning(`স্টক কনফ্লিক্ট: ${d.conflicts.join("; ")}`);
+      }
+      reset();
       void qc.invalidateQueries({ queryKey: ["pos-recent"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
