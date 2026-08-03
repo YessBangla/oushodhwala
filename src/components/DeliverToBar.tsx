@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useDismissable } from "@/hooks/useDismissable";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, ChevronDown, Check, Trash2, Plus, Navigation, Truck } from "lucide-react";
