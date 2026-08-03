@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
+import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
-type P = { id: string; name: string; en: string; price: number; stock: number; pack: string };
+type P = { id: string; name: string; en: string; price: number; stock: number; pack: string; category: string; brand: string };
 type Line = { product_id: string; product_name: string; price: number; qty: number };
 
 const METHODS = [
@@ -26,21 +26,35 @@ export function PosTerminal() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [discount, setDiscount] = useState("0");
+  const [discMode, setDiscMode] = useState<"amount" | "percent">("amount");
+  const [vat, setVat] = useState("0");
+  const [barcode, setBarcode] = useState("");
+  const [cat, setCat] = useState("all");
+  const [held, setHeld] = useState<{ id: string; name: string; lines: Line[] }[]>([]);
   const [paid, setPaid] = useState("");
   const [method, setMethod] = useState("cash");
 
   const { data: results, isFetching } = useQuery({
-    queryKey: ["pos-search", q],
-    enabled: q.trim().length > 1,
+    queryKey: ["pos-search", q, cat],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
-        .select("id,name,en,price,stock,pack")
-        .eq("active", true)
-        .or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`)
-        .limit(12);
+        .select("id,name,en,price,stock,pack,category,brand")
+        .eq("active", true);
+      if (q.trim().length > 1) query = query.or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`);
+      if (cat !== "all") query = query.eq("category", cat);
+      const { data, error } = await query.order("stock", { ascending: false }).limit(24);
       if (error) throw error;
       return (data ?? []) as P[];
+    },
+  });
+
+  const { data: cats = [] } = useQuery({
+    queryKey: ["pos-cats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("slug,bn").limit(40);
+      if (error) throw error;
+      return (data ?? []) as { slug: string; bn: string }[];
     },
   });
 
@@ -72,9 +86,13 @@ export function PosTerminal() {
     setLines((ls) => ls.map((l) => (l.product_id === id ? { ...l, qty: Math.max(1, qty) } : l)));
 
   const sub = useMemo(() => lines.reduce((a, l) => a + l.price * l.qty, 0), [lines]);
-  const disc = Number(discount) || 0;
-  const total = Math.max(sub - disc, 0);
+  const disc = discMode === "percent" ? Math.round(((sub * (Number(discount) || 0)) / 100) * 100) / 100 : Number(discount) || 0;
+  const vatAmt = Math.round(((sub - disc) * (Number(vat) || 0)) / 100 * 100) / 100;
+  const total = Math.max(sub - disc + vatAmt, 0);
   const due = Math.max(total - (Number(paid) || 0), 0);
+  const change = Math.max((Number(paid) || 0) - total, 0);
+  /** সার্ভারে মোট = সাবটোটাল − ডিসকাউন্ট, তাই ভ্যাট নেট অ্যাডজাস্টমেন্ট হিসেবে পাঠানো হয় */
+  const netDiscount = disc - vatAmt;
 
   const [online, setOnline] = useState(true);
   const [queue, setQueue] = useState<QueuedSale[]>([]);
@@ -129,7 +147,42 @@ export function PosTerminal() {
     setName("");
     setPhone("");
     setDiscount("0");
+    setVat("0");
     setPaid("");
+  };
+
+  /** বারকোড/SKU স্ক্যান — এন্টার চাপলে সরাসরি কার্টে যোগ */
+  async function scan(code: string) {
+    const c = code.trim();
+    if (!c) return;
+    const { data } = await supabase
+      .from("products")
+      .select("id,name,en,price,stock,pack,category,brand")
+      .eq("active", true)
+      .or(`id.eq.${/^[0-9a-f-]{36}$/i.test(c) ? c : "00000000-0000-0000-0000-000000000000"},name.ilike.%${c}%,en.ilike.%${c}%`)
+      .limit(1);
+    const p = (data ?? [])[0] as P | undefined;
+    if (!p) {
+      toast.error("পণ্য মেলেনি: " + c);
+      return;
+    }
+    add(p);
+    setBarcode("");
+  }
+
+  const hold = () => {
+    if (!lines.length) return;
+    setHeld((h) => [...h, { id: String(Date.now()), name: name || `হোল্ড ${h.length + 1}`, lines }]);
+    setLines([]);
+    toast.success("বিক্রয় হোল্ড করা হয়েছে");
+  };
+
+  const resume = (id: string) => {
+    const item = held.find((h) => h.id === id);
+    if (!item) return;
+    setLines(item.lines);
+    setName(item.name);
+    setHeld((h) => h.filter((x) => x.id !== id));
   };
 
   const sell = useMutation({
@@ -138,7 +191,7 @@ export function PosTerminal() {
         items: lines,
         customer_name: name,
         phone,
-        discount: disc,
+        discount: netDiscount,
         paid: Number(paid) || total,
         method,
         note: "",
