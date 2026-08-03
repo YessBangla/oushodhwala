@@ -440,14 +440,35 @@ export function PosTerminal() {
           placeholder="মোবাইল (ঐচ্ছিক)"
           className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
         />
-        <label className="block text-[11px] font-semibold text-muted-foreground">ছাড় (৳)</label>
-        <input
-          type="number"
-          value={discount}
-          onChange={(e) => setDiscount(e.target.value)}
-          className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
-        />
-        <label className="block text-[11px] font-semibold text-muted-foreground">পরিশোধ (৳)</label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-[11px] font-semibold text-muted-foreground">
+            <span className="flex items-center gap-1">
+              ছাড়
+              <button
+                onClick={() => setDiscMode((m) => (m === "amount" ? "percent" : "amount"))}
+                className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-primary-dark"
+              >
+                {discMode === "amount" ? "৳" : "%"}
+              </button>
+            </span>
+            <input
+              type="number"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
+            />
+          </label>
+          <label className="text-[11px] font-semibold text-muted-foreground">
+            ভ্যাট (%)
+            <input
+              type="number"
+              value={vat}
+              onChange={(e) => setVat(e.target.value)}
+              className="mt-1 min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
+            />
+          </label>
+        </div>
+        <label className="block text-[11px] font-semibold text-muted-foreground">পরিশোধিত (৳)</label>
         <input
           type="number"
           value={paid}
@@ -455,50 +476,72 @@ export function PosTerminal() {
           placeholder={String(total)}
           className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
         />
-        <select
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
-        >
+
+        <p className="text-[11px] font-semibold text-muted-foreground">পেমেন্ট মাধ্যম</p>
+        <div className="grid grid-cols-3 gap-1.5">
           {METHODS.map((m) => (
-            <option key={m.v} value={m.v}>
+            <button
+              key={m.v}
+              onClick={() => setMethod(m.v)}
+              className={`min-h-11 rounded-lg px-2 text-[11px] font-bold ${
+                method === m.v ? "bg-primary text-primary-foreground" : "border border-border text-navy"
+              }`}
+            >
               {m.t}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
 
         <dl className="space-y-1 border-t border-border pt-2 text-xs">
           <div className="flex justify-between">
-            <dt>সাবটোটাল</dt>
+            <dt>সাবটোটাল · {bn(lines.reduce((a, l) => a + l.qty, 0))} আইটেম</dt>
             <dd>৳{bn(sub)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>ছাড়</dt>
             <dd>-৳{bn(disc)}</dd>
           </div>
+          <div className="flex justify-between">
+            <dt>ভ্যাট {bn(Number(vat) || 0)}%</dt>
+            <dd>৳{bn(vatAmt)}</dd>
+          </div>
           <div className="flex justify-between text-sm font-bold text-primary">
-            <dt>মোট</dt>
+            <dt>সর্বমোট</dt>
             <dd>৳{bn(total)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>বাকি</dt>
             <dd>৳{bn(due)}</dd>
           </div>
+          <div className="flex justify-between font-bold">
+            <dt>ফেরত</dt>
+            <dd>৳{bn(change)}</dd>
+          </div>
         </dl>
 
         <button
           disabled={lines.length === 0 || sell.isPending}
           onClick={() => sell.mutate()}
-          className="min-h-11 w-full rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
+          className="min-h-12 w-full rounded-lg bg-primary text-sm font-extrabold text-primary-foreground disabled:opacity-50"
         >
-          {sell.isPending ? "প্রক্রিয়াধীন…" : "বিক্রয় সম্পন্ন করুন"}
+          {sell.isPending ? "প্রক্রিয়াধীন…" : `বিল সম্পন্ন করুন · ৳${bn(total)}`}
         </button>
-        <button
-          onClick={() => window.print()}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border text-xs font-semibold"
-        >
-          <Printer className="h-3.5 w-3.5" /> রসিদ প্রিন্ট
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={hold}
+            disabled={lines.length === 0}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border text-xs font-semibold disabled:opacity-50"
+          >
+            <PauseCircle className="h-3.5 w-3.5" /> হোল্ড করুন
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border text-xs font-semibold"
+          >
+            <Printer className="h-3.5 w-3.5" /> রসিদ প্রিন্ট
+          </button>
+        </div>
+
       </aside>
     </div>
   );
