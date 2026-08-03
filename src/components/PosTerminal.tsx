@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle, ScanLine, PauseCircle, PlayCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { ProductImage } from "@/components/ProductImage";
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
 type P = {
@@ -51,7 +52,7 @@ export function PosTerminal() {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("id,name,en,price,stock,pack,category,brand")
+        .select("id,name,en,price,stock,pack,category,brand,image_url,medicine_image_url,emoji")
         .eq("active", true);
       if (q.trim().length > 1) query = query.or(`name.ilike.%${q}%,en.ilike.%${q}%,generic.ilike.%${q}%`);
       if (cat !== "all") query = query.eq("category", cat);
@@ -169,7 +170,7 @@ export function PosTerminal() {
     if (!c) return;
     const { data } = await supabase
       .from("products")
-      .select("id,name,en,price,stock,pack,category,brand")
+      .select("id,name,en,price,stock,pack,category,brand,image_url,medicine_image_url,emoji")
       .eq("active", true)
       .or(`id.eq.${/^[0-9a-f-]{36}$/i.test(c) ? c : "00000000-0000-0000-0000-000000000000"},name.ilike.%${c}%,en.ilike.%${c}%`)
       .limit(1);
