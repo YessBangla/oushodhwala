@@ -888,7 +888,7 @@ export function PartyStatement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {(stmt.rows ?? []).map((r, i) => (
+              {rows.map((r, i) => (
                 <tr key={i}>
                   <td className="px-3 py-2">{new Date(r.date).toLocaleDateString("bn-BD")}</td>
                   <td className="px-3 py-2 font-mono">{r.ref}</td>
@@ -897,7 +897,8 @@ export function PartyStatement() {
                   <td className="px-3 py-2 text-right">৳{bn(Number(r.credit))}</td>
                 </tr>
               ))}
-              {(stmt.rows ?? []).length === 0 && (
+              {rows.length === 0 && (
+
                 <tr>
                   <td colSpan={5} className="p-4 text-center text-muted-foreground">
                     কোনো লেনদেন নেই
