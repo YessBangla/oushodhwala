@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Truck, Bike, Plus, Trash2, Send, Search, Share2, Wifi, Check, FlaskConical, RotateCcw, XCircle } from "lucide-react";
+import {
+  Truck, Bike, Plus, Trash2, Send, Search, Share2, Wifi, Check, FlaskConical, RotateCcw, XCircle,
+  Link2, ShieldCheck, Timer, Map as MapIcon, Bell, BellOff,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { DELIVERY_STATUS, fmtTime } from "@/lib/delivery";
 import { copyTrackLink } from "@/lib/track-link";
 import { CHANNEL_LABEL, notifyLink, withAbsoluteLinks, type NotifyChannel } from "@/lib/notify";
+import { RouteMap, type PathPoint } from "@/components/RouteMap";
+import { enablePush, disablePush, notifyPush, pushEnabled, pushSupported } from "@/lib/webpush";
 
 type Delivery = {
   id: string;
@@ -18,12 +23,18 @@ type Delivery = {
   rider_id: string | null;
   eta_minutes: number;
   public_token: string;
+  token_expires_at: string | null;
+  token_revoked: boolean;
+  token_scope: string;
+  last_lat: number | null;
+  last_lng: number | null;
   last_seen_at: string | null;
   pod_photo_url: string;
   pod_signature_url: string;
   pod_receiver_name: string;
   riders: { name: string; phone: string } | null;
 };
+
 
 type Rider = { id: string; name: string; phone: string; vehicle: string; zone: string; active: boolean; user_id: string | null };
 
