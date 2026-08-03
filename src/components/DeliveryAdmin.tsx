@@ -385,7 +385,7 @@ export function DeliveryAdmin() {
                         </td>
                       </tr>
                     )}
-                    </>
+                    </Fragment>
                   );
 
                 })}
