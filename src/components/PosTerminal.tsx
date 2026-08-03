@@ -305,27 +305,28 @@ export function PosTerminal() {
         )}
 
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2">
           {isFetching && <p className="col-span-full text-xs text-muted-foreground">খোঁজা হচ্ছে…</p>}
           {(results ?? []).map((p) => (
             <button
               key={p.id}
               onClick={() => add(p)}
-              className="group overflow-hidden rounded-xl border border-border bg-card text-left transition-colors hover:border-primary"
+              className="group flex min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-border bg-card p-2 text-left transition-colors hover:border-primary"
             >
               <ProductImage
                 src={p.image_url || p.medicine_image_url}
                 alt={p.name}
                 emoji={p.emoji || "💊"}
                 ratio="square"
-                imgClassName="transition-transform group-hover:scale-105"
+                className="h-11 w-11 shrink-0 rounded-lg"
+                imgClassName="p-0.5"
               />
-              <div className="space-y-0.5 p-2">
-                <p className="truncate text-xs font-semibold leading-tight">{p.name}</p>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="truncate text-[11px] font-semibold leading-tight">{p.name}</p>
                 <p className="truncate text-[10px] text-muted-foreground">
                   {p.pack} · স্টক {bn(p.stock)}
                 </p>
-                <p className="text-sm font-bold text-primary">৳{bn(p.price)}</p>
+                <p className="text-xs font-bold text-primary">৳{bn(p.price)}</p>
               </div>
             </button>
           ))}
