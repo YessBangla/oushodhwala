@@ -442,11 +442,17 @@ function DeliveryDetail({ delivery }: { delivery: Delivery }) {
 
   const saveEta = async () => {
     const n = Number(eta);
-    if (!Number.isFinite(n) || n <= 0) return toast.error("সঠিক ETA দিন");
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("সঠিক ETA দিন");
+      return;
+    }
     setBusy("eta");
     const { error } = await supabase.rpc("admin_set_delivery_eta", { _delivery_id: delivery.id, _eta: Math.round(n) });
     setBusy("");
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("ETA হালনাগাদ হয়েছে — গ্রাহককে নোটিফিকেশন পাঠানো হয়েছে");
     refresh();
   };
@@ -455,7 +461,10 @@ function DeliveryDetail({ delivery }: { delivery: Delivery }) {
     setBusy("link");
     const { error } = await supabase.rpc("admin_set_track_link", { _delivery_id: delivery.id, ...args });
     setBusy("");
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(msg);
     refresh();
   };
