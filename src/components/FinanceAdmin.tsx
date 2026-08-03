@@ -451,6 +451,7 @@ type DayBookData = {
 
 export function DayBook() {
   const [day, setDay] = useState(today());
+  const [q, setQ] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["day-book", day],
     queryFn: async () => {
@@ -465,6 +466,25 @@ export function DayBook() {
     (data?.pos ?? []).reduce((a, r) => a + Number(r.total), 0);
   const outflow = (data?.expenses ?? []).reduce((a, r) => a + Number(r.amount), 0);
 
+  const term = q.trim().toLowerCase();
+  const match = (r: { a: string; b: string; c: string }) =>
+    !term || [r.a, r.b, r.c].some((s) => (s ?? "").toLowerCase().includes(term));
+
+  const sections = [
+    { title: "অনলাইন অর্ডার", rows: (data?.orders ?? []).map((r) => ({ a: r.no, b: r.name, c: r.method, d: Number(r.total) })) },
+    { title: "POS বিক্রয়", rows: (data?.pos ?? []).map((r) => ({ a: r.no, b: r.name || "ওয়াক-ইন", c: r.method, d: Number(r.total) })) },
+    { title: "খরচ", rows: (data?.expenses ?? []).map((r) => ({ a: r.title, b: catLabel(r.category), c: r.method, d: Number(r.amount) })) },
+  ].map((s) => ({ ...s, rows: s.rows.filter(match) }));
+
+  const cols = [
+    { key: "section", label: "বিভাগ" },
+    { key: "a", label: "রেফারেন্স" },
+    { key: "b", label: "বিবরণ" },
+    { key: "c", label: "মাধ্যম" },
+    { key: "d", label: "টাকা" },
+  ];
+  const flat = sections.flatMap((s) => s.rows.map((r) => ({ section: s.title, ...r })));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -475,8 +495,17 @@ export function DayBook() {
           onChange={(e) => setDay(e.target.value)}
           className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm"
         />
-        <button onClick={() => window.print()} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
-          প্রিন্ট
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="রেফারেন্স/নাম/মাধ্যম খুঁজুন…"
+          className="min-h-11 min-w-48 flex-1 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+        />
+        <button onClick={() => downloadCsv(`day-book-${day}`, cols, flat)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          CSV
+        </button>
+        <button onClick={() => printReport("ডে-বুক", `তারিখ ${day} · আয় ৳${inflow} · ব্যয় ৳${outflow}`, cols, flat)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          PDF
         </button>
       </div>
 
@@ -495,13 +524,11 @@ export function DayBook() {
 
       {isLoading && <p className="text-xs text-muted-foreground">লোড হচ্ছে…</p>}
 
-      {[
-        { title: "অনলাইন অর্ডার", rows: (data?.orders ?? []).map((r) => ({ a: r.no, b: r.name, c: r.method, d: r.total })) },
-        { title: "POS বিক্রয়", rows: (data?.pos ?? []).map((r) => ({ a: r.no, b: r.name || "ওয়াক-ইন", c: r.method, d: r.total })) },
-        { title: "খরচ", rows: (data?.expenses ?? []).map((r) => ({ a: r.title, b: catLabel(r.category), c: r.method, d: r.amount })) },
-      ].map((sec) => (
+      {sections.map((sec) => (
         <div key={sec.title} className="rounded-xl border border-border bg-card">
-          <p className="border-b border-border px-3 py-2 text-xs font-bold">{sec.title}</p>
+          <p className="border-b border-border px-3 py-2 text-xs font-bold">
+            {sec.title} <span className="text-muted-foreground">({bn(sec.rows.length)})</span>
+          </p>
           <ul className="divide-y divide-border text-xs">
             {sec.rows.map((r, i) => (
               <li key={i} className="flex items-center gap-2 px-3 py-2">
@@ -518,6 +545,7 @@ export function DayBook() {
     </div>
   );
 }
+
 
 /* ---------------- ফিন্যান্সিয়ালস ---------------- */
 type Fin = {
