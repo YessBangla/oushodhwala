@@ -250,20 +250,66 @@ function DeliveryPanel() {
   const active = rows.filter((r) => !["delivered", "failed"].includes(r.status));
   const past = rows.filter((r) => ["delivered", "failed"].includes(r.status));
 
+  // আজকের পরিসংখ্যান
+  const today = new Date().toDateString();
+  const isToday = (iso: string) => new Date(iso).toDateString() === today;
+  const doneToday = past.filter((r) => r.status === "delivered" && isToday(r.created_at)).length;
+  const failedToday = past.filter((r) => r.status === "failed" && isToday(r.created_at)).length;
+  const codDue = active
+    .filter((r) => r.orders?.payment_method === "cod" && r.orders?.payment_status !== "paid")
+    .reduce((s, r) => s + Number(r.orders?.total ?? 0), 0);
+  const collectedToday = past
+    .filter((r) => r.status === "delivered" && isToday(r.created_at) && r.orders?.payment_method === "cod")
+    .reduce((s, r) => s + Number(r.orders?.total ?? 0), 0);
+
+  // অগ্রাধিকার অনুসারে সাজানো — যত এগিয়ে, তত উপরে
+  const rank: Record<string, number> = { arrived: 0, on_the_way: 1, picked: 2, assigned: 3 };
+  const activeSorted = [...active].sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+
+  const stats: { label: string; value: string; tone: string }[] = [
+    { label: t("চলমান", "Active"), value: t.n(active.length), tone: "text-primary" },
+    { label: t("আজ সম্পন্ন", "Done today"), value: t.n(doneToday), tone: "text-primary-dark" },
+    { label: t("সংগ্রহ বাকি (COD)", "COD to collect"), value: t.money(codDue), tone: "text-navy" },
+    { label: t("আজ সংগৃহীত", "Collected today"), value: t.money(collectedToday), tone: "text-navy" },
+  ];
+
   return (
     <div className="pt-4">
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-lg">🛵</span>
-        <div>
-          <p className="text-sm font-bold text-navy">{rider.name}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {rider.phone} · {rider.zone || t("সব এলাকা", "All zones")}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-navy">{rider.name}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {rider.phone} · {rider.zone || t("সব এলাকা", "All zones")} · {rider.vehicle || t("যানবাহন", "Vehicle")}
           </p>
         </div>
-        <button onClick={() => void refetch()} className="ml-auto rounded-lg bg-muted p-2" aria-label={t("রিফ্রেশ", "Refresh")}>
+        <span
+          className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            sharing ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {sharing ? t("অনলাইন", "Online") : t("অফলাইন", "Offline")}
+        </span>
+        <button onClick={() => void refetch()} className="shrink-0 rounded-lg bg-muted p-2" aria-label={t("রিফ্রেশ", "Refresh")}>
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
+
+      {/* আজকের সারাংশ */}
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl border border-border bg-card p-3">
+            <p className="text-[10px] font-semibold text-muted-foreground">{s.label}</p>
+            <p className={`mt-0.5 font-display text-base font-extrabold ${s.tone}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+      {failedToday > 0 && (
+        <p className="mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-[11px] font-semibold text-destructive">
+          {t(`আজ ${t.n(failedToday)}টি ডেলিভারি ব্যর্থ হয়েছে — পুনরায় শিডিউল করুন।`, `${failedToday} delivery(s) failed today — please reschedule.`)}
+        </p>
+      )}
+
 
       <div className="mt-3 rounded-2xl border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
