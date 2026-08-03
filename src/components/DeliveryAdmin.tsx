@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Truck, Bike, Plus, Trash2, Send, Search, Share2, Wifi, FlaskConical, RotateCcw, XCircle } from "lucide-react";
+import { Truck, Bike, Plus, Trash2, Send, Search, Share2, Wifi, Check, FlaskConical, RotateCcw, XCircle } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
