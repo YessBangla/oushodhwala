@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Plus, Trash2, BookOpen, Wallet, CalendarDays, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { downloadCsv, printReport } from "@/lib/erp-report";
+
 
 const today = () => new Date().toISOString().slice(0, 10);
 
