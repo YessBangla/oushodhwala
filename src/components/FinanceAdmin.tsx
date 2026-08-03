@@ -418,6 +418,107 @@ export function JournalAdmin() {
   );
 }
 
+/* ---------------- জার্নাল তালিকা: ফিল্টার + এক্সপোর্ট ---------------- */
+type JEntryLine = { id: string; account_code: string; account_name: string; debit: number; credit: number };
+export type JEntry = {
+  id: string;
+  entry_no: string;
+  entry_date: string;
+  memo: string;
+  total: number;
+  journal_lines?: JEntryLine[];
+};
+
+function JournalList({ entries }: { entries: JEntry[] }) {
+  const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const term = q.trim().toLowerCase();
+  const list = entries.filter((e) => {
+    if (from && e.entry_date < from) return false;
+    if (to && e.entry_date > to) return false;
+    if (!term) return true;
+    const hay = [e.entry_no, e.memo, ...(e.journal_lines ?? []).map((l) => `${l.account_code} ${l.account_name}`)]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(term);
+  });
+
+  const cols = [
+    { key: "entry_no", label: "এন্ট্রি নং" },
+    { key: "entry_date", label: "তারিখ" },
+    { key: "memo", label: "মেমো" },
+    { key: "account", label: "হিসাব" },
+    { key: "debit", label: "ডেবিট" },
+    { key: "credit", label: "ক্রেডিট" },
+  ];
+  const rows = list.flatMap((e) =>
+    (e.journal_lines ?? []).map((l) => ({
+      entry_no: e.entry_no,
+      entry_date: e.entry_date,
+      memo: e.memo || "",
+      account: `${l.account_code} ${l.account_name}`,
+      debit: Number(l.debit),
+      credit: Number(l.credit),
+    })),
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="এন্ট্রি নং / মেমো / হিসাব খুঁজুন…"
+          className="min-h-11 min-w-48 flex-1 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+        />
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
+        <span className="text-xs text-muted-foreground">থেকে</span>
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
+        <button onClick={() => downloadCsv(`journal-${today()}`, cols, rows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          CSV
+        </button>
+        <button onClick={() => printReport("জার্নাল", `${from || "শুরু"} — ${to || "আজ"} · ${list.length} এন্ট্রি`, cols, rows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          PDF
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card">
+        <p className="border-b border-border px-3 py-2 text-xs font-bold">
+          এন্ট্রি <span className="text-muted-foreground">({bn(list.length)})</span>
+        </p>
+        <ul className="divide-y divide-border text-xs">
+          {list.map((e) => (
+            <li key={e.id} className="px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-muted-foreground">{e.entry_no}</span>
+                <span className="font-semibold">{e.memo || "—"}</span>
+                <span className="ml-auto font-bold text-primary">৳{bn(Number(e.total))}</span>
+                <span className="text-muted-foreground">{e.entry_date}</span>
+              </div>
+              <div className="mt-1 space-y-0.5 pl-2 text-[11px] text-muted-foreground">
+                {(e.journal_lines ?? []).map((l) => (
+                  <div key={l.id} className="flex gap-2">
+                    <span className="w-32 truncate">
+                      {l.account_code} {l.account_name}
+                    </span>
+                    <span className="w-20 text-right">{Number(l.debit) ? `ডেঃ ৳${bn(Number(l.debit))}` : ""}</span>
+                    <span className="w-20 text-right">{Number(l.credit) ? `ক্রেঃ ৳${bn(Number(l.credit))}` : ""}</span>
+                  </div>
+                ))}
+              </div>
+            </li>
+          ))}
+          {list.length === 0 && <li className="p-4 text-center text-muted-foreground">কোনো এন্ট্রি নেই</li>}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+
+
 /* ---------------- ডে-বুক ---------------- */
 type DayBookData = {
   day: string;
