@@ -71,6 +71,11 @@ export function DeliveryAdmin() {
   const [fArea, setFArea] = useState("all");
   const [fPriority, setFPriority] = useState<"all" | "unassigned" | "active" | "urgent">("all");
   const [copied, setCopied] = useState("");
+  const [openRow, setOpenRow] = useState("");
+  const [push, setPush] = useState(false);
+
+  useEffect(() => setPush(pushEnabled()), []);
+
 
   const { data: riders = [] } = useQuery({
     queryKey: ["admin-riders"],
