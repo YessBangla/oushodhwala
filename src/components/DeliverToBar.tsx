@@ -102,19 +102,18 @@ export function DeliverToBar() {
   };
 
   return (
-    <div className="relative border-t border-border bg-muted">
+    <div className="relative">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className="flex w-full max-w-md items-center gap-1 px-4 py-1.5 text-[11px] text-muted-foreground"
+        className="flex max-w-[190px] items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1.5 text-[11px] text-navy hover:border-primary"
       >
         <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-        <span className="truncate">
-          {t("ডেলিভারি", "Deliver to")}: {addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}
-        </span>
-        <ChevronDown className={`ml-1 h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="truncate">{addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}</span>
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+
 
       {open && (
         <>
@@ -124,7 +123,7 @@ export function DeliverToBar() {
             onClick={toggle}
             className="fixed inset-0 z-30 cursor-default bg-navy/20"
           />
-          <div className="absolute left-2 right-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card px-4 py-3 shadow-xl sm:left-4 sm:right-auto sm:w-[420px]">
+          <div className="fixed inset-x-3 top-24 z-40 max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-card px-4 py-3 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]">
           <p className="text-[11px] font-bold text-navy">{t("ডেলিভারি ঠিকানা", "Delivery address")}</p>
           <ul className="mt-2 space-y-1.5">
             {addresses.map((a) => (
