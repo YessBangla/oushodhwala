@@ -6,7 +6,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
-type P = { id: string; name: string; en: string; price: number; stock: number; pack: string; category: string; brand: string };
+type P = {
+  id: string;
+  name: string;
+  en: string;
+  price: number;
+  stock: number;
+  pack: string;
+  category: string;
+  brand: string;
+  image_url?: string | null;
+  medicine_image_url?: string | null;
+  emoji?: string | null;
+};
 type Line = { product_id: string; product_name: string; price: number; qty: number };
 
 const METHODS = [
