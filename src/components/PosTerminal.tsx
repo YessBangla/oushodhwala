@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Trash2, Printer, ShoppingBag } from "lucide-react";
+import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
 type P = { id: string; name: string; en: string; price: number; stock: number; pack: string };
 type Line = { product_id: string; product_name: string; price: number; qty: number };
@@ -15,6 +16,7 @@ const METHODS = [
   { v: "card", t: "কার্ড" },
   { v: "due", t: "বাকি" },
 ];
+
 
 /** কাউন্টার/সরাসরি বিক্রয় টার্মিনাল */
 export function PosTerminal() {
