@@ -140,16 +140,19 @@ export function PosTerminal() {
     },
   });
 
-  const add = (p: P) =>
+  const add = (p: P, qty = 1, unit: "piece" | "pack" = "piece") => {
+    const units = unit === "pack" ? qty * packSize(p.pack) : qty;
     setLines((ls) => {
       const i = ls.findIndex((l) => l.product_id === p.id);
       if (i >= 0) {
         const copy = [...ls];
-        copy[i] = { ...copy[i]!, qty: copy[i]!.qty + 1 };
+        copy[i] = { ...copy[i]!, qty: copy[i]!.qty + units };
         return copy;
       }
-      return [...ls, { product_id: p.id, product_name: p.name, price: Number(p.price), qty: 1 }];
+      return [...ls, { product_id: p.id, product_name: p.name, price: Number(p.price), qty: units }];
     });
+  };
+
 
   const setQty = (id: string, qty: number) =>
     setLines((ls) => ls.map((l) => (l.product_id === id ? { ...l, qty: Math.max(1, qty) } : l)));
