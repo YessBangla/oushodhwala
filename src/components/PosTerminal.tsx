@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Trash2, Printer, ShoppingBag } from "lucide-react";
+import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
 type P = { id: string; name: string; en: string; price: number; stock: number; pack: string };
 type Line = { product_id: string; product_name: string; price: number; qty: number };
@@ -15,6 +16,7 @@ const METHODS = [
   { v: "card", t: "কার্ড" },
   { v: "due", t: "বাকি" },
 ];
+
 
 /** কাউন্টার/সরাসরি বিক্রয় টার্মিনাল */
 export function PosTerminal() {
@@ -74,31 +76,93 @@ export function PosTerminal() {
   const total = Math.max(sub - disc, 0);
   const due = Math.max(total - (Number(paid) || 0), 0);
 
+  const [online, setOnline] = useState(true);
+  const [queue, setQueue] = useState<QueuedSale[]>([]);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    setOnline(isOnline());
+    setQueue(loadQueue());
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  const pending = queue.filter((s) => s.status !== "synced");
+
+  const runSync = async (silent = false) => {
+    if (loadQueue().every((s) => s.status === "synced")) {
+      setQueue(loadQueue());
+      if (!silent) toast.info("সিংক করার মতো কিছু নেই");
+      return;
+    }
+    setSyncing(true);
+    try {
+      const r = await syncQueue();
+      setQueue(loadQueue());
+      void qc.invalidateQueries({ queryKey: ["pos-recent"] });
+      if (!silent || r.synced || r.failed) {
+        toast.success(
+          `সিংক: নতুন ${bn(r.synced)} · আগেই ছিল ${bn(r.duplicate)} · ব্যর্থ ${bn(r.failed)}${
+            r.conflicts ? ` · স্টক কনফ্লিক্ট ${bn(r.conflicts)}` : ""
+          }`,
+        );
+      }
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // অনলাইনে ফিরলে স্বয়ংক্রিয় সিংক
+  useEffect(() => {
+    if (online && loadQueue().some((s) => s.status !== "synced")) void runSync(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online]);
+
+  const reset = () => {
+    setLines([]);
+    setName("");
+    setPhone("");
+    setDiscount("0");
+    setPaid("");
+  };
+
   const sell = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("pos_create_sale", {
-        _items: lines,
-        _customer_name: name,
-        _phone: phone,
-        _discount: disc,
-        _paid: Number(paid) || total,
-        _method: method,
-        _note: "",
+      const sale = enqueue({
+        items: lines,
+        customer_name: name,
+        phone,
+        discount: disc,
+        paid: Number(paid) || total,
+        method,
+        note: "",
       });
-      if (error) throw error;
-      return data as { invoice_no: string };
+      setQueue(loadQueue());
+      if (!isOnline()) return { offline: true as const, invoice_no: "" };
+      const r = await syncQueue();
+      setQueue(loadQueue());
+      const done = loadQueue().find((s) => s.ref === sale.ref);
+      if (done?.status === "failed") throw new Error(done.error || "সিংক ব্যর্থ");
+      return { offline: false as const, invoice_no: done?.invoice_no ?? "", conflicts: done?.conflicts ?? [], r };
     },
     onSuccess: (d) => {
-      toast.success(`বিক্রয় সম্পন্ন — ইনভয়েস ${d.invoice_no}`);
-      setLines([]);
-      setName("");
-      setPhone("");
-      setDiscount("0");
-      setPaid("");
+      if (d.offline) toast.warning("অফলাইন — বিক্রয় কিউতে সংরক্ষিত, অনলাইনে এলে সিংক হবে");
+      else {
+        toast.success(`বিক্রয় সম্পন্ন — ইনভয়েস ${d.invoice_no}`);
+        if (d.conflicts?.length) toast.warning(`স্টক কনফ্লিক্ট: ${d.conflicts.join("; ")}`);
+      }
+      reset();
       void qc.invalidateQueries({ queryKey: ["pos-recent"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -163,7 +227,86 @@ export function PosTerminal() {
         </div>
 
         <div className="rounded-xl border border-border bg-card">
+          <p className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 text-xs font-bold">
+            {online ? (
+              <span className="flex items-center gap-1.5 text-primary">● অনলাইন</span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-sale">
+                <CloudOff className="h-3.5 w-3.5" /> অফলাইন মোড
+              </span>
+            )}
+            <span className="text-muted-foreground">অপেক্ষমাণ {bn(pending.length)}</span>
+            <button
+              onClick={() => void runSync()}
+              disabled={syncing || !online}
+              className="ml-auto flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} /> এখনই সিংক
+            </button>
+            <button
+              onClick={() => {
+                clearSynced();
+                setQueue(loadQueue());
+              }}
+              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold"
+            >
+              সিংককৃত মুছুন
+            </button>
+          </p>
+          <ul className="divide-y divide-border text-xs">
+            {queue
+              .slice()
+              .reverse()
+              .slice(0, 12)
+              .map((s) => (
+                <li key={s.ref} className="flex flex-wrap items-center gap-2 px-3 py-2">
+                  <span className="font-mono text-[10px] text-muted-foreground">{s.ref}</span>
+                  <span className="font-semibold">{s.customer_name || "ওয়াক-ইন"}</span>
+                  <span className="text-muted-foreground">{bn(s.items.length)} আইটেম</span>
+                  <span className="font-bold text-primary">
+                    ৳{bn(Math.max(s.items.reduce((a, l) => a + l.price * l.qty, 0) - s.discount, 0))}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      s.status === "synced"
+                        ? "bg-secondary text-primary-dark"
+                        : s.status === "failed"
+                          ? "bg-sale/10 text-sale"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {s.status === "synced" ? `সিংক · ${s.invoice_no}` : s.status === "failed" ? "ব্যর্থ" : "অপেক্ষমাণ"}
+                  </span>
+                  {!!s.conflicts?.length && (
+                    <span className="flex items-center gap-1 text-[10px] text-sale">
+                      <AlertTriangle className="h-3 w-3" /> {s.conflicts.join("; ")}
+                    </span>
+                  )}
+                  {s.error && <span className="text-[10px] text-sale">{s.error}</span>}
+                  <button
+                    onClick={() => {
+                      removeRef(s.ref);
+                      setQueue(loadQueue());
+                    }}
+                    aria-label="কিউ থেকে সরান"
+                    className="ml-auto text-sale"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            {queue.length === 0 && <li className="p-3 text-center text-muted-foreground">কিউ খালি</li>}
+          </ul>
+          <p className="border-t border-border px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
+            মার্জ নিয়ম: প্রতিটি বিক্রয়ের ইউনিক রেফারেন্স সার্ভারে যাচাই হয় — একই বিক্রয় দুইবার পোস্ট হয় না। স্টকের
+            ক্ষেত্রে সার্ভারই চূড়ান্ত; অফলাইনে স্টক বদলে গেলে বিক্রয় বাতিল না করে ঘাটতি ইনভয়েস নোটে লিখে রাখা হয়,
+            যা পরে স্টক অ্যাডজাস্টমেন্টে মেলানো যায়।
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card">
           <p className="border-b border-border px-3 py-2 text-xs font-bold">সাম্প্রতিক POS ইনভয়েস</p>
+
           <ul className="divide-y divide-border text-xs">
             {(recent ?? []).map((r) => (
               <li key={r.id} className="flex items-center justify-between px-3 py-2">

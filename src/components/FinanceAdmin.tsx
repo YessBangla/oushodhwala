@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Plus, Trash2, BookOpen, Wallet, CalendarDays, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
+import { downloadCsv, printReport } from "@/lib/erp-report";
+
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -410,10 +412,84 @@ export function JournalAdmin() {
         </div>
       </div>
 
+      <JournalList entries={(entries ?? []) as JEntry[]} />
+
+    </div>
+  );
+}
+
+/* ---------------- জার্নাল তালিকা: ফিল্টার + এক্সপোর্ট ---------------- */
+type JEntryLine = { id: string; account_code: string; account_name: string; debit: number; credit: number };
+export type JEntry = {
+  id: string;
+  entry_no: string;
+  entry_date: string;
+  memo: string;
+  total: number;
+  journal_lines?: JEntryLine[];
+};
+
+function JournalList({ entries }: { entries: JEntry[] }) {
+  const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const term = q.trim().toLowerCase();
+  const list = entries.filter((e) => {
+    if (from && e.entry_date < from) return false;
+    if (to && e.entry_date > to) return false;
+    if (!term) return true;
+    const hay = [e.entry_no, e.memo, ...(e.journal_lines ?? []).map((l) => `${l.account_code} ${l.account_name}`)]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(term);
+  });
+
+  const cols = [
+    { key: "entry_no", label: "এন্ট্রি নং" },
+    { key: "entry_date", label: "তারিখ" },
+    { key: "memo", label: "মেমো" },
+    { key: "account", label: "হিসাব" },
+    { key: "debit", label: "ডেবিট" },
+    { key: "credit", label: "ক্রেডিট" },
+  ];
+  const rows = list.flatMap((e) =>
+    (e.journal_lines ?? []).map((l) => ({
+      entry_no: e.entry_no,
+      entry_date: e.entry_date,
+      memo: e.memo || "",
+      account: `${l.account_code} ${l.account_name}`,
+      debit: Number(l.debit),
+      credit: Number(l.credit),
+    })),
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="এন্ট্রি নং / মেমো / হিসাব খুঁজুন…"
+          className="min-h-11 min-w-48 flex-1 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+        />
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
+        <span className="text-xs text-muted-foreground">থেকে</span>
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
+        <button onClick={() => downloadCsv(`journal-${today()}`, cols, rows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          CSV
+        </button>
+        <button onClick={() => printReport("জার্নাল", `${from || "শুরু"} — ${to || "আজ"} · ${list.length} এন্ট্রি`, cols, rows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          PDF
+        </button>
+      </div>
+
       <div className="rounded-xl border border-border bg-card">
-        <p className="border-b border-border px-3 py-2 text-xs font-bold">সাম্প্রতিক এন্ট্রি</p>
+        <p className="border-b border-border px-3 py-2 text-xs font-bold">
+          এন্ট্রি <span className="text-muted-foreground">({bn(list.length)})</span>
+        </p>
         <ul className="divide-y divide-border text-xs">
-          {(entries ?? []).map((e) => (
+          {list.map((e) => (
             <li key={e.id} className="px-3 py-2">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-muted-foreground">{e.entry_no}</span>
@@ -422,7 +498,7 @@ export function JournalAdmin() {
                 <span className="text-muted-foreground">{e.entry_date}</span>
               </div>
               <div className="mt-1 space-y-0.5 pl-2 text-[11px] text-muted-foreground">
-                {(e.journal_lines ?? []).map((l: { id: string; account_code: string; account_name: string; debit: number; credit: number }) => (
+                {(e.journal_lines ?? []).map((l) => (
                   <div key={l.id} className="flex gap-2">
                     <span className="w-32 truncate">
                       {l.account_code} {l.account_name}
@@ -434,12 +510,14 @@ export function JournalAdmin() {
               </div>
             </li>
           ))}
-          {(entries ?? []).length === 0 && <li className="p-4 text-center text-muted-foreground">কোনো এন্ট্রি নেই</li>}
+          {list.length === 0 && <li className="p-4 text-center text-muted-foreground">কোনো এন্ট্রি নেই</li>}
         </ul>
       </div>
     </div>
   );
 }
+
+
 
 /* ---------------- ডে-বুক ---------------- */
 type DayBookData = {
@@ -451,6 +529,7 @@ type DayBookData = {
 
 export function DayBook() {
   const [day, setDay] = useState(today());
+  const [q, setQ] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["day-book", day],
     queryFn: async () => {
@@ -465,6 +544,25 @@ export function DayBook() {
     (data?.pos ?? []).reduce((a, r) => a + Number(r.total), 0);
   const outflow = (data?.expenses ?? []).reduce((a, r) => a + Number(r.amount), 0);
 
+  const term = q.trim().toLowerCase();
+  const match = (r: { a: string; b: string; c: string }) =>
+    !term || [r.a, r.b, r.c].some((s) => (s ?? "").toLowerCase().includes(term));
+
+  const sections = [
+    { title: "অনলাইন অর্ডার", rows: (data?.orders ?? []).map((r) => ({ a: r.no, b: r.name, c: r.method, d: Number(r.total) })) },
+    { title: "POS বিক্রয়", rows: (data?.pos ?? []).map((r) => ({ a: r.no, b: r.name || "ওয়াক-ইন", c: r.method, d: Number(r.total) })) },
+    { title: "খরচ", rows: (data?.expenses ?? []).map((r) => ({ a: r.title, b: catLabel(r.category), c: r.method, d: Number(r.amount) })) },
+  ].map((s) => ({ ...s, rows: s.rows.filter(match) }));
+
+  const cols = [
+    { key: "section", label: "বিভাগ" },
+    { key: "a", label: "রেফারেন্স" },
+    { key: "b", label: "বিবরণ" },
+    { key: "c", label: "মাধ্যম" },
+    { key: "d", label: "টাকা" },
+  ];
+  const flat = sections.flatMap((s) => s.rows.map((r) => ({ section: s.title, ...r })));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -475,8 +573,17 @@ export function DayBook() {
           onChange={(e) => setDay(e.target.value)}
           className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm"
         />
-        <button onClick={() => window.print()} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
-          প্রিন্ট
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="রেফারেন্স/নাম/মাধ্যম খুঁজুন…"
+          className="min-h-11 min-w-48 flex-1 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+        />
+        <button onClick={() => downloadCsv(`day-book-${day}`, cols, flat)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          CSV
+        </button>
+        <button onClick={() => printReport("ডে-বুক", `তারিখ ${day} · আয় ৳${inflow} · ব্যয় ৳${outflow}`, cols, flat)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          PDF
         </button>
       </div>
 
@@ -495,13 +602,11 @@ export function DayBook() {
 
       {isLoading && <p className="text-xs text-muted-foreground">লোড হচ্ছে…</p>}
 
-      {[
-        { title: "অনলাইন অর্ডার", rows: (data?.orders ?? []).map((r) => ({ a: r.no, b: r.name, c: r.method, d: r.total })) },
-        { title: "POS বিক্রয়", rows: (data?.pos ?? []).map((r) => ({ a: r.no, b: r.name || "ওয়াক-ইন", c: r.method, d: r.total })) },
-        { title: "খরচ", rows: (data?.expenses ?? []).map((r) => ({ a: r.title, b: catLabel(r.category), c: r.method, d: r.amount })) },
-      ].map((sec) => (
+      {sections.map((sec) => (
         <div key={sec.title} className="rounded-xl border border-border bg-card">
-          <p className="border-b border-border px-3 py-2 text-xs font-bold">{sec.title}</p>
+          <p className="border-b border-border px-3 py-2 text-xs font-bold">
+            {sec.title} <span className="text-muted-foreground">({bn(sec.rows.length)})</span>
+          </p>
           <ul className="divide-y divide-border text-xs">
             {sec.rows.map((r, i) => (
               <li key={i} className="flex items-center gap-2 px-3 py-2">
@@ -518,6 +623,7 @@ export function DayBook() {
     </div>
   );
 }
+
 
 /* ---------------- ফিন্যান্সিয়ালস ---------------- */
 type Fin = {
@@ -547,6 +653,22 @@ export function Financials() {
   const revenue = Number(data?.online_sales ?? 0) + Number(data?.pos_sales ?? 0);
   const cost = Number(data?.purchases ?? 0) + Number(data?.expenses ?? 0) + Number(data?.refunds ?? 0);
 
+  const finCols = [
+    { key: "item", label: "বিবরণ" },
+    { key: "amount", label: "টাকা" },
+  ];
+  const finRows = [
+    { item: "অনলাইন বিক্রয়", amount: Number(data?.online_sales ?? 0) },
+    { item: "POS বিক্রয়", amount: Number(data?.pos_sales ?? 0) },
+    { item: "মোট ক্রয়", amount: Number(data?.purchases ?? 0) },
+    { item: "মোট খরচ", amount: Number(data?.expenses ?? 0) },
+    { item: "রিফান্ড", amount: Number(data?.refunds ?? 0) },
+    { item: "POS বাকি", amount: Number(data?.pos_due ?? 0) },
+    { item: "স্টকের মূল্য", amount: Number(data?.stock_value ?? 0) },
+    ...Object.entries(data?.expenses_by_cat ?? {}).map(([k, v]) => ({ item: `খরচ · ${catLabel(k)}`, amount: Number(v) })),
+    { item: "নিট লাভ/ক্ষতি", amount: revenue - cost },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -554,7 +676,14 @@ export function Financials() {
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
         <span className="text-xs text-muted-foreground">থেকে</span>
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm" />
+        <button onClick={() => downloadCsv(`financials-${from}_${to}`, finCols, finRows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          CSV
+        </button>
+        <button onClick={() => printReport("ফিন্যান্সিয়ালস", `${from} — ${to}`, finCols, finRows)} className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold">
+          PDF
+        </button>
       </div>
+
 
       {isLoading && <p className="text-xs text-muted-foreground">লোড হচ্ছে…</p>}
 
@@ -630,6 +759,8 @@ type Stmt = { kind: string; name: string; total: number; rows: { date: string; r
 export function PartyStatement() {
   const [kind, setKind] = useState<"customer" | "supplier">("supplier");
   const [party, setParty] = useState("");
+  const [q, setQ] = useState("");
+
 
   const { data: suppliers } = useQuery({
     queryKey: ["stmt-suppliers"],
@@ -664,6 +795,25 @@ export function PartyStatement() {
     },
   });
 
+  const term = q.trim().toLowerCase();
+  const rows = (stmt?.rows ?? []).filter(
+    (r) => !term || [r.ref, r.detail].some((s) => (s ?? "").toLowerCase().includes(term)),
+  );
+  const stmtCols = [
+    { key: "date", label: "তারিখ" },
+    { key: "ref", label: "রেফ" },
+    { key: "detail", label: "বিবরণ" },
+    { key: "debit", label: "ডেবিট" },
+    { key: "credit", label: "ক্রেডিট" },
+  ];
+  const stmtRows = rows.map((r) => ({
+    date: new Date(r.date).toLocaleDateString("bn-BD"),
+    ref: r.ref,
+    detail: r.detail,
+    debit: Number(r.debit),
+    credit: Number(r.credit),
+  }));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -696,7 +846,28 @@ export function PartyStatement() {
                 </option>
               ))}
         </select>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="রেফ/বিবরণ খুঁজুন…"
+          className="min-h-11 min-w-48 flex-1 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+        />
+        <button
+          disabled={!stmt}
+          onClick={() => downloadCsv(`statement-${kind}-${today()}`, stmtCols, stmtRows)}
+          className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+        >
+          CSV
+        </button>
+        <button
+          disabled={!stmt}
+          onClick={() => printReport("পার্টি স্টেটমেন্ট", `${stmt?.name ?? ""} · মোট ৳${Number(stmt?.total ?? 0)}`, stmtCols, stmtRows)}
+          className="min-h-11 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+        >
+          PDF
+        </button>
       </div>
+
 
       {isFetching && <p className="text-xs text-muted-foreground">লোড হচ্ছে…</p>}
 
@@ -717,7 +888,7 @@ export function PartyStatement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {(stmt.rows ?? []).map((r, i) => (
+              {rows.map((r, i) => (
                 <tr key={i}>
                   <td className="px-3 py-2">{new Date(r.date).toLocaleDateString("bn-BD")}</td>
                   <td className="px-3 py-2 font-mono">{r.ref}</td>
@@ -726,7 +897,8 @@ export function PartyStatement() {
                   <td className="px-3 py-2 text-right">৳{bn(Number(r.credit))}</td>
                 </tr>
               ))}
-              {(stmt.rows ?? []).length === 0 && (
+              {rows.length === 0 && (
+
                 <tr>
                   <td colSpan={5} className="p-4 text-center text-muted-foreground">
                     কোনো লেনদেন নেই
