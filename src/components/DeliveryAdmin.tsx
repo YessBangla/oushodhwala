@@ -214,11 +214,30 @@ export function DeliveryAdmin() {
             <x.icon className="h-3.5 w-3.5" /> {x.t}
           </button>
         ))}
-        <span className="ml-auto flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
+        {pushSupported() && (
+          <button
+            onClick={async () => {
+              if (push) {
+                disablePush();
+                setPush(false);
+                return;
+              }
+              const ok = await enablePush();
+              setPush(ok);
+              if (!ok) toast.error("ব্রাউজার নোটিফিকেশনের অনুমতি পাওয়া যায়নি");
+            }}
+            className={`ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold ${push ? "bg-secondary text-primary-dark" : "bg-muted"}`}
+          >
+            {push ? <Bell className="h-3.5 w-3.5" /> : <BellOff className="h-3.5 w-3.5" />}
+            {push ? "পুশ অ্যালার্ট চালু" : "পুশ অ্যালার্ট"}
+          </button>
+        )}
+        <span className={`flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground ${pushSupported() ? "" : "ml-auto"}`}>
           <Wifi className={`h-3.5 w-3.5 ${live ? "text-primary" : ""}`} />
           {live ? "লাইভ সিঙ্ক চালু" : "প্রতি ১৫ সেকেন্ডে রিফ্রেশ"}
           {dataUpdatedAt > 0 && ` · সর্বশেষ ${fmtTime(new Date(dataUpdatedAt).toISOString())}`}
         </span>
+
       </div>
 
       {tab === "deliveries" && (
