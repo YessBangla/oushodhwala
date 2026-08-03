@@ -759,6 +759,8 @@ type Stmt = { kind: string; name: string; total: number; rows: { date: string; r
 export function PartyStatement() {
   const [kind, setKind] = useState<"customer" | "supplier">("supplier");
   const [party, setParty] = useState("");
+  const [q, setQ] = useState("");
+
 
   const { data: suppliers } = useQuery({
     queryKey: ["stmt-suppliers"],
