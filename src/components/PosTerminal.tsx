@@ -5,6 +5,8 @@ import { Search, Trash2, Printer, ShoppingBag, CloudOff, RefreshCw, AlertTriangl
 import { supabase } from "@/integrations/supabase/client";
 import { bn } from "@/data/catalog";
 import { ProductImage } from "@/components/ProductImage";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { enqueue, isOnline, loadQueue, removeRef, clearSynced, syncQueue, type QueuedSale } from "@/lib/pos-offline";
 
 type P = {
