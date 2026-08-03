@@ -102,19 +102,18 @@ export function DeliverToBar() {
   };
 
   return (
-    <div className="relative border-t border-border bg-muted">
+    <div className="relative">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className="flex w-full max-w-md items-center gap-1 px-4 py-1.5 text-[11px] text-muted-foreground"
+        className="flex max-w-[190px] items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1.5 text-[11px] text-navy hover:border-primary"
       >
         <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-        <span className="truncate">
-          {t("ডেলিভারি", "Deliver to")}: {addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}
-        </span>
-        <ChevronDown className={`ml-1 h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="truncate">{addr ? addr.area : t("ঠিকানা যোগ করুন", "Add address")}</span>
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+
 
       {open && (
         <>
