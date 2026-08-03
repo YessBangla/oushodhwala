@@ -139,6 +139,10 @@ export function PosTerminal() {
     },
   });
 
+  const [catOpen, setCatOpen] = useState(false);
+  const catName = (slug: string) => cats.find((c) => c.slug === slug)?.bn ?? slug;
+
+
   const { data: recent } = useQuery({
     queryKey: ["pos-recent"],
     queryFn: async () => {
