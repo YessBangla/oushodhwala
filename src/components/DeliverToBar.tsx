@@ -44,16 +44,18 @@ export function DeliverToBar({ full = false }: { full?: boolean }) {
     }
   }, []);
 
-  const toggle = () => {
-    setOpen((o) => {
-      try {
-        localStorage.setItem(OPEN_KEY, o ? "0" : "1");
-      } catch {
-        /* ignore */
-      }
-      return !o;
-    });
-  };
+  const setOpenPersist = useCallback((next: boolean) => {
+    setOpen(next);
+    try {
+      localStorage.setItem(OPEN_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const close = useCallback(() => setOpenPersist(false), [setOpenPersist]);
+  const toggle = () => setOpenPersist(!open);
+  const { ref: wrapRef, triggerRef } = useDismissable<HTMLDivElement>(open, close);
 
   const addr = addresses.find((a) => a.id === activeAddress) ?? addresses[0];
 
