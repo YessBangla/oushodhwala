@@ -250,20 +250,66 @@ function DeliveryPanel() {
   const active = rows.filter((r) => !["delivered", "failed"].includes(r.status));
   const past = rows.filter((r) => ["delivered", "failed"].includes(r.status));
 
+  // আজকের পরিসংখ্যান
+  const today = new Date().toDateString();
+  const isToday = (iso: string) => new Date(iso).toDateString() === today;
+  const doneToday = past.filter((r) => r.status === "delivered" && isToday(r.created_at)).length;
+  const failedToday = past.filter((r) => r.status === "failed" && isToday(r.created_at)).length;
+  const codDue = active
+    .filter((r) => r.orders?.payment_method === "cod" && r.orders?.payment_status !== "paid")
+    .reduce((s, r) => s + Number(r.orders?.total ?? 0), 0);
+  const collectedToday = past
+    .filter((r) => r.status === "delivered" && isToday(r.created_at) && r.orders?.payment_method === "cod")
+    .reduce((s, r) => s + Number(r.orders?.total ?? 0), 0);
+
+  // অগ্রাধিকার অনুসারে সাজানো — যত এগিয়ে, তত উপরে
+  const rank: Record<string, number> = { arrived: 0, on_the_way: 1, picked: 2, assigned: 3 };
+  const activeSorted = [...active].sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+
+  const stats: { label: string; value: string; tone: string }[] = [
+    { label: t("চলমান", "Active"), value: t.n(active.length), tone: "text-primary" },
+    { label: t("আজ সম্পন্ন", "Done today"), value: t.n(doneToday), tone: "text-primary-dark" },
+    { label: t("সংগ্রহ বাকি (COD)", "COD to collect"), value: t.money(codDue), tone: "text-navy" },
+    { label: t("আজ সংগৃহীত", "Collected today"), value: t.money(collectedToday), tone: "text-navy" },
+  ];
+
   return (
     <div className="pt-4">
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-lg">🛵</span>
-        <div>
-          <p className="text-sm font-bold text-navy">{rider.name}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {rider.phone} · {rider.zone || t("সব এলাকা", "All zones")}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-navy">{rider.name}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {rider.phone} · {rider.zone || t("সব এলাকা", "All zones")} · {rider.vehicle || t("যানবাহন", "Vehicle")}
           </p>
         </div>
-        <button onClick={() => void refetch()} className="ml-auto rounded-lg bg-muted p-2" aria-label={t("রিফ্রেশ", "Refresh")}>
+        <span
+          className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            sharing ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {sharing ? t("অনলাইন", "Online") : t("অফলাইন", "Offline")}
+        </span>
+        <button onClick={() => void refetch()} className="shrink-0 rounded-lg bg-muted p-2" aria-label={t("রিফ্রেশ", "Refresh")}>
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
+
+      {/* আজকের সারাংশ */}
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl border border-border bg-card p-3">
+            <p className="text-[10px] font-semibold text-muted-foreground">{s.label}</p>
+            <p className={`mt-0.5 font-display text-base font-extrabold ${s.tone}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+      {failedToday > 0 && (
+        <p className="mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-[11px] font-semibold text-destructive">
+          {t(`আজ ${t.n(failedToday)}টি ডেলিভারি ব্যর্থ হয়েছে — পুনরায় শিডিউল করুন।`, `${failedToday} delivery(s) failed today — please reschedule.`)}
+        </p>
+      )}
+
 
       <div className="mt-3 rounded-2xl border border-border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -340,41 +386,88 @@ function DeliveryPanel() {
         {t("চলমান ডেলিভারি", "Active deliveries")} ({t.n(active.length)})
       </h2>
       {active.length === 0 && (
-        <p className="mt-2 text-xs text-muted-foreground">{t("এখন কোনো ডেলিভারি নেই।", "No active delivery right now.")}</p>
+        <p className="mt-2 rounded-2xl border border-dashed border-border bg-card p-6 text-center text-xs text-muted-foreground">
+          {t("এখন কোনো ডেলিভারি নেই। নতুন অর্ডার এলে এখানে দেখাবে।", "No active delivery right now. New assignments appear here.")}
+        </p>
       )}
 
       <ul className="mt-2 space-y-3">
-        {active.map((r) => (
-          <li key={r.id} className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-bold text-navy">#{r.order_no}</p>
-              <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
-                {t(DELIVERY_STATUS[r.status]?.bn ?? r.status, DELIVERY_STATUS[r.status]?.en ?? r.status)}
-              </span>
-            </div>
-            <p className="mt-1 text-xs font-semibold">{r.orders?.customer_name}</p>
-            <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
-              <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-primary" /> {r.orders?.address}
-            </p>
-            <div className="mt-2 flex items-center gap-2 text-[11px]">
-              <a href={`tel:${r.orders?.phone}`} className="flex items-center gap-1 rounded-lg bg-muted px-2 py-1 font-semibold">
-                <Phone className="h-3 w-3" /> {r.orders?.phone}
-              </a>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.orders?.address ?? "")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg bg-muted px-2 py-1 font-semibold"
-              >
-                {t("ম্যাপ", "Map")}
-              </a>
-              <span className="ml-auto font-display text-sm font-extrabold text-primary">{t.money(Number(r.orders?.total ?? 0))}</span>
-            </div>
-            <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
-              {r.orders?.payment_method === "cod" && r.orders?.payment_status !== "paid"
-                ? t("ক্যাশ অন ডেলিভারি — টাকা সংগ্রহ করুন", "Cash on delivery — collect payment")
-                : t("পেমেন্ট সম্পন্ন", "Payment done")}
-            </p>
+        {activeSorted.map((r, i) => {
+          const cod = r.orders?.payment_method === "cod" && r.orders?.payment_status !== "paid";
+          const wa = (r.orders?.phone ?? "").replace(/\D/g, "").replace(/^0/, "88");
+          const step = ["assigned", "picked", "on_the_way", "arrived"].indexOf(r.status) + 1;
+          return (
+            <li
+              key={r.id}
+              className={`rounded-2xl border bg-card p-4 ${i === 0 ? "border-primary shadow-[var(--shadow-elevated)]" : "border-border"}`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {i === 0 && (
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    {t("পরবর্তী স্টপ", "Next stop")}
+                  </span>
+                )}
+                <p className="text-xs font-bold text-navy">#{r.order_no}</p>
+                <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-primary-dark">
+                  {DELIVERY_STATUS[r.status]?.emoji} {t(DELIVERY_STATUS[r.status]?.bn ?? r.status, DELIVERY_STATUS[r.status]?.en ?? r.status)}
+                </span>
+              </div>
+
+              {/* ধাপ অগ্রগতি */}
+              <div className="mt-2 flex gap-1" aria-hidden>
+                {[1, 2, 3, 4].map((s) => (
+                  <span key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-muted"}`} />
+                ))}
+              </div>
+
+              <p className="mt-2 text-xs font-semibold">{r.orders?.customer_name}</p>
+              <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
+                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-primary" /> {r.orders?.address}
+              </p>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                <a href={`tel:${r.orders?.phone}`} className="flex min-h-9 items-center gap-1 rounded-lg bg-muted px-2 font-semibold">
+                  <Phone className="h-3 w-3" /> {r.orders?.phone}
+                </a>
+                <a
+                  href={`https://wa.me/${wa}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-9 items-center rounded-lg bg-muted px-2 font-semibold"
+                >
+                  WhatsApp
+                </a>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(r.orders?.address ?? "")}&travelmode=driving`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-9 items-center gap-1 rounded-lg bg-primary/10 px-2 font-bold text-primary"
+                >
+                  <Navigation className="h-3 w-3" /> {t("দিকনির্দেশ", "Navigate")}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void navigator.clipboard?.writeText(r.orders?.address ?? "")}
+                  className="flex min-h-9 items-center rounded-lg bg-muted px-2 font-semibold"
+                >
+                  {t("ঠিকানা কপি", "Copy address")}
+                </button>
+                <span className="ml-auto font-display text-sm font-extrabold text-primary">{t.money(Number(r.orders?.total ?? 0))}</span>
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-semibold">
+                <span className={`rounded-full px-2 py-0.5 ${cod ? "bg-sale/10 text-sale" : "bg-secondary text-primary-dark"}`}>
+                  {cod ? t("ক্যাশ অন ডেলিভারি — টাকা সংগ্রহ করুন", "Cash on delivery — collect payment") : t("পেমেন্ট সম্পন্ন", "Payment done")}
+                </span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                  {t("আনুমানিক", "ETA")} {t.n(r.eta_minutes)} {t("মিনিট", "min")}
+                </span>
+                <span className="text-muted-foreground">
+                  {t("নিয়োগ", "Assigned")}: {fmtTime(r.created_at, t.en)}
+                </span>
+                {r.note && <span className="w-full text-muted-foreground">📝 {r.note}</span>}
+              </div>
+
 
             {r.status === "arrived" && (
               <>
@@ -426,39 +519,52 @@ function DeliveryPanel() {
             )}
 
 
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(NEXT[r.status] ?? []).map((s) => (
-                <button
-                  key={s}
-                  disabled={busy === r.id + s}
-                  onClick={() => void update(r, s)}
-                  className={`rounded-lg px-3 py-2 text-[11px] font-bold disabled:opacity-60 ${
-                    s === "failed" ? "bg-destructive/10 text-destructive" : "bg-primary text-primary-foreground"
-                  }`}
-                >
-                  {t(DELIVERY_STATUS[s]?.bn ?? s, DELIVERY_STATUS[s]?.en ?? s)}
-                </button>
-              ))}
-            </div>
-          </li>
-        ))}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(NEXT[r.status] ?? []).map((s) => (
+                  <button
+                    key={s}
+                    disabled={busy === r.id + s}
+                    onClick={() => void update(r, s)}
+                    className={`min-h-11 rounded-lg px-3 text-[11px] font-bold disabled:opacity-60 ${
+                      s === "failed" ? "bg-destructive/10 text-destructive" : "bg-primary text-primary-foreground"
+                    }`}
+                  >
+                    {t(DELIVERY_STATUS[s]?.bn ?? s, DELIVERY_STATUS[s]?.en ?? s)}
+                  </button>
+                ))}
+              </div>
+            </li>
+          );
+        })}
+
       </ul>
 
       {past.length > 0 && (
         <>
-          <h2 className="mt-6 text-sm font-bold text-navy">{t("সম্পন্ন", "Completed")}</h2>
+          <h2 className="mt-6 text-sm font-bold text-navy">
+            {t("সম্পন্ন ও ব্যর্থ", "Completed & failed")} ({t.n(past.length)})
+          </h2>
           <ul className="mt-2 space-y-2">
             {past.map((r) => (
-              <li key={r.id} className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-[11px]">
+              <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-[11px]">
                 <span>{DELIVERY_STATUS[r.status]?.emoji}</span>
                 <span className="font-bold">#{r.order_no}</span>
                 <span className="text-muted-foreground">{r.orders?.customer_name}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    r.status === "delivered" ? "bg-secondary text-primary-dark" : "bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  {t(DELIVERY_STATUS[r.status]?.bn ?? r.status, DELIVERY_STATUS[r.status]?.en ?? r.status)}
+                </span>
+                <span className="font-display font-extrabold text-primary">{t.money(Number(r.orders?.total ?? 0))}</span>
                 <span className="ml-auto text-muted-foreground">{fmtTime(r.created_at, t.en)}</span>
               </li>
             ))}
           </ul>
         </>
       )}
+
     </div>
   );
 }
