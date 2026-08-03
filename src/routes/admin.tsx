@@ -31,6 +31,11 @@ import { WEEKDAYS } from "@/lib/appointments";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 import { allowedTabs } from "@/lib/roles";
 import { StaffRoles } from "@/components/StaffRoles";
+import { PosTerminal } from "@/components/PosTerminal";
+import { ExpensesAdmin, ChartOfAccounts, JournalAdmin, DayBook, Financials, PartyStatement } from "@/components/FinanceAdmin";
+import { StockAdjustments, StockCount, LabelPrint } from "@/components/StockOpsAdmin";
+import { BranchesAdmin, StockTransfers, DeliveryZonesAdmin } from "@/components/BranchesAdmin";
+import { Workspace } from "@/components/Workspace";
 
 
 
@@ -51,6 +56,8 @@ export const Route = createFileRoute("/admin")({
 
 const TABS = [
   { id: "dash", t: "ড্যাশবোর্ড" },
+  { id: "workspace", t: "ওয়ার্কস্পেস" },
+  { id: "pos", t: "POS / কাউন্টার বিক্রয়" },
   { id: "orders", t: "অর্ডার" },
   { id: "inventory", t: "ইনভেন্টরি" },
   { id: "products", t: "প্রোডাক্ট" },
@@ -87,6 +94,18 @@ const TABS = [
   { id: "erproles", t: "ERP অ্যাক্সেস" },
   { id: "staff", t: "স্টাফ ও ভূমিকা" },
 
+  { id: "expenses", t: "খরচ" },
+  { id: "coa", t: "চার্ট অব অ্যাকাউন্টস" },
+  { id: "journal", t: "জার্নাল" },
+  { id: "daybook", t: "ডে-বুক" },
+  { id: "financials", t: "ফিন্যান্সিয়ালস" },
+  { id: "party", t: "পার্টি স্টেটমেন্ট" },
+  { id: "stockadj", t: "স্টক অ্যাডজাস্টমেন্ট" },
+  { id: "stockcount", t: "স্টক কাউন্ট" },
+  { id: "labels", t: "বারকোড ও লেবেল" },
+  { id: "branches", t: "শাখা (মাল্টি ব্রাঞ্চ)" },
+  { id: "transfers", t: "স্টক ট্রান্সফার" },
+  { id: "zones", t: "ডেলিভারি জোন" },
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
@@ -97,10 +116,12 @@ const pickTabs = (ids: string[]) =>
   });
 
 const NAV_GROUPS: AdminNavGroup[] = [
-  { label: "ওভারভিউ", items: pickTabs(["dash"]) },
-  { label: "বিক্রয়", items: pickTabs(["orders", "inventory", "accounts", "reports", "returns"]) },
+  { label: "ওভারভিউ", items: pickTabs(["dash", "workspace"]) },
+  { label: "বিক্রয়", items: pickTabs(["pos", "orders", "inventory", "accounts", "reports", "returns"]) },
+  { label: "হিসাব ও অ্যাকাউন্টিং", items: pickTabs(["expenses", "daybook", "journal", "coa", "financials", "party"]) },
   { label: "সাপ্লাই চেইন", items: pickTabs(["suppliers", "purchases", "batches", "erpreports"]) },
-  { label: "ডেলিভারি", items: pickTabs(["delivery", "riders"]) },
+  { label: "স্টক অপারেশন", items: pickTabs(["stockadj", "stockcount", "labels", "branches", "transfers"]) },
+  { label: "ডেলিভারি", items: pickTabs(["delivery", "riders", "zones"]) },
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["support", "lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
@@ -207,6 +228,20 @@ function Admin() {
       }}
     >
       {tab === "dash" && <Dashboard />}
+      {tab === "workspace" && <Workspace groups={visibleGroups} onOpen={(id) => setTab(id as TabId)} />}
+      {tab === "pos" && <PosTerminal />}
+      {tab === "expenses" && <ExpensesAdmin />}
+      {tab === "coa" && <ChartOfAccounts />}
+      {tab === "journal" && <JournalAdmin />}
+      {tab === "daybook" && <DayBook />}
+      {tab === "financials" && <Financials />}
+      {tab === "party" && <PartyStatement />}
+      {tab === "stockadj" && <StockAdjustments />}
+      {tab === "stockcount" && <StockCount />}
+      {tab === "labels" && <LabelPrint />}
+      {tab === "branches" && <BranchesAdmin />}
+      {tab === "transfers" && <StockTransfers />}
+      {tab === "zones" && <DeliveryZonesAdmin />}
       {tab === "orders" && <Orders />}
       {tab === "inventory" && <Inventory />}
       {tab === "products" && <Products />}

@@ -16,12 +16,16 @@ export const ROLE_TABS: Record<AppRole, string[]> = {
   super_admin: ["*"],
   admin: ["*"],
   erp_manager: [
-    "dash", "orders", "inventory", "products", "suppliers", "purchases",
+    "dash", "workspace", "orders", "inventory", "products", "suppliers", "purchases",
     "batches", "erpreports", "audit", "monitor", "health",
+    "stockadj", "stockcount", "labels", "branches", "transfers", "zones", "pos",
   ],
-  accountant: ["dash", "orders", "accounts", "reports", "returns", "loyalty"],
-  support_agent: ["dash", "support", "orders", "customers", "rx", "consults", "returns", "reviews"],
-  pharmacist: ["dash", "rx", "consults", "products", "inventory", "lab", "diagnostics", "doctors"],
+  accountant: [
+    "dash", "workspace", "orders", "accounts", "reports", "returns", "loyalty",
+    "expenses", "coa", "journal", "daybook", "financials", "party",
+  ],
+  support_agent: ["dash", "workspace", "support", "orders", "customers", "rx", "consults", "returns", "reviews"],
+  pharmacist: ["dash", "workspace", "pos", "rx", "consults", "products", "inventory", "lab", "diagnostics", "doctors", "labels"],
   rider: [],
   user: [],
 };
