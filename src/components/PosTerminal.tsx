@@ -32,6 +32,9 @@ const METHODS = [
   { v: "due", t: "বাকি" },
 ];
 
+const RECENT_CATS_KEY = "pos-recent-cats";
+const LOW_STOCK = 10;
+
 
 /** কাউন্টার/সরাসরি বিক্রয় টার্মিনাল */
 export function PosTerminal() {
