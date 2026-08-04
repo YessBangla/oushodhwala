@@ -1,0 +1,1 @@
+DELETE FROM public.prescriptions WHERE guest_token IN ('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
