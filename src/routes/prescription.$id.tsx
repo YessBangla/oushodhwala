@@ -148,7 +148,7 @@ function RxReading() {
 
   const order = useMemo(() => {
 
-    if (!data) return { lines: [] as Array<{ p: Product; qty: number }>, total: 0, mrp: 0 };
+    if (!data) return { lines: [] as Array<{ p: Product; qty: number }>, total: 0, discount: 0, payable: 0, mrp: 0 };
     const lines: Array<{ p: Product; qty: number }> = [];
     data.items.forEach((row, i) => {
       const s = sel[i];
