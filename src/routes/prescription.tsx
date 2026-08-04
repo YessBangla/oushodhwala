@@ -70,6 +70,12 @@ function Prescription() {
   const [delId, setDelId] = useState<string | null>(null);
   const [readId, setReadId] = useState<string | null>(null);
   const [retDays, setRetDays] = useState(0);
+  /** গেস্ট আপলোডের পর প্রসেসিং অনুমতির ডায়ালগ */
+  const [permOpen, setPermOpen] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
   const removeRx = useServerFn(deleteRx);
   const rereadRx = useServerFn(readPrescription);
   const saveSettings = useServerFn(saveRxSettings);
