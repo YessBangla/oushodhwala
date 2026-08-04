@@ -524,12 +524,39 @@ function Prescription() {
       />
 
       {submit.isPending && (
-        <div className="mt-3">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-            <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        <div className="mt-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
+          <p className="flex items-center gap-1.5 text-xs font-bold text-primary">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {phase === "upload"
+              ? t("ফাইল আপলোড হচ্ছে...", "Uploading files...")
+              : phase === "save"
+                ? t("প্রেসক্রিপশন সংরক্ষণ হচ্ছে...", "Saving prescription...")
+                : t("ঔষধওয়ালা পড়া শুরু করছে...", "Oushodhwala is starting to read...")}
+          </p>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div className="h-full bg-primary transition-all" style={{ width: `${phase === "upload" ? pct : 100}%` }} />
           </div>
-          <p className="mt-1 text-center text-[10px] text-muted-foreground">
-            {t.n(done)}/{t.n(picked.length)} {t("ফাইল আপলোড হয়েছে", "files uploaded")}
+          <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
+            {t.n(done)}/{t.n(picked.length)} {t("ফাইল আপলোড হয়েছে", "files uploaded")} · {t.n(pct)}%
+          </p>
+          <ul className="mt-2 space-y-1">
+            {picked.map((p) => (
+              <li key={p.id} className="flex items-center gap-1.5 text-[10px]">
+                <span className="truncate">{p.file.name}</span>
+                <span className="ml-auto shrink-0 font-semibold">
+                  {uploaded[p.id]
+                    ? `✓ ${t("সম্পন্ন", "Done")}`
+                    : failed.includes(p.id)
+                      ? `✕ ${t("ব্যর্থ", "Failed")}`
+                      : retrying[p.id]
+                        ? t(`রিট্রাই ${retrying[p.id]}/৩`, `Retry ${retrying[p.id]}/3`)
+                        : t("চলছে...", "In progress...")}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {t("পেইজটি বন্ধ করবেন না — শেষ হলে রিডিং পেইজে নিয়ে যাওয়া হবে।", "Please don't close the page — you'll be taken to the reading page when done.")}
           </p>
         </div>
       )}
@@ -553,18 +580,38 @@ function Prescription() {
       )}
 
       <Dialog open={permOpen} onOpenChange={setPermOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-h-[85vh] max-w-sm overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base">
               {t("প্রসেসিং-এর অনুমতি দিন", "Allow processing")}
             </DialogTitle>
             <DialogDescription className="text-xs">
               {t(
-                "আপনার প্রেসক্রিপশন ঔষধওয়ালা পড়বে ও লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট যাচাই করবেন। লগইন ছাড়াও চালিয়ে যেতে পারেন — ফলাফল এই ডিভাইসে গোপন কোড দিয়ে সংরক্ষিত থাকবে।",
-                "Oushodhwala will read your prescription and a licensed pharmacist will verify it. You can continue without login — the result stays on this device with a private code.",
+                "লগইন ছাড়াই চালিয়ে যেতে পারেন। শুরুর আগে জেনে নিন কী কী ডেটা প্রসেস হবে ও কতদিন থাকবে।",
+                "You can continue without logging in. Before we start, here is exactly what is processed and for how long.",
               )}
             </DialogDescription>
           </DialogHeader>
+
+          <div className="rounded-lg border border-border bg-secondary/50 p-2.5">
+            <p className="text-[11px] font-bold">{t("কী কী প্রসেস হবে", "What is processed")}</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[10px] text-muted-foreground">
+              <li>{t(`আপনার নির্বাচিত ${picked.length}টি প্রেসক্রিপশন ছবি/PDF`, `Your ${picked.length} selected prescription image(s)/PDF`)}</li>
+              <li>{t("ছবি থেকে পড়া ঔষধের নাম, ডোজ, সময়কাল ও নির্দেশনা", "Medicine names, dose, duration and instructions read from the image")}</li>
+              <li>{t("আপনার দেওয়া মোবাইল নম্বর ও অতিরিক্ত নোট (দিলে)", "The mobile number and note you provide (if any)")}</li>
+              <li>{t("এই ডিভাইসে রাখা একটি গোপন গেস্ট কোড — এটি দিয়েই শুধু আপনি ফলাফল দেখতে পান", "A private guest code stored on this device — only it can open your result")}</li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-border bg-secondary/50 p-2.5">
+            <p className="text-[11px] font-bold">{t("কতদিন থাকবে", "How long it is kept")}</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[10px] text-muted-foreground">
+              <li>{t("ফাইল ও রিডিং ফলাফল ৩০ দিন পর্যন্ত সংরক্ষিত থাকে।", "Files and reading results are kept for up to 30 days.")}</li>
+              <li>{t("যেকোনো সময় নিজেই \"মুছুন\" চেপে স্থায়ীভাবে মুছে ফেলতে পারবেন।", "You can permanently delete them anytime with the Delete button.")}</li>
+              <li>{t("ব্রাউজারের ডেটা মুছে ফেললে গেস্ট কোডও চলে যাবে — তখন ফলাফল আর খোলা যাবে না।", "Clearing browser data removes the guest code — the result can no longer be opened.")}</li>
+              <li>{t("তথ্য শুধু ঔষধ শনাক্ত ও ফার্মাসিস্ট যাচাইয়ে ব্যবহৃত হয়; বিজ্ঞাপনে দেওয়া হয় না।", "Data is used only for medicine matching and pharmacist verification — never for ads.")}</li>
+            </ul>
+          </div>
 
           <label className="flex items-start gap-2 text-[11px]">
             <input
@@ -575,8 +622,8 @@ function Prescription() {
             />
             <span>
               {t(
-                "আমি আমার প্রেসক্রিপশন পড়া ও যাচাইয়ের অনুমতি দিচ্ছি।",
-                "I allow my prescription to be read and verified.",
+                "আমি উপরের তথ্য পড়েছি এবং আমার প্রেসক্রিপশন পড়া ও যাচাইয়ের অনুমতি দিচ্ছি।",
+                "I have read the above and allow my prescription to be read and verified.",
               )}
             </span>
           </label>
@@ -586,11 +633,88 @@ function Prescription() {
             disabled={!consent || submit.isPending}
             className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {t("অনুমতি দিন ও প্রসেস করুন", "Allow & process")}
+            {t("অনুমতি দিন ও প্রসেসিং শুরু করুন", "Allow & start processing")}
           </button>
           <Link to="/auth" className="text-center text-[11px] font-semibold text-primary underline">
             {t("চাইলে লগইন করে সংরক্ষণ করুন", "Optional: log in to save to your account")}
           </Link>
+        </DialogContent>
+      </Dialog>
+
+      {!user && (
+        <section className="mt-6">
+          <h2 className="flex items-center gap-1.5 text-sm font-bold">
+            <Smartphone className="h-4 w-4 text-primary" />
+            {t("এই ডিভাইসের প্রেসক্রিপশন হিস্ট্রি", "Prescriptions on this device")}
+          </h2>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {t(
+              "লগইন ছাড়া জমা দেওয়া প্রেসক্রিপশনগুলো এই ডিভাইসের গোপন কোড দিয়ে দেখা যাচ্ছে।",
+              "Prescriptions submitted without login, visible via this device's private code.",
+            )}
+          </p>
+          {guestList.isLoading ? (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("লোড হচ্ছে...", "Loading...")}
+            </p>
+          ) : (guestList.data ?? []).length === 0 ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("এই ডিভাইসে এখনো কোনো প্রেসক্রিপশন নেই।", "No prescriptions on this device yet.")}
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-2">
+              {(guestList.data ?? []).map((r) => (
+                <li key={r.id} className="rounded-xl border border-border bg-card p-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span>📄</span>
+                    <span className="font-semibold">
+                      {t.n(r.files)} {t("টি ফাইল", "file(s)")}
+                      {r.medicines > 0 && ` · ${t.n(r.medicines)} ${t("ঔষধ", "medicines")}`}
+                    </span>
+                    <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">
+                      {r.parsedAt ? t("পড়া হয়েছে", "Read") : t("পড়া হচ্ছে", "Reading")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {new Date(r.createdAt).toLocaleString(t.en ? "en-US" : "bn-BD")}
+                  </p>
+                  {r.adminNote && (
+                    <p className="mt-1 text-[11px] font-semibold text-primary">
+                      {t("ফার্মাসিস্ট:", "Pharmacist:")} {r.adminNote}
+                    </p>
+                  )}
+                  <Link
+                    to="/prescription/$id"
+                    params={{ id: r.id }}
+                    className="mt-2 block rounded-lg bg-primary py-2 text-center text-[11px] font-bold text-primary-foreground"
+                  >
+                    {t("ফলাফল, PDF ও শেয়ার", "Result, PDF & share")}
+                  </Link>
+                  <div className="mt-1.5 flex gap-1.5">
+                    <button
+                      onClick={() => void rereadOne(r.id)}
+                      disabled={readId === r.id}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-[11px] font-bold disabled:opacity-60"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${readId === r.id ? "animate-spin" : ""}`} />
+                      {readId === r.id ? t("পড়ছে...", "Reading...") : t("আবার পড়ুন", "Re-read")}
+                    </button>
+                    <button
+                      onClick={() => void removeGuestOne(r.id)}
+                      disabled={delId === r.id}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-destructive/50 py-2 text-[11px] font-bold text-destructive disabled:opacity-60"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {delId === r.id ? t("মুছছে...", "Deleting...") : t("মুছুন", "Delete")}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
         </DialogContent>
       </Dialog>
 
