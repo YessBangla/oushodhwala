@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   RefreshCw,
   ShoppingCart,
@@ -347,7 +347,7 @@ function RxReading() {
           onClick={async () => {
             setRefreshing(true);
             try {
-              await (user ? read({ data: { id, force: true } }) : readGuest({ data: { id, token: guestToken, force: true } }));
+              await runRead(true);
               setEdited(null);
               await refetch();
               toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
@@ -394,7 +394,7 @@ function RxReading() {
             onClick={async () => {
               setRefreshing(true);
               try {
-                await (user ? read({ data: { id, force: true } }) : readGuest({ data: { id, token: guestToken, force: true } }));
+                await runRead(true);
                 setEdited(null);
                 await refetch();
                 toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
