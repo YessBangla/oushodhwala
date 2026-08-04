@@ -163,6 +163,13 @@ function Prescription() {
                 <p className="mt-1 text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleString(t.en ? "en-US" : "bn-BD")}</p>
                 {r.note && <p className="mt-1 text-[11px] text-muted-foreground">{t("নোট:", "Note:")} {r.note}</p>}
                 {r.admin_note && <p className="mt-1 text-[11px] font-semibold text-primary">{t("ফার্মাসিস্ট:", "Pharmacist:")} {r.admin_note}</p>}
+                <Link
+                  to="/prescription/$id"
+                  params={{ id: r.id }}
+                  className="mt-2 block rounded-lg bg-primary py-2 text-center text-[11px] font-bold text-primary-foreground"
+                >
+                  {t("ঔষধের দাম ও বিস্তারিত দেখুন", "See medicines, price & details")}
+                </Link>
               </li>
             ))}
           </ul>
