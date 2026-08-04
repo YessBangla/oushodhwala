@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Zap, Camera, ShieldCheck, Clock, Trash2, FileText, RefreshCw, ShieldAlert } from "lucide-react";
+import { Upload, Zap, Camera, ShieldCheck, Clock, Trash2, FileText, RefreshCw, ShieldAlert, Loader2, Smartphone } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -8,9 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
-import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
+import { quickReorderRx, readPrescription, readPrescriptionGuest } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
-import { getGuestToken, rememberGuestRx } from "@/lib/rx-guest";
+import { listGuestRx, deleteGuestRx } from "@/lib/rx-guest.functions";
+import { getGuestToken, rememberGuestRx, forgetGuestRx } from "@/lib/rx-guest";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+
 
 export const Route = createFileRoute("/prescription")({
   head: () => ({
