@@ -170,8 +170,9 @@ function Prescription() {
   };
 
   const submit = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error(t("লগইন প্রয়োজন", "Login required"));
+    mutationFn: async (uidArg?: string) => {
+      const uid = uidArg ?? user?.id;
+      if (!uid) throw new Error(t("লগইন প্রয়োজন", "Login required"));
       opsStart("prescription_upload", { files: picked.length });
       const ok: Record<string, string> = { ...uploaded };
       const bad: string[] = [];
@@ -180,7 +181,7 @@ function Prescription() {
       for (const p of picked) {
         if (ok[p.id]) continue;
         try {
-          ok[p.id] = await uploadOne(p, user.id);
+          ok[p.id] = await uploadOne(p, uid);
           setUploaded({ ...ok });
           setDone((d) => d + 1);
         } catch {
@@ -201,7 +202,7 @@ function Prescription() {
       const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
       const { data, error } = await supabase
         .from("prescriptions")
-        .insert({ user_id: user.id, note, phone, file_urls: urls })
+        .insert({ user_id: uid, note, phone, file_urls: urls })
         .select("id")
         .single();
       if (error) {
