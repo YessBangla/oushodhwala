@@ -2079,6 +2079,41 @@ export type Database = {
           },
         ]
       }
+      prescription_audit: {
+        Row: {
+          action: string
+          changes: Json
+          created_at: string
+          id: string
+          prescription_id: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          prescription_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          prescription_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_audit_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescriptions: {
         Row: {
           admin_note: string
