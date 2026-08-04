@@ -202,6 +202,19 @@ function Prescription() {
                 >
                   {t("ঔষধের দাম ও বিস্তারিত দেখুন", "See medicines, price & details")}
                 </Link>
+                {r.parsed_at && (
+                  <button
+                    onClick={() => quickReorder(r.id)}
+                    disabled={busyId === r.id}
+                    className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary py-2 text-[11px] font-bold text-primary disabled:opacity-60"
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    {busyId === r.id
+                      ? t("কার্টে যোগ হচ্ছে...", "Adding to cart...")
+                      : t("এক-ক্লিক রি-অর্ডার (যাচাই ছাড়াই)", "One-click re-order (skip verification)")}
+                  </button>
+                )}
+
               </li>
             ))}
           </ul>
