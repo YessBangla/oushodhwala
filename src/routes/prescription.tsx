@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Zap, Camera, ShieldCheck, Clock, Trash2, FileText } from "lucide-react";
+import { Upload, Zap, Camera, ShieldCheck, Clock, Trash2, FileText, RefreshCw, ShieldAlert } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { quickReorderRx } from "@/lib/rx-read.functions";
+import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
+
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 export const Route = createFileRoute("/prescription")({
@@ -55,6 +57,16 @@ function Prescription() {
   const [phone, setPhone] = useState("");
   const [picked, setPicked] = useState<Picked[]>([]);
   const [done, setDone] = useState(0);
+  const [uploaded, setUploaded] = useState<Record<string, string>>({});
+  const [failed, setFailed] = useState<string[]>([]);
+  const [retrying, setRetrying] = useState<Record<string, number>>({});
+  const [delId, setDelId] = useState<string | null>(null);
+  const [retDays, setRetDays] = useState(0);
+  const removeRx = useServerFn(deleteRx);
+  const saveSettings = useServerFn(saveRxSettings);
+  const loadSettings = useServerFn(getRxSettings);
+  const housekeep = useServerFn(rxHousekeeping);
+
 
   useEffect(() => () => picked.forEach((p) => URL.revokeObjectURL(p.url)), [picked]);
 
@@ -122,19 +134,50 @@ function Prescription() {
     },
   });
 
+  /** এক ফাইল আপলোড — ব্যর্থ হলে ব্যাক-অফসহ সর্বোচ্চ ৩ বার স্বয়ংক্রিয় রিট্রাই */
+  const uploadOne = async (p: Picked, uid: string) => {
+    let lastErr: Error | null = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const path = `${uid}/${Date.now()}-${attempt}-${p.file.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error } = await supabase.storage.from("prescriptions").upload(path, p.file);
+      if (!error) return path;
+      lastErr = new Error(error.message);
+      setRetrying((r) => ({ ...r, [p.id]: attempt }));
+      await new Promise((res) => setTimeout(res, attempt * 1200));
+    }
+    throw lastErr ?? new Error("upload failed");
+  };
+
   const submit = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error(t("লগইন প্রয়োজন", "Login required"));
       opsStart("prescription_upload", { files: picked.length });
-      setDone(0);
-      const urls: string[] = [];
+      const ok: Record<string, string> = { ...uploaded };
+      const bad: string[] = [];
+      setFailed([]);
+      setDone(Object.keys(ok).length);
       for (const p of picked) {
-        const path = `${user.id}/${Date.now()}-${p.file.name.replace(/[^\w.\-]/g, "_")}`;
-        const { error } = await supabase.storage.from("prescriptions").upload(path, p.file);
-        if (error) throw error;
-        urls.push(path);
-        setDone((d) => d + 1);
+        if (ok[p.id]) continue;
+        try {
+          ok[p.id] = await uploadOne(p, user.id);
+          setUploaded({ ...ok });
+          setDone((d) => d + 1);
+        } catch {
+          bad.push(p.id);
+        }
       }
+      setRetrying({});
+      if (bad.length) {
+        setFailed(bad);
+        opsFailure("prescription_upload", new Error("upload failed"), { files: bad.length });
+        throw new Error(
+          t(
+            `${bad.length}টি ফাইল আপলোড হয়নি — "পুনরায় চেষ্টা করুন" চাপুন`,
+            `${bad.length} file(s) failed — tap "Retry"`,
+          ),
+        );
+      }
+      const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
       const { data, error } = await supabase
         .from("prescriptions")
         .insert({ user_id: user.id, note, phone, file_urls: urls })
@@ -147,6 +190,7 @@ function Prescription() {
       opsSuccess("prescription_upload", "", { files: urls.length });
       return data.id as string;
     },
+
     onSuccess: (id) => {
       toast.success(
         t("প্রেসক্রিপশন জমা হয়েছে — AI পড়া শুরু হচ্ছে", "Prescription submitted — AI reading starts now"),
@@ -155,13 +199,65 @@ function Prescription() {
       setPicked([]);
       setNote("");
       setDone(0);
+      setUploaded({});
+      setFailed([]);
       void qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
       void navigate({ to: "/prescription/$id", params: { id } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** নোটিফিকেশন তৈরি ও রিটেনশন অনুযায়ী পুরনো প্রেসক্রিপশন মুছে ফেলা */
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      try {
+        const s = await loadSettings({});
+        setRetDays(s.days);
+        const r = await housekeep({});
+        if (r.purged > 0 || r.notified > 0) {
+          void qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+          void qc.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      } catch {
+        /* নীরবে উপেক্ষা */
+      }
+    })();
+  }, [user, loadSettings, housekeep, qc]);
+
+  const removeOne = async (id: string) => {
+    if (!window.confirm(t("এই প্রেসক্রিপশন ও এর ফলাফল স্থায়ীভাবে মুছে যাবে। নিশ্চিত?", "This prescription and its results will be permanently deleted. Continue?")))
+      return;
+    setDelId(id);
+    try {
+      await removeRx({ data: { id } });
+      toast.success(t("মুছে ফেলা হয়েছে", "Deleted"));
+      void qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDelId(null);
+    }
+  };
+
+  const changeRetention = async (days: number) => {
+    setRetDays(days);
+    try {
+      await saveSettings({ data: { days, notifyEmail: true } });
+      toast.success(
+        days === 0
+          ? t("স্বয়ংক্রিয় মুছে ফেলা বন্ধ", "Auto-delete off")
+          : t(`${days} দিন পর স্বয়ংক্রিয়ভাবে মুছে যাবে`, `Auto-delete after ${days} days`),
+      );
+      const r = await housekeep({});
+      if (r.purged > 0) void qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   const pct = picked.length ? Math.round((done / picked.length) * 100) : 0;
+
 
   return (
     <div className="pt-4">
@@ -249,6 +345,17 @@ function Prescription() {
                 </div>
               )}
               <p className="truncate px-1.5 py-1 text-[9px]">{p.file.name}</p>
+              <p className="px-1.5 pb-1 text-[9px] font-semibold">
+                {uploaded[p.id] ? (
+                  <span className="text-primary">✓ {t("আপলোড হয়েছে", "Uploaded")}</span>
+                ) : failed.includes(p.id) ? (
+                  <span className="text-destructive">✕ {t("ব্যর্থ", "Failed")}</span>
+                ) : retrying[p.id] ? (
+                  <span className="text-muted-foreground">
+                    {t(`রিট্রাই ${retrying[p.id]}/৩`, `Retry ${retrying[p.id]}/3`)}
+                  </span>
+                ) : null}
+              </p>
               <button
                 onClick={() => setPicked((prev) => prev.filter((x) => x.id !== p.id))}
                 aria-label={t("সরান", "Remove")}
@@ -260,6 +367,21 @@ function Prescription() {
           ))}
         </ul>
       )}
+
+      {failed.length > 0 && !submit.isPending && (
+        <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+          <p className="text-[11px] font-semibold text-destructive">
+            {t.n(failed.length)} {t("টি ফাইল আপলোড হয়নি — বাকিগুলো সংরক্ষিত আছে।", "file(s) failed — the rest are saved.")}
+          </p>
+          <button
+            onClick={() => submit.mutate()}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[11px] font-bold text-primary-foreground"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> {t("পুনরায় চেষ্টা করুন", "Retry")}
+          </button>
+        </div>
+      )}
+
 
       <input
         value={phone}
@@ -359,12 +481,57 @@ function Prescription() {
                         : t("এক-ক্লিক রি-অর্ডার (যাচাই ছাড়াই)", "One-click re-order (skip verification)")}
                     </button>
                   )}
+                  <button
+                    onClick={() => void removeOne(r.id)}
+                    disabled={delId === r.id}
+                    className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/50 py-2 text-[11px] font-bold text-destructive disabled:opacity-60"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {delId === r.id
+                      ? t("মুছে ফেলা হচ্ছে...", "Deleting...")
+                      : t("প্রেসক্রিপশন ও ফলাফল মুছুন", "Delete prescription & results")}
+                  </button>
                 </li>
               );
             })}
           </ul>
         )}
       </section>
+
+      {user && (
+        <section className="mt-6 rounded-xl border border-border bg-card p-3">
+          <h2 className="flex items-center gap-1.5 text-sm font-bold">
+            <ShieldAlert className="h-4 w-4 text-primary" />
+            {t("ডাটা রিটেনশন কন্ট্রোল", "Data retention control")}
+          </h2>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {t(
+              "নির্ধারিত সময় পার হলে আপনার প্রেসক্রিপশনের ফাইল ও এক্সট্র্যাক্টেড ফলাফল স্বয়ংক্রিয়ভাবে মুছে যাবে।",
+              "After the chosen period, your prescription files and extracted results are deleted automatically.",
+            )}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {[0, 30, 90, 180, 365].map((d) => (
+              <button
+                key={d}
+                onClick={() => void changeRetention(d)}
+                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                  retDays === d ? "border-primary bg-primary/10 text-primary" : "border-border"
+                }`}
+              >
+                {d === 0 ? t("কখনো নয়", "Never") : `${t.n(d)} ${t("দিন", "days")}`}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {t(
+              "AI রিডিং শেষ হলে ও মেয়াদ শেষের ৫ দিন আগে আপনি ইন-অ্যাপ নোটিফিকেশন পাবেন।",
+              "You get an in-app notification when AI reading finishes and 5 days before expiry.",
+            )}
+          </p>
+        </section>
+      )}
+
     </div>
   );
 }
