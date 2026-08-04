@@ -10,6 +10,13 @@ import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
@@ -63,6 +70,12 @@ function Prescription() {
   const [delId, setDelId] = useState<string | null>(null);
   const [readId, setReadId] = useState<string | null>(null);
   const [retDays, setRetDays] = useState(0);
+  /** গেস্ট আপলোডের পর প্রসেসিং অনুমতির ডায়ালগ */
+  const [permOpen, setPermOpen] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
   const removeRx = useServerFn(deleteRx);
   const rereadRx = useServerFn(readPrescription);
   const saveSettings = useServerFn(saveRxSettings);
@@ -170,8 +183,9 @@ function Prescription() {
   };
 
   const submit = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error(t("লগইন প্রয়োজন", "Login required"));
+    mutationFn: async (uidArg?: string) => {
+      const uid = uidArg ?? user?.id;
+      if (!uid) throw new Error(t("লগইন প্রয়োজন", "Login required"));
       opsStart("prescription_upload", { files: picked.length });
       const ok: Record<string, string> = { ...uploaded };
       const bad: string[] = [];
@@ -180,7 +194,7 @@ function Prescription() {
       for (const p of picked) {
         if (ok[p.id]) continue;
         try {
-          ok[p.id] = await uploadOne(p, user.id);
+          ok[p.id] = await uploadOne(p, uid);
           setUploaded({ ...ok });
           setDone((d) => d + 1);
         } catch {
@@ -201,7 +215,7 @@ function Prescription() {
       const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
       const { data, error } = await supabase
         .from("prescriptions")
-        .insert({ user_id: user.id, note, phone, file_urls: urls })
+        .insert({ user_id: uid, note, phone, file_urls: urls })
         .select("id")
         .single();
       if (error) {
@@ -227,6 +241,34 @@ function Prescription() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  /** অনুমতি নিয়ে প্রবেশ করে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু */
+  const allowAndSubmit = async () => {
+    if (!consent) return;
+    if (user) {
+      setPermOpen(false);
+      submit.mutate(undefined);
+      return;
+    }
+    if (!email || !pass) {
+      toast.error(t("ইমেইল ও পাসওয়ার্ড দিন", "Enter email and password"));
+      return;
+    }
+    setSigningIn(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error || !data.user) throw new Error(error?.message ?? t("লগইন ব্যর্থ", "Login failed"));
+      setPermOpen(false);
+      setPass("");
+      submit.mutate(data.user.id);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+
 
   /** নোটিফিকেশন তৈরি ও রিটেনশন অনুযায়ী পুরনো প্রেসক্রিপশন মুছে ফেলা */
   useEffect(() => {
@@ -395,7 +437,7 @@ function Prescription() {
             {t.n(failed.length)} {t("টি ফাইল আপলোড হয়নি — বাকিগুলো সংরক্ষিত আছে।", "file(s) failed — the rest are saved.")}
           </p>
           <button
-            onClick={() => submit.mutate()}
+            onClick={() => submit.mutate(undefined)}
             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[11px] font-bold text-primary-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" /> {t("পুনরায় চেষ্টা করুন", "Retry")}
@@ -431,29 +473,82 @@ function Prescription() {
         </div>
       )}
 
-      {!user ? (
-        <Link
-          to="/auth"
-          className="mt-3 block w-full rounded-lg bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground"
-        >
-          {t("লগইন করে জমা দিন", "Log in to submit")}
-        </Link>
-      ) : (
-        <button
-          onClick={() => submit.mutate()}
-          className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          disabled={picked.length === 0 || submit.isPending}
-        >
-          {submit.isPending
-            ? t("জমা হচ্ছে...", "Submitting...")
-            : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
-        </button>
-      )}
+      <button
+        onClick={() => (user ? submit.mutate(undefined) : setPermOpen(true))}
+        className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+        disabled={picked.length === 0 || submit.isPending}
+      >
+        {submit.isPending
+          ? t("জমা হচ্ছে...", "Submitting...")
+          : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
+      </button>
       {!user && (
         <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-          {t("লগইন ছাড়া প্রেসক্রিপশন প্রসেস করা যায় না।", "Prescriptions cannot be processed without login.")}
+          {t(
+            "জমা দিলে প্রসেসিং শুরুর আগে অনুমতি চাওয়া হবে।",
+            "You will be asked for permission before processing starts.",
+          )}
         </p>
       )}
+
+      <Dialog open={permOpen} onOpenChange={setPermOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {t("প্রসেসিং-এর অনুমতি দিন", "Allow processing")}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {t(
+                "আপনার প্রেসক্রিপশন ঔষধওয়ালা পড়বে ও লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট যাচাই করবেন। নিরাপদে সংরক্ষণের জন্য অ্যাকাউন্টে প্রবেশ করুন।",
+                "Oushodhwala will read your prescription and a licensed pharmacist will verify it. Sign in so it can be stored securely.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <label className="flex items-start gap-2 text-[11px]">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              {t(
+                "আমি আমার প্রেসক্রিপশন পড়া ও যাচাইয়ের অনুমতি দিচ্ছি।",
+                "I allow my prescription to be read and verified.",
+              )}
+            </span>
+          </label>
+
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder={t("ইমেইল", "Email")}
+            className="w-full rounded-lg border border-border bg-card p-2.5 text-xs outline-none"
+          />
+          <input
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            type="password"
+            placeholder={t("পাসওয়ার্ড", "Password")}
+            className="w-full rounded-lg border border-border bg-card p-2.5 text-xs outline-none"
+          />
+
+          <button
+            onClick={allowAndSubmit}
+            disabled={!consent || signingIn || submit.isPending}
+            className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {signingIn
+              ? t("অনুমতি দেওয়া হচ্ছে...", "Allowing...")
+              : t("অনুমতি দিন ও প্রসেস করুন", "Allow & process")}
+          </button>
+          <Link to="/auth" className="text-center text-[11px] font-semibold text-primary underline">
+            {t("অ্যাকাউন্ট নেই? রেজিস্টার করুন", "No account? Register")}
+          </Link>
+        </DialogContent>
+      </Dialog>
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-bold">{t("আপলোড করা প্রেসক্রিপশন", "Uploaded prescriptions")}</h2>
