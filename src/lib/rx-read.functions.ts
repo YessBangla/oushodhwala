@@ -212,7 +212,7 @@ async function performRead(supabase: any, id: string, force?: boolean) {
       ],
     });
     try {
-      read = ReadSchema.parse(await result.output);
+      read = tidy(ReadSchema.parse(await result.output));
     } catch (e) {
       console.error("rx-read failed", e);
       throw new Error("AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন");
