@@ -76,18 +76,41 @@ function Prescription() {
   /** গেস্ট আপলোডের পর প্রসেসিং অনুমতির ডায়ালগ */
   const [permOpen, setPermOpen] = useState(false);
   const [consent, setConsent] = useState(false);
+  /** লাইভ প্রগ্রেসের ধাপ — কোন কাজটি এখন চলছে */
+  const [phase, setPhase] = useState<"idle" | "upload" | "save" | "read">("idle");
+  /** আপলোড/জমা ব্যর্থ হলে বাংলা নির্দেশনাসহ বার্তা */
+  const [errMsg, setErrMsg] = useState("");
   const removeRx = useServerFn(deleteRx);
   const rereadRx = useServerFn(readPrescription);
+  const rereadGuest = useServerFn(readPrescriptionGuest);
+  const listGuest = useServerFn(listGuestRx);
+  const removeGuest = useServerFn(deleteGuestRx);
   const saveSettings = useServerFn(saveRxSettings);
   const loadSettings = useServerFn(getRxSettings);
   const housekeep = useServerFn(rxHousekeeping);
+
+  /** লগইন না থাকলে এই ডিভাইসের গোপন গেস্ট কোড */
+  const [guestToken, setGuestToken] = useState("");
+  useEffect(() => {
+    if (!user) setGuestToken(getGuestToken());
+  }, [user]);
+
+  /** এই ডিভাইসে গেস্ট হিসেবে জমা দেওয়া প্রেসক্রিপশনের হিস্ট্রি */
+  const guestList = useQuery({
+    queryKey: ["guest-prescriptions", guestToken],
+    enabled: !user && !!guestToken,
+    retry: false,
+    queryFn: () => listGuest({ data: { token: guestToken } }),
+  });
 
   /** নির্বাচিত প্রেসক্রিপশনের OCR/রিডিং আবার চালায় */
   const rereadOne = async (id: string) => {
     setReadId(id);
     try {
-      await rereadRx({ data: { id, force: true } });
+      if (user) await rereadRx({ data: { id, force: true } });
+      else await rereadGuest({ data: { id, token: guestToken, force: true } });
       await qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+      await qc.invalidateQueries({ queryKey: ["guest-prescriptions"] });
       await qc.invalidateQueries({ queryKey: ["rx-read", id] });
       toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
     } catch (e) {
@@ -99,6 +122,24 @@ function Prescription() {
       setReadId(null);
     }
   };
+
+  /** গেস্ট হিস্ট্রি থেকে একটি প্রেসক্রিপশন মুছে ফেলা */
+  const removeGuestOne = async (id: string) => {
+    if (!window.confirm(t("এই প্রেসক্রিপশন ও ফলাফল স্থায়ীভাবে মুছে যাবে। নিশ্চিত?", "This prescription and its results will be permanently deleted. Continue?")))
+      return;
+    setDelId(id);
+    try {
+      await removeGuest({ data: { id, token: guestToken } });
+      forgetGuestRx(id);
+      await guestList.refetch();
+      toast.success(t("মুছে ফেলা হয়েছে", "Deleted"));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDelId(null);
+    }
+  };
+
 
 
 
