@@ -320,7 +320,7 @@ function RxReading() {
           onClick={async () => {
             setRefreshing(true);
             try {
-              await read({ data: { id, force: true } });
+              await (user ? read({ data: { id, force: true } }) : readGuest({ data: { id, token: guestToken, force: true } }));
               setEdited(null);
               await refetch();
               toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
@@ -367,7 +367,7 @@ function RxReading() {
             onClick={async () => {
               setRefreshing(true);
               try {
-                await read({ data: { id, force: true } });
+                await (user ? read({ data: { id, force: true } }) : readGuest({ data: { id, token: guestToken, force: true } }));
                 setEdited(null);
                 await refetch();
                 toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
@@ -518,9 +518,18 @@ function RxReading() {
 
           <RxInteractions meds={interactionMeds} />
 
-          <RxShareManager id={id} />
+          {user && <RxShareManager id={id} />}
 
-          <RxVersions rows={auditQ.data ?? []} />
+          {user && <RxVersions rows={auditQ.data ?? []} />}
+
+          {!user && (
+            <div className="mt-4 rounded-xl border border-border bg-card p-3 text-[11px] text-muted-foreground">
+              {t(
+                "আপনি লগইন ছাড়া দেখছেন — ফলাফলটি এই ডিভাইসে গোপন কোড দিয়ে সংরক্ষিত। অন্য ডিভাইসে দেখতে বা শেয়ার করতে লগইন করুন।",
+                "You are viewing without login — this result is kept on this device with a private code. Log in to view or share it elsewhere.",
+              )}
+            </div>
+          )}
 
         </>
       )}
