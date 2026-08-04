@@ -25,12 +25,14 @@ import { MedSections, type MedSection } from "@/components/MedSections";
 import { cleanMedText, dedupeSections } from "@/lib/medtext";
 import {
   readPrescription,
+  readPrescriptionGuest,
   saveRxEdits,
   listRxAudit,
   type RxRead,
   type RxReadItem,
   type RxChange,
 } from "@/lib/rx-read.functions";
+import { getGuestToken } from "@/lib/rx-guest";
 import { printRxSummary, rxSummaryText, type RxSummary } from "@/lib/rx-summary";
 import { RxInteractions } from "@/components/RxInteractions";
 import { RxShareManager } from "@/components/RxShareManager";
@@ -85,6 +87,7 @@ function RxReading() {
   const t = useT();
   const { user } = useAuth();
   const read = useServerFn(readPrescription);
+  const readGuest = useServerFn(readPrescriptionGuest);
   const save = useServerFn(saveRxEdits);
   const audit = useServerFn(listRxAudit);
   const { add } = useStore();
@@ -97,11 +100,17 @@ function RxReading() {
   const [sel, setSel] = useState<Record<number, Sel>>({});
   const [edited, setEdited] = useState<Result | null>(null);
 
+  /** লগইন না থাকলে এই ব্রাউজারের গেস্ট কোড দিয়েই প্রেসক্রিপশন পড়া হয় */
+  const guestToken = useMemo(() => (user ? "" : getGuestToken()), [user]);
+
   const { data: fetched, isLoading, error, refetch } = useQuery<Result>({
-    queryKey: ["rx-read", id],
-    enabled: !!user,
+    queryKey: ["rx-read", id, user ? "user" : "guest"],
+    enabled: !!user || !!guestToken,
     retry: false,
-    queryFn: () => read({ data: { id } }),
+    queryFn: () =>
+      user
+        ? read({ data: { id } })
+        : (readGuest({ data: { id, token: guestToken } }) as Promise<Result>),
   });
 
   const auditQ = useQuery({
@@ -110,6 +119,7 @@ function RxReading() {
     retry: false,
     queryFn: () => audit({ data: { id } }),
   });
+
 
   const data = edited ?? fetched ?? null;
 
@@ -168,16 +178,8 @@ function RxReading() {
 
 
 
-  if (!user) {
-    return (
-      <div className="pt-16 text-center text-sm">
-        <p className="text-muted-foreground">{t("প্রেসক্রিপশন দেখতে লগইন করুন।", "Please log in to view this prescription.")}</p>
-        <Link to="/auth" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-          {t("লগইন", "Login")}
-        </Link>
-      </div>
-    );
-  }
+  // লগইন ছাড়াও গেস্ট কোড দিয়ে প্রেসক্রিপশন দেখা ও অর্ডার করা যায়
+
 
   const setSelAt = (i: number, s: Partial<Sel>) =>
     setSel((p) => ({ ...p, [i]: { ...(p[i] ?? DEF_SEL), ...s } }));
@@ -218,7 +220,11 @@ function RxReading() {
     try {
       const changes = diffChanges();
       const payload: RxRead = { ...data.read, items: draft };
-      const res = (await save({ data: { id, read: payload, confirmed: true, changes } })) as Result;
+      // গেস্ট হলে সার্ভারে সেভ না করে স্থানীয়ভাবেই যাচাই সম্পন্ন হয়
+      const res = user
+        ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
+        : ({ ...data, read: payload } as Result);
+
       setEdited(res);
       setDraft(res.read.items.map((it) => ({ ...it })));
       setBase(res.read.items.map((it) => ({ ...it })));
@@ -314,7 +320,7 @@ function RxReading() {
           onClick={async () => {
             setRefreshing(true);
             try {
-              await read({ data: { id, force: true } });
+              await (user ? read({ data: { id, force: true } }) : readGuest({ data: { id, token: guestToken, force: true } }));
               setEdited(null);
               await refetch();
               toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
@@ -361,7 +367,7 @@ function RxReading() {
             onClick={async () => {
               setRefreshing(true);
               try {
-                await read({ data: { id, force: true } });
+                await (user ? read({ data: { id, force: true } }) : readGuest({ data: { id, token: guestToken, force: true } }));
                 setEdited(null);
                 await refetch();
                 toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
@@ -512,9 +518,18 @@ function RxReading() {
 
           <RxInteractions meds={interactionMeds} />
 
-          <RxShareManager id={id} />
+          {user && <RxShareManager id={id} />}
 
-          <RxVersions rows={auditQ.data ?? []} />
+          {user && <RxVersions rows={auditQ.data ?? []} />}
+
+          {!user && (
+            <div className="mt-4 rounded-xl border border-border bg-card p-3 text-[11px] text-muted-foreground">
+              {t(
+                "আপনি লগইন ছাড়া দেখছেন — ফলাফলটি এই ডিভাইসে গোপন কোড দিয়ে সংরক্ষিত। অন্য ডিভাইসে দেখতে বা শেয়ার করতে লগইন করুন।",
+                "You are viewing without login — this result is kept on this device with a private code. Log in to view or share it elsewhere.",
+              )}
+            </div>
+          )}
 
         </>
       )}

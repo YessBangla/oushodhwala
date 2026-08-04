@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
+import { getGuestToken, rememberGuestRx } from "@/lib/rx-guest";
 import {
   Dialog,
   DialogContent,
@@ -73,9 +74,6 @@ function Prescription() {
   /** গেস্ট আপলোডের পর প্রসেসিং অনুমতির ডায়ালগ */
   const [permOpen, setPermOpen] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [signingIn, setSigningIn] = useState(false);
   const removeRx = useServerFn(deleteRx);
   const rereadRx = useServerFn(readPrescription);
   const saveSettings = useServerFn(saveRxSettings);
@@ -169,10 +167,10 @@ function Prescription() {
   });
 
   /** এক ফাইল আপলোড — ব্যর্থ হলে ব্যাক-অফসহ সর্বোচ্চ ৩ বার স্বয়ংক্রিয় রিট্রাই */
-  const uploadOne = async (p: Picked, uid: string) => {
+  const uploadOne = async (p: Picked, folder: string) => {
     let lastErr: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
-      const path = `${uid}/${Date.now()}-${attempt}-${p.file.name.replace(/[^\w.\-]/g, "_")}`;
+      const path = `${folder}/${Date.now()}-${attempt}-${p.file.name.replace(/[^\w.\-]/g, "_")}`;
       const { error } = await supabase.storage.from("prescriptions").upload(path, p.file);
       if (!error) return path;
       lastErr = new Error(error.message);
@@ -184,8 +182,10 @@ function Prescription() {
 
   const submit = useMutation({
     mutationFn: async (uidArg?: string) => {
-      const uid = uidArg ?? user?.id;
-      if (!uid) throw new Error(t("লগইন প্রয়োজন", "Login required"));
+      const uid = uidArg ?? user?.id ?? null;
+      // লগইন ছাড়া হলে গেস্ট কোড দিয়েই প্রসেস হবে
+      const token = uid ? "" : getGuestToken();
+      const folder = uid ? uid : `guest/${token}`;
       opsStart("prescription_upload", { files: picked.length });
       const ok: Record<string, string> = { ...uploaded };
       const bad: string[] = [];
@@ -194,7 +194,7 @@ function Prescription() {
       for (const p of picked) {
         if (ok[p.id]) continue;
         try {
-          ok[p.id] = await uploadOne(p, uid);
+          ok[p.id] = await uploadOne(p, folder);
           setUploaded({ ...ok });
           setDone((d) => d + 1);
         } catch {
@@ -213,17 +213,18 @@ function Prescription() {
         );
       }
       const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
-      const { data, error } = await supabase
+      // আইডি ক্লায়েন্টেই তৈরি — গেস্ট ইনসার্টে সারি ফেরত আনার দরকার হয় না
+      const newId = crypto.randomUUID();
+      const { error } = await supabase
         .from("prescriptions")
-        .insert({ user_id: uid, note, phone, file_urls: urls })
-        .select("id")
-        .single();
+        .insert({ id: newId, user_id: uid, guest_token: uid ? null : token, note, phone, file_urls: urls });
       if (error) {
         opsFailure("prescription_upload", error, { files: urls.length });
         throw error;
       }
       opsSuccess("prescription_upload", "", { files: urls.length });
-      return data.id as string;
+      if (!uid) rememberGuestRx(newId);
+      return newId;
     },
 
     onSuccess: (id) => {
@@ -242,31 +243,13 @@ function Prescription() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  /** অনুমতি নিয়ে প্রবেশ করে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু */
-  const allowAndSubmit = async () => {
+  /** অনুমতি নিয়ে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু — লগইন ছাড়াও চলবে */
+  const allowAndSubmit = () => {
     if (!consent) return;
-    if (user) {
-      setPermOpen(false);
-      submit.mutate(undefined);
-      return;
-    }
-    if (!email || !pass) {
-      toast.error(t("ইমেইল ও পাসওয়ার্ড দিন", "Enter email and password"));
-      return;
-    }
-    setSigningIn(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error || !data.user) throw new Error(error?.message ?? t("লগইন ব্যর্থ", "Login failed"));
-      setPermOpen(false);
-      setPass("");
-      submit.mutate(data.user.id);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSigningIn(false);
-    }
+    setPermOpen(false);
+    submit.mutate(undefined);
   };
+
 
 
 
@@ -499,8 +482,8 @@ function Prescription() {
             </DialogTitle>
             <DialogDescription className="text-xs">
               {t(
-                "আপনার প্রেসক্রিপশন ঔষধওয়ালা পড়বে ও লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট যাচাই করবেন। নিরাপদে সংরক্ষণের জন্য অ্যাকাউন্টে প্রবেশ করুন।",
-                "Oushodhwala will read your prescription and a licensed pharmacist will verify it. Sign in so it can be stored securely.",
+                "আপনার প্রেসক্রিপশন ঔষধওয়ালা পড়বে ও লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট যাচাই করবেন। লগইন ছাড়াও চালিয়ে যেতে পারেন — ফলাফল এই ডিভাইসে গোপন কোড দিয়ে সংরক্ষিত থাকবে।",
+                "Oushodhwala will read your prescription and a licensed pharmacist will verify it. You can continue without login — the result stays on this device with a private code.",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -520,35 +503,19 @@ function Prescription() {
             </span>
           </label>
 
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            placeholder={t("ইমেইল", "Email")}
-            className="w-full rounded-lg border border-border bg-card p-2.5 text-xs outline-none"
-          />
-          <input
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-            type="password"
-            placeholder={t("পাসওয়ার্ড", "Password")}
-            className="w-full rounded-lg border border-border bg-card p-2.5 text-xs outline-none"
-          />
-
           <button
             onClick={allowAndSubmit}
-            disabled={!consent || signingIn || submit.isPending}
+            disabled={!consent || submit.isPending}
             className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {signingIn
-              ? t("অনুমতি দেওয়া হচ্ছে...", "Allowing...")
-              : t("অনুমতি দিন ও প্রসেস করুন", "Allow & process")}
+            {t("অনুমতি দিন ও প্রসেস করুন", "Allow & process")}
           </button>
           <Link to="/auth" className="text-center text-[11px] font-semibold text-primary underline">
-            {t("অ্যাকাউন্ট নেই? রেজিস্টার করুন", "No account? Register")}
+            {t("চাইলে লগইন করে সংরক্ষণ করুন", "Optional: log in to save to your account")}
           </Link>
         </DialogContent>
       </Dialog>
+
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-bold">{t("আপলোড করা প্রেসক্রিপশন", "Uploaded prescriptions")}</h2>

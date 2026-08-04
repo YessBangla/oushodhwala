@@ -170,77 +170,97 @@ async function toParts(supabase: { storage: any }, paths: string[]) {
   return parts;
 }
 
+/** এক প্রেসক্রিপশন পড়া ও ম্যাচ করা — লগইন ও গেস্ট দুই পথেই ব্যবহৃত */
+async function performRead(supabase: any, id: string, force?: boolean) {
+  const { data: row, error } = await supabase
+    .from("prescriptions")
+    .select("id, file_urls, note, status, admin_note, created_at, parsed, parsed_at, parse_note")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!row) throw new Error("প্রেসক্রিপশন পাওয়া যায়নি");
+
+  const cached = row.parsed as unknown as RxRead | null;
+  let read: RxRead;
+
+  if (!force && row.parsed_at && cached && Array.isArray(cached.items) && cached.items.length) {
+    read = ReadSchema.parse(cached);
+  } else {
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI সার্ভিস কনফিগার করা নেই");
+    const parts = await toParts(supabase, row.file_urls ?? []);
+    if (parts.length === 0) throw new Error("প্রেসক্রিপশনের ফাইল পড়া যায়নি");
+
+    const gateway = createLovableAiGatewayProvider(key);
+    // দীর্ঘ রিডিং যেন ২ মিনিটে কেটে না যায় — স্ট্রিমিং কলে হ্যান্ডলারের ভেতরেই শেষ করি
+    const result = streamText({
+      model: gateway("google/gemini-3.6-flash"),
+      system: SYSTEM,
+      output: Output.object({ schema: ReadSchema }),
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `এই প্রেসক্রিপশনের প্রতিটি ঔষধ পড়ুন। রোগীর নোট: ${row.note || "নেই"}`,
+            },
+            ...parts,
+          ] as never,
+        },
+      ],
+    });
+    try {
+      read = ReadSchema.parse(await result.output);
+    } catch (e) {
+      console.error("rx-read failed", e);
+      throw new Error("AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন");
+    }
+
+    await supabase
+      .from("prescriptions")
+      .update({ parsed: read as never, parsed_at: new Date().toISOString(), parse_note: read.note })
+      .eq("id", row.id);
+  }
+
+  const items = [];
+  for (const item of read.items) {
+    items.push({ item, matches: await matchItem(supabase, item) });
+  }
+
+  return {
+    id: row.id as string,
+    status: row.status as string,
+    adminNote: row.admin_note as string,
+    createdAt: row.created_at as string,
+    parsedAt: (row.parsed_at ?? new Date().toISOString()) as string,
+    read: { ...read, items: read.items },
+    items,
+  };
+}
+
 export const readPrescription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string; force?: boolean }) => d)
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: row, error } = await supabase
+  .handler(async ({ data, context }) => performRead(context.supabase, data.id, data.force));
+
+/** লগইন ছাড়া জমা দেওয়া প্রেসক্রিপশন — গেস্ট টোকেন মিললে তবেই পড়া হয় */
+export const readPrescriptionGuest = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; token: string; force?: boolean }) => d)
+  .handler(async ({ data }) => {
+    if (!data.token || data.token.length < 24) throw new Error("গেস্ট কোড সঠিক নয়");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: own, error } = await supabaseAdmin
       .from("prescriptions")
-      .select("id, file_urls, note, status, admin_note, created_at, parsed, parsed_at, parse_note")
+      .select("id, guest_token, user_id")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!row) throw new Error("প্রেসক্রিপশন পাওয়া যায়নি");
-
-    const cached = row.parsed as unknown as RxRead | null;
-    let read: RxRead;
-
-    if (!data.force && row.parsed_at && cached && Array.isArray(cached.items) && cached.items.length) {
-      read = ReadSchema.parse(cached);
-    } else {
-      const key = process.env["LOVABLE_API_KEY"];
-      if (!key) throw new Error("AI সার্ভিস কনফিগার করা নেই");
-      const parts = await toParts(supabase, row.file_urls ?? []);
-      if (parts.length === 0) throw new Error("প্রেসক্রিপশনের ফাইল পড়া যায়নি");
-
-      const gateway = createLovableAiGatewayProvider(key);
-      // দীর্ঘ রিডিং যেন ২ মিনিটে কেটে না যায় — স্ট্রিমিং কলে হ্যান্ডলারের ভেতরেই শেষ করি
-      const result = streamText({
-        model: gateway("google/gemini-3.6-flash"),
-        system: SYSTEM,
-        output: Output.object({ schema: ReadSchema }),
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `এই প্রেসক্রিপশনের প্রতিটি ঔষধ পড়ুন। রোগীর নোট: ${row.note || "নেই"}`,
-              },
-              ...parts,
-            ] as never,
-          },
-        ],
-      });
-      try {
-        read = ReadSchema.parse(await result.output);
-      } catch (e) {
-        console.error("rx-read failed", e);
-        throw new Error("AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন");
-      }
-
-      await supabase
-        .from("prescriptions")
-        .update({ parsed: read as never, parsed_at: new Date().toISOString(), parse_note: read.note })
-        .eq("id", row.id);
-    }
-
-    const items = [];
-    for (const item of read.items) {
-      items.push({ item, matches: await matchItem(supabase, item) });
-    }
-
-    return {
-      id: row.id,
-      status: row.status,
-      adminNote: row.admin_note,
-      createdAt: row.created_at,
-      parsedAt: row.parsed_at ?? new Date().toISOString(),
-      read: { ...read, items: read.items },
-      items,
-    };
+    if (!own || own.user_id || own.guest_token !== data.token)
+      throw new Error("প্রেসক্রিপশন পাওয়া যায়নি");
+    return performRead(supabaseAdmin, data.id, data.force);
   });
+
 
 export type RxChange = { line: number; medicine: string; field: string; from: string; to: string };
 

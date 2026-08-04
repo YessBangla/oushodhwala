@@ -2169,6 +2169,7 @@ export type Database = {
           admin_note: string
           created_at: string
           file_urls: string[]
+          guest_token: string | null
           id: string
           note: string
           notified_expiry: boolean
@@ -2179,12 +2180,13 @@ export type Database = {
           phone: string
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           admin_note?: string
           created_at?: string
           file_urls?: string[]
+          guest_token?: string | null
           id?: string
           note?: string
           notified_expiry?: boolean
@@ -2195,12 +2197,13 @@ export type Database = {
           phone?: string
           status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           admin_note?: string
           created_at?: string
           file_urls?: string[]
+          guest_token?: string | null
           id?: string
           note?: string
           notified_expiry?: boolean
@@ -2211,7 +2214,7 @@ export type Database = {
           phone?: string
           status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
