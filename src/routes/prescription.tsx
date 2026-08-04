@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
+import { getGuestToken, rememberGuestRx } from "@/lib/rx-guest";
 import {
   Dialog,
   DialogContent,
