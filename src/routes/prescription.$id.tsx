@@ -106,18 +106,33 @@ function RxReading() {
   const [sel, setSel] = useState<Record<number, Sel>>({});
   const [edited, setEdited] = useState<Result | null>(null);
 
-  /** লগইন না থাকলে এই ব্রাউজারের গেস্ট কোড দিয়েই প্রেসক্রিপশন পড়া হয় */
-  const guestToken = useMemo(() => (user ? "" : getGuestToken()), [user]);
+  /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
+  const guestToken = useMemo(() => getGuestToken(), []);
+
+  /** আগে লগইন-পাথে পড়ি; না পেলে (গেস্ট হিসেবে আপলোড করা) গেস্ট কোড দিয়ে পড়ি */
+  const runRead = useCallback(
+    async (force?: boolean): Promise<Result> => {
+      if (user) {
+        try {
+          return (await read({ data: force ? { id, force: true } : { id } })) as Result;
+        } catch (e) {
+          if (!guestToken) throw e;
+        }
+      }
+      return (await readGuest({
+        data: force ? { id, token: guestToken, force: true } : { id, token: guestToken },
+      })) as Result;
+    },
+    [user, read, readGuest, id, guestToken],
+  );
 
   const { data: fetched, isLoading, error, refetch } = useQuery<Result>({
     queryKey: ["rx-read", id, user ? "user" : "guest"],
     enabled: !!user || !!guestToken,
     retry: false,
-    queryFn: () =>
-      user
-        ? read({ data: { id } })
-        : (readGuest({ data: { id, token: guestToken } }) as Promise<Result>),
+    queryFn: () => runRead(),
   });
+
 
   const auditQ = useQuery({
     queryKey: ["rx-audit", id],
