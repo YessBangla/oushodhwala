@@ -184,7 +184,8 @@ async function performRead(supabase: any, id: string, force?: boolean) {
   let read: RxRead;
 
   if (!force && row.parsed_at && cached && Array.isArray(cached.items) && cached.items.length) {
-    read = ReadSchema.parse(cached);
+    read = tidy(ReadSchema.parse(cached));
+
   } else {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI সার্ভিস কনফিগার করা নেই");
