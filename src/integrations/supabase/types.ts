@@ -2171,6 +2171,8 @@ export type Database = {
           file_urls: string[]
           id: string
           note: string
+          notified_expiry: boolean
+          notified_parsed: boolean
           parse_note: string
           parsed: Json
           parsed_at: string | null
@@ -2185,6 +2187,8 @@ export type Database = {
           file_urls?: string[]
           id?: string
           note?: string
+          notified_expiry?: boolean
+          notified_parsed?: boolean
           parse_note?: string
           parsed?: Json
           parsed_at?: string | null
@@ -2199,6 +2203,8 @@ export type Database = {
           file_urls?: string[]
           id?: string
           note?: string
+          notified_expiry?: boolean
+          notified_parsed?: boolean
           parse_note?: string
           parsed?: Json
           parsed_at?: string | null
@@ -2639,6 +2645,27 @@ export type Database = {
           user_id?: string | null
           vehicle?: string
           zone?: string
+        }
+        Relationships: []
+      }
+      rx_retention: {
+        Row: {
+          days: number
+          notify_email: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          days?: number
+          notify_email?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          days?: number
+          notify_email?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

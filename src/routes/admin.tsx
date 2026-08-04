@@ -27,6 +27,7 @@ import { ReturnsAdmin, ReviewsAdmin } from "@/components/ModerationAdmin";
 import { CampaignsAdmin } from "@/components/CampaignsAdmin";
 import { ReportsAdmin } from "@/components/ReportsAdmin";
 import { LoyaltyAdmin } from "@/components/LoyaltyAdmin";
+import { RxAdmin } from "@/components/RxAdmin";
 import { WEEKDAYS } from "@/lib/appointments";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 import { allowedTabs } from "@/lib/roles";
@@ -251,7 +252,7 @@ function Admin() {
       {tab === "offers" && <Offers />}
       {tab === "lab" && <LabTests />}
       {tab === "doctors" && <Doctors />}
-      {tab === "rx" && <Prescriptions />}
+      {tab === "rx" && <RxAdmin />}
       {tab === "consults" && <Consultations />}
       {tab === "delivery" && <DeliveryAdmin />}
       {tab === "riders" && <RidersAdmin />}
@@ -1713,93 +1714,6 @@ function Blackouts({ doctorId }: { doctorId: string }) {
 
 /* ---------------- prescriptions ---------------- */
 
-const RX_STATUS: Record<string, string> = {
-  pending: "যাচাই চলছে",
-  approved: "অনুমোদিত",
-  rejected: "বাতিল",
-  fulfilled: "অর্ডার তৈরি হয়েছে",
-};
-
-function Prescriptions() {
-  const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-prescriptions"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("prescriptions").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-  const [notes, setNotes] = useState<Record<string, string>>({});
-
-  const update = useMutation({
-    mutationFn: async ({ id, status, admin_note }: { id: string; status: string; admin_note: string }) => {
-      const { error } = await supabase.from("prescriptions").update({ status, admin_note }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("প্রেসক্রিপশন আপডেট হয়েছে");
-      void qc.invalidateQueries({ queryKey: ["admin-prescriptions"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const openFile = async (path: string) => {
-    const { data, error } = await supabase.storage.from("prescriptions").createSignedUrl(path, 300);
-    if (error || !data) {
-      toast.error("ফাইল খোলা যায়নি");
-      return;
-    }
-    window.open(data.signedUrl, "_blank", "noopener");
-  };
-
-  if (isLoading) return <p className="text-xs text-muted-foreground">লোড হচ্ছে...</p>;
-  if ((data ?? []).length === 0) return <p className="text-xs text-muted-foreground">কোনো প্রেসক্রিপশন জমা পড়েনি।</p>;
-
-  return (
-    <div className="space-y-2">
-      {(data ?? []).map((r) => (
-        <article key={r.id} className="rounded-xl border border-border bg-card p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{RX_STATUS[r.status] ?? r.status}</span>
-            <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString("bn-BD")}</p>
-            {r.phone && <p className="text-[11px] font-semibold">{r.phone}</p>}
-          </div>
-          {r.note && <p className="mt-1 text-[11px] text-muted-foreground">নোট: {r.note}</p>}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {r.file_urls.map((f) => (
-              <button
-                key={f}
-                onClick={() => void openFile(f)}
-                className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold"
-              >
-                📄 ফাইল দেখুন
-              </button>
-            ))}
-          </div>
-          <input
-            value={notes[r.id] ?? r.admin_note}
-            onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
-            placeholder="ফার্মাসিস্টের মন্তব্য"
-            className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none"
-          />
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {Object.entries(RX_STATUS).map(([k, label]) => (
-              <button
-                key={k}
-                disabled={update.isPending}
-                onClick={() => update.mutate({ id: r.id, status: k, admin_note: notes[r.id] ?? r.admin_note })}
-                className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold disabled:opacity-40"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </article>
-      ))}
-    </div>
-  );
-}
 
 /* ---------------- settings ---------------- */
 
