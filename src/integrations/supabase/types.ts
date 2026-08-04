@@ -4267,6 +4267,7 @@ export type Database = {
             }
           }
       run_stock_alerts: { Args: { _expiry_days?: number }; Returns: number }
+      rx_share_hit: { Args: { _token: string }; Returns: undefined }
       rx_share_open: { Args: { _token: string }; Returns: Json }
       save_order_location: {
         Args: {
