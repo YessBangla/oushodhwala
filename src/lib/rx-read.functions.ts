@@ -235,13 +235,24 @@ export const readPrescription = createServerFn({ method: "POST" })
     };
   });
 
+export type RxChange = { line: number; medicine: string; field: string; from: string; to: string };
+
+const ChangeSchema = z.object({
+  line: z.number().default(0),
+  medicine: z.string().default(""),
+  field: z.string().default(""),
+  from: z.string().default(""),
+  to: z.string().default(""),
+});
+
 /** ব্যবহারকারীর যাচাই/সম্পাদনা করা ঔষধ তালিকা সেভ করে আবার ম্যাচ করে ফেরত দেয় */
 export const saveRxEdits = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; read: unknown; confirmed?: boolean }) => d)
+  .inputValidator((d: { id: string; read: unknown; confirmed?: boolean; changes?: unknown }) => d)
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const read = ReadSchema.parse(data.read);
+    const changes = z.array(ChangeSchema).default([]).parse(data.changes ?? []);
 
     const { data: row, error } = await supabase
       .from("prescriptions")
@@ -251,7 +262,7 @@ export const saveRxEdits = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!row) throw new Error("প্রেসক্রিপশন পাওয়া যায়নি");
 
-    await supabase
+    const { error: upErr } = await supabase
       .from("prescriptions")
       .update({
         parsed: read as never,
@@ -259,6 +270,14 @@ export const saveRxEdits = createServerFn({ method: "POST" })
         parse_note: read.note,
       })
       .eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+
+    await supabase.from("prescription_audit").insert({
+      prescription_id: data.id,
+      user_id: userId,
+      action: data.confirmed ? "verify_save" : "save",
+      changes: changes as never,
+    });
 
     const items = [];
     for (const item of read.items) {
@@ -275,3 +294,24 @@ export const saveRxEdits = createServerFn({ method: "POST" })
       items,
     };
   });
+
+/** যাচাইয়ের সময় কী কী পরিবর্তন হয়েছে তার লগ */
+export const listRxAudit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("prescription_audit")
+      .select("id, action, changes, created_at")
+      .eq("prescription_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r) => ({
+      id: r.id as string,
+      action: r.action as string,
+      createdAt: r.created_at as string,
+      changes: (r.changes ?? []) as RxChange[],
+    }));
+  });
+
