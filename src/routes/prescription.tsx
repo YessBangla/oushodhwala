@@ -169,10 +169,10 @@ function Prescription() {
   });
 
   /** এক ফাইল আপলোড — ব্যর্থ হলে ব্যাক-অফসহ সর্বোচ্চ ৩ বার স্বয়ংক্রিয় রিট্রাই */
-  const uploadOne = async (p: Picked, uid: string) => {
+  const uploadOne = async (p: Picked, folder: string) => {
     let lastErr: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
-      const path = `${uid}/${Date.now()}-${attempt}-${p.file.name.replace(/[^\w.\-]/g, "_")}`;
+      const path = `${folder}/${Date.now()}-${attempt}-${p.file.name.replace(/[^\w.\-]/g, "_")}`;
       const { error } = await supabase.storage.from("prescriptions").upload(path, p.file);
       if (!error) return path;
       lastErr = new Error(error.message);
@@ -184,8 +184,10 @@ function Prescription() {
 
   const submit = useMutation({
     mutationFn: async (uidArg?: string) => {
-      const uid = uidArg ?? user?.id;
-      if (!uid) throw new Error(t("লগইন প্রয়োজন", "Login required"));
+      const uid = uidArg ?? user?.id ?? null;
+      // লগইন ছাড়া হলে গেস্ট কোড দিয়েই প্রসেস হবে
+      const token = uid ? "" : getGuestToken();
+      const folder = uid ? uid : `guest/${token}`;
       opsStart("prescription_upload", { files: picked.length });
       const ok: Record<string, string> = { ...uploaded };
       const bad: string[] = [];
@@ -194,7 +196,7 @@ function Prescription() {
       for (const p of picked) {
         if (ok[p.id]) continue;
         try {
-          ok[p.id] = await uploadOne(p, uid);
+          ok[p.id] = await uploadOne(p, folder);
           setUploaded({ ...ok });
           setDone((d) => d + 1);
         } catch {
@@ -215,7 +217,7 @@ function Prescription() {
       const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
       const { data, error } = await supabase
         .from("prescriptions")
-        .insert({ user_id: uid, note, phone, file_urls: urls })
+        .insert({ user_id: uid, guest_token: uid ? null : token, note, phone, file_urls: urls })
         .select("id")
         .single();
       if (error) {
@@ -223,6 +225,7 @@ function Prescription() {
         throw error;
       }
       opsSuccess("prescription_upload", "", { files: urls.length });
+      if (!uid) rememberGuestRx(data.id as string);
       return data.id as string;
     },
 
@@ -242,31 +245,13 @@ function Prescription() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  /** অনুমতি নিয়ে প্রবেশ করে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু */
-  const allowAndSubmit = async () => {
+  /** অনুমতি নিয়ে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু — লগইন ছাড়াও চলবে */
+  const allowAndSubmit = () => {
     if (!consent) return;
-    if (user) {
-      setPermOpen(false);
-      submit.mutate(undefined);
-      return;
-    }
-    if (!email || !pass) {
-      toast.error(t("ইমেইল ও পাসওয়ার্ড দিন", "Enter email and password"));
-      return;
-    }
-    setSigningIn(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error || !data.user) throw new Error(error?.message ?? t("লগইন ব্যর্থ", "Login failed"));
-      setPermOpen(false);
-      setPass("");
-      submit.mutate(data.user.id);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSigningIn(false);
-    }
+    setPermOpen(false);
+    submit.mutate(undefined);
   };
+
 
 
 
