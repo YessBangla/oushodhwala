@@ -220,7 +220,11 @@ function RxReading() {
     try {
       const changes = diffChanges();
       const payload: RxRead = { ...data.read, items: draft };
-      const res = (await save({ data: { id, read: payload, confirmed: true, changes } })) as Result;
+      // গেস্ট হলে সার্ভারে সেভ না করে স্থানীয়ভাবেই যাচাই সম্পন্ন হয়
+      const res = user
+        ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
+        : ({ ...data, read: payload } as Result);
+
       setEdited(res);
       setDraft(res.read.items.map((it) => ({ ...it })));
       setBase(res.read.items.map((it) => ({ ...it })));
