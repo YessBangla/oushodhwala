@@ -342,10 +342,44 @@ function RxReading() {
 
       {isLoading && (
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          {t("প্রেসক্রিপশন পড়া হচ্ছে... কিছুক্ষণ অপেক্ষা করুন।", "Reading your prescription... please wait.")}
+          {t("ঔষধওয়ালা পড়ছে... কিছুক্ষণ অপেক্ষা করুন।", "Oushodhwala is reading... please wait.")}
         </p>
       )}
-      {error && <p className="mt-8 text-center text-sm text-sale">{(error as Error).message}</p>}
+      {error && (
+        <div className="mt-6 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+          <p className="flex items-start gap-2 text-[12px] font-bold text-destructive">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            {t("প্রেসক্রিপশনটি পড়া যায়নি", "Could not read the prescription")}
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{(error as Error).message}</p>
+          <ul className="mt-2 list-disc space-y-0.5 pl-4 text-[11px] text-muted-foreground">
+            <li>{t("ছবিটি যেন স্পষ্ট ও আলোকিত হয় — ঝাপসা বা কাটা ছবি এড়িয়ে চলুন।", "Use a clear, well-lit photo — avoid blur or cropped edges.")}</li>
+            <li>{t("পুরো কাগজটি ফ্রেমে রাখুন, ঔষধের নামগুলো যেন দেখা যায়।", "Keep the whole page in frame so medicine names are visible.")}</li>
+            <li>{t("সমস্যা থাকলে ০৯৬১৩-০০০০০০ নম্বরে কল করুন, আমরা ম্যানুয়ালি পড়ে দেব।", "Still stuck? Call 09613-000000 and we will read it manually.")}</li>
+          </ul>
+          <button
+            onClick={async () => {
+              setRefreshing(true);
+              try {
+                await read({ data: { id, force: true } });
+                setEdited(null);
+                await refetch();
+                toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
+              } catch (e) {
+                toast.error((e as Error).message);
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            disabled={refreshing}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[11px] font-bold text-primary-foreground disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            {t("আবার পড়ুন", "Re-read")}
+          </button>
+        </div>
+      )}
+
 
       {data && (
         <>
