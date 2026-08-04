@@ -152,11 +152,16 @@ function RxReading() {
       if (!p) return;
       lines.push({ p, qty: s.qty });
     });
+    const total = lines.reduce((a, l) => a + l.p.price * l.qty, 0);
+    const discount = Math.round(total * RX_DISCOUNT);
     return {
       lines,
-      total: lines.reduce((a, l) => a + l.p.price * l.qty, 0),
+      total,
+      discount,
+      payable: total - discount,
       mrp: lines.reduce((a, l) => a + (l.p.mrp || l.p.price) * l.qty, 0),
     };
+
   }, [data, sel]);
 
   /** ইন্টার‍্যাকশন পরীক্ষার জন্য নির্বাচিত ঔষধ */
