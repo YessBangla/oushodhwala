@@ -59,6 +59,10 @@ export const Route = createFileRoute("/prescription/$id")({
 });
 
 type Result = Awaited<ReturnType<typeof readPrescription>>;
+
+/** প্রেসক্রিপশন থেকে অর্ডারে ঔষধওয়ালার নির্ধারিত ছাড় */
+const RX_DISCOUNT = 0.1;
+
 type Row = Result["items"][number];
 type Product = Row["matches"][number];
 
