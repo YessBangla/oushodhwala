@@ -432,29 +432,82 @@ function Prescription() {
         </div>
       )}
 
-      {!user ? (
-        <Link
-          to="/auth"
-          className="mt-3 block w-full rounded-lg bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground"
-        >
-          {t("লগইন করে জমা দিন", "Log in to submit")}
-        </Link>
-      ) : (
-        <button
-          onClick={() => submit.mutate(undefined)}
-          className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          disabled={picked.length === 0 || submit.isPending}
-        >
-          {submit.isPending
-            ? t("জমা হচ্ছে...", "Submitting...")
-            : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
-        </button>
-      )}
+      <button
+        onClick={() => (user ? submit.mutate(undefined) : setPermOpen(true))}
+        className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+        disabled={picked.length === 0 || submit.isPending}
+      >
+        {submit.isPending
+          ? t("জমা হচ্ছে...", "Submitting...")
+          : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
+      </button>
       {!user && (
         <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-          {t("লগইন ছাড়া প্রেসক্রিপশন প্রসেস করা যায় না।", "Prescriptions cannot be processed without login.")}
+          {t(
+            "জমা দিলে প্রসেসিং শুরুর আগে অনুমতি চাওয়া হবে।",
+            "You will be asked for permission before processing starts.",
+          )}
         </p>
       )}
+
+      <Dialog open={permOpen} onOpenChange={setPermOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {t("প্রসেসিং-এর অনুমতি দিন", "Allow processing")}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {t(
+                "আপনার প্রেসক্রিপশন ঔষধওয়ালা পড়বে ও লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট যাচাই করবেন। নিরাপদে সংরক্ষণের জন্য অ্যাকাউন্টে প্রবেশ করুন।",
+                "Oushodhwala will read your prescription and a licensed pharmacist will verify it. Sign in so it can be stored securely.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <label className="flex items-start gap-2 text-[11px]">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              {t(
+                "আমি আমার প্রেসক্রিপশন পড়া ও যাচাইয়ের অনুমতি দিচ্ছি।",
+                "I allow my prescription to be read and verified.",
+              )}
+            </span>
+          </label>
+
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder={t("ইমেইল", "Email")}
+            className="w-full rounded-lg border border-border bg-card p-2.5 text-xs outline-none"
+          />
+          <input
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            type="password"
+            placeholder={t("পাসওয়ার্ড", "Password")}
+            className="w-full rounded-lg border border-border bg-card p-2.5 text-xs outline-none"
+          />
+
+          <button
+            onClick={allowAndSubmit}
+            disabled={!consent || signingIn || submit.isPending}
+            className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {signingIn
+              ? t("অনুমতি দেওয়া হচ্ছে...", "Allowing...")
+              : t("অনুমতি দিন ও প্রসেস করুন", "Allow & process")}
+          </button>
+          <Link to="/auth" className="text-center text-[11px] font-semibold text-primary underline">
+            {t("অ্যাকাউন্ট নেই? রেজিস্টার করুন", "No account? Register")}
+          </Link>
+        </DialogContent>
+      </Dialog>
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-bold">{t("আপলোড করা প্রেসক্রিপশন", "Uploaded prescriptions")}</h2>
