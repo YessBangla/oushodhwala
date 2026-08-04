@@ -242,6 +242,34 @@ function Prescription() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** অনুমতি নিয়ে প্রবেশ করে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু */
+  const allowAndSubmit = async () => {
+    if (!consent) return;
+    if (user) {
+      setPermOpen(false);
+      submit.mutate(undefined);
+      return;
+    }
+    if (!email || !pass) {
+      toast.error(t("ইমেইল ও পাসওয়ার্ড দিন", "Enter email and password"));
+      return;
+    }
+    setSigningIn(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error || !data.user) throw new Error(error?.message ?? t("লগইন ব্যর্থ", "Login failed"));
+      setPermOpen(false);
+      setPass("");
+      submit.mutate(data.user.id);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+
+
   /** নোটিফিকেশন তৈরি ও রিটেনশন অনুযায়ী পুরনো প্রেসক্রিপশন মুছে ফেলা */
   useEffect(() => {
     if (!user) return;
