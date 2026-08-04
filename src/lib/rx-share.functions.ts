@@ -135,6 +135,8 @@ export const readSharedRx = createServerFn({ method: "POST" })
     if (!payload["ok"]) return { error: (payload["error"] as "not_found") ?? "not_found" };
 
     const scopes = (payload["scopes"] ?? {}) as RxScopes;
+    await sb.rpc("rx_share_hit", { _token: data.token });
+
     let items = (payload["items"] ?? []) as SharedMed[];
     if (scopes.prices) items = await attachPrices(items);
 
