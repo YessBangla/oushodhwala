@@ -97,11 +97,17 @@ function RxReading() {
   const [sel, setSel] = useState<Record<number, Sel>>({});
   const [edited, setEdited] = useState<Result | null>(null);
 
+  /** লগইন না থাকলে এই ব্রাউজারের গেস্ট কোড দিয়েই প্রেসক্রিপশন পড়া হয় */
+  const guestToken = useMemo(() => (user ? "" : getGuestToken()), [user]);
+
   const { data: fetched, isLoading, error, refetch } = useQuery<Result>({
-    queryKey: ["rx-read", id],
-    enabled: !!user,
+    queryKey: ["rx-read", id, user ? "user" : "guest"],
+    enabled: !!user || !!guestToken,
     retry: false,
-    queryFn: () => read({ data: { id } }),
+    queryFn: () =>
+      user
+        ? read({ data: { id } })
+        : (readGuest({ data: { id, token: guestToken } }) as Promise<Result>),
   });
 
   const auditQ = useQuery({
@@ -110,6 +116,7 @@ function RxReading() {
     retry: false,
     queryFn: () => audit({ data: { id } }),
   });
+
 
   const data = edited ?? fetched ?? null;
 
