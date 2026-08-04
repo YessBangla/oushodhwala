@@ -178,16 +178,8 @@ function RxReading() {
 
 
 
-  if (!user) {
-    return (
-      <div className="pt-16 text-center text-sm">
-        <p className="text-muted-foreground">{t("প্রেসক্রিপশন দেখতে লগইন করুন।", "Please log in to view this prescription.")}</p>
-        <Link to="/auth" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-          {t("লগইন", "Login")}
-        </Link>
-      </div>
-    );
-  }
+  // লগইন ছাড়াও গেস্ট কোড দিয়ে প্রেসক্রিপশন দেখা ও অর্ডার করা যায়
+
 
   const setSelAt = (i: number, s: Partial<Sel>) =>
     setSel((p) => ({ ...p, [i]: { ...(p[i] ?? DEF_SEL), ...s } }));
