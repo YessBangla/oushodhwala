@@ -149,6 +149,25 @@ function RxReading() {
     };
   }, [data, sel]);
 
+  /** ইন্টার‍্যাকশন পরীক্ষার জন্য নির্বাচিত ঔষধ */
+  const interactionMeds = useMemo(() => {
+    const src = draft ?? data?.read.items ?? [];
+    return src
+      .map((it, i) => {
+        const s = sel[i] ?? DEF_SEL;
+        if (s.skip) return null;
+        const p = data?.items[i]?.matches[s.match];
+        return {
+          name: p?.en || p?.name || it.name || it.raw,
+          generic: p?.generic || it.generic,
+          strength: p?.strength || it.strength,
+        };
+      })
+      .filter(Boolean) as Array<{ name: string; generic: string; strength: string }>;
+  }, [draft, data, sel]);
+
+
+
   if (!user) {
     return (
       <div className="pt-16 text-center text-sm">
