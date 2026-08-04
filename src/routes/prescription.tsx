@@ -61,11 +61,32 @@ function Prescription() {
   const [failed, setFailed] = useState<string[]>([]);
   const [retrying, setRetrying] = useState<Record<string, number>>({});
   const [delId, setDelId] = useState<string | null>(null);
+  const [readId, setReadId] = useState<string | null>(null);
   const [retDays, setRetDays] = useState(0);
   const removeRx = useServerFn(deleteRx);
+  const rereadRx = useServerFn(readPrescription);
   const saveSettings = useServerFn(saveRxSettings);
   const loadSettings = useServerFn(getRxSettings);
   const housekeep = useServerFn(rxHousekeeping);
+
+  /** নির্বাচিত প্রেসক্রিপশনের OCR/রিডিং আবার চালায় */
+  const rereadOne = async (id: string) => {
+    setReadId(id);
+    try {
+      await rereadRx({ data: { id, force: true } });
+      await qc.invalidateQueries({ queryKey: ["my-rx"] });
+      await qc.invalidateQueries({ queryKey: ["rx-read", id] });
+      toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
+    } catch (e) {
+      toast.error(
+        (e as Error).message ||
+          t("পড়া যায়নি — স্পষ্ট ছবি দিয়ে আবার চেষ্টা করুন।", "Could not read — try again with a clearer photo."),
+      );
+    } finally {
+      setReadId(null);
+    }
+  };
+
 
 
   useEffect(() => () => picked.forEach((p) => URL.revokeObjectURL(p.url)), [picked]);
