@@ -396,7 +396,7 @@ function Prescription() {
             {t.n(failed.length)} {t("টি ফাইল আপলোড হয়নি — বাকিগুলো সংরক্ষিত আছে।", "file(s) failed — the rest are saved.")}
           </p>
           <button
-            onClick={() => submit.mutate()}
+            onClick={() => submit.mutate(undefined)}
             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[11px] font-bold text-primary-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" /> {t("পুনরায় চেষ্টা করুন", "Retry")}
@@ -441,7 +441,7 @@ function Prescription() {
         </Link>
       ) : (
         <button
-          onClick={() => submit.mutate()}
+          onClick={() => submit.mutate(undefined)}
           className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           disabled={picked.length === 0 || submit.isPending}
         >
