@@ -87,6 +87,7 @@ function RxReading() {
   const t = useT();
   const { user } = useAuth();
   const read = useServerFn(readPrescription);
+  const readGuest = useServerFn(readPrescriptionGuest);
   const save = useServerFn(saveRxEdits);
   const audit = useServerFn(listRxAudit);
   const { add } = useStore();
