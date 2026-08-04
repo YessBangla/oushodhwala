@@ -476,7 +476,12 @@ function RxReading() {
             </>
           )}
 
-          <AuditLog rows={auditQ.data ?? []} />
+          <RxInteractions meds={interactionMeds} />
+
+          <RxShareManager id={id} />
+
+          <RxVersions rows={auditQ.data ?? []} />
+
         </>
       )}
     </div>
