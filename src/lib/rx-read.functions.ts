@@ -5,6 +5,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { expandQuery } from "@/lib/bn-search";
 
+const FieldConfSchema = z.object({
+  name: z.number().min(0).max(1).default(0.5),
+  strength: z.number().min(0).max(1).default(0.5),
+  form: z.number().min(0).max(1).default(0.5),
+  dose: z.number().min(0).max(1).default(0.5),
+  duration: z.number().min(0).max(1).default(0.5),
+  instruction: z.number().min(0).max(1).default(0.5),
+});
+
 const ItemSchema = z.object({
   raw: z.string().describe("প্রেসক্রিপশনে ঠিক যেভাবে লেখা আছে"),
   name: z.string().describe("ঔষধের ব্র্যান্ড নাম (ইংরেজি বানানে, সঠিক করে)"),
@@ -15,6 +24,18 @@ const ItemSchema = z.object({
   duration: z.string().default("").describe("যেমন ৭ দিন"),
   instruction: z.string().default("").describe("খাবার আগে/পরে ইত্যাদি"),
   confidence: z.number().min(0).max(1).default(0.5),
+  fieldConf: FieldConfSchema.default({
+    name: 0.5,
+    strength: 0.5,
+    form: 0.5,
+    dose: 0.5,
+    duration: 0.5,
+    instruction: 0.5,
+  }).describe("প্রতিটি অংশের আলাদা কনফিডেন্স (০–১)"),
+  reason: z
+    .string()
+    .default("")
+    .describe("এই লাইনের কোন অংশ কেন অস্পষ্ট — সংক্ষেপে কারণ (যেমন: 'strength অস্পষ্ট, 500 নাকি 50 বোঝা যাচ্ছে না')"),
 });
 
 const ReadSchema = z.object({
@@ -28,6 +49,7 @@ const ReadSchema = z.object({
 
 export type RxReadItem = z.infer<typeof ItemSchema>;
 export type RxRead = z.infer<typeof ReadSchema>;
+export type RxFieldConf = z.infer<typeof FieldConfSchema>;
 
 const SYSTEM = `You are a senior Bangladeshi clinical pharmacist reading a handwritten doctor's prescription.
 
@@ -37,8 +59,11 @@ Rules (critical — a wrong medicine can harm a patient):
 - NEVER invent a medicine that is not written. If a line is unreadable, still return it with the best guess, a low confidence, and put the doubt in "note".
 - Keep the exact written text in "raw".
 - Extract strength (mg/ml), form, dose pattern (e.g. 1+0+1), duration and food instruction when written.
+- For EVERY line give "fieldConf": a separate 0–1 confidence for name, strength, form, dose, duration and instruction. Use 0 when that part is simply not written, and a low value (<0.6) when the handwriting is ambiguous.
+- For EVERY line give "reason": a short plain explanation of exactly which parts are uncertain and why (empty string when everything is clear).
 - Also return patient name, doctor name, date and any general advice if present.
 - Output must be valid JSON matching the schema.`;
+
 
 type ProductRow = {
   id: string;
