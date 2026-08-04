@@ -38,6 +38,7 @@ import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
+import { Route as PrescriptionIdRouteImport } from './routes/prescription.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as RxIdRouteImport } from './routes/rx.$id'
 import { Route as TTokenRouteImport } from './routes/t.$token'
@@ -191,6 +192,11 @@ const ConsultationIdRoute = ConsultationIdRouteImport.update({
   path: '/consultation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrescriptionIdRoute = PrescriptionIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PrescriptionRoute,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -247,7 +253,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
-  '/prescription': typeof PrescriptionRoute
+  '/prescription': typeof PrescriptionRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -257,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
+  '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
@@ -285,7 +292,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
-  '/prescription': typeof PrescriptionRoute
+  '/prescription': typeof PrescriptionRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -295,6 +302,7 @@ export interface FileRoutesByTo {
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
+  '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
@@ -324,7 +332,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
-  '/prescription': typeof PrescriptionRoute
+  '/prescription': typeof PrescriptionRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -334,6 +342,7 @@ export interface FileRoutesById {
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
+  '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
@@ -374,6 +383,7 @@ export interface FileRouteTypes {
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
+    | '/prescription/$id'
     | '/product/$id'
     | '/rx/$id'
     | '/t/$token'
@@ -412,6 +422,7 @@ export interface FileRouteTypes {
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
+    | '/prescription/$id'
     | '/product/$id'
     | '/rx/$id'
     | '/t/$token'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
+    | '/prescription/$id'
     | '/product/$id'
     | '/rx/$id'
     | '/t/$token'
@@ -479,7 +491,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
   OrdersRoute: typeof OrdersRoute
-  PrescriptionRoute: typeof PrescriptionRoute
+  PrescriptionRoute: typeof PrescriptionRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
@@ -703,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsultationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prescription/$id': {
+      id: '/prescription/$id'
+      path: '/$id'
+      fullPath: '/prescription/$id'
+      preLoaderRoute: typeof PrescriptionIdRouteImport
+      parentRoute: typeof PrescriptionRoute
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -755,6 +774,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PrescriptionRouteChildren {
+  PrescriptionIdRoute: typeof PrescriptionIdRoute
+}
+
+const PrescriptionRouteChildren: PrescriptionRouteChildren = {
+  PrescriptionIdRoute: PrescriptionIdRoute,
+}
+
+const PrescriptionRouteWithChildren = PrescriptionRoute._addFileChildren(
+  PrescriptionRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -775,7 +806,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
   OrdersRoute: OrdersRoute,
-  PrescriptionRoute: PrescriptionRoute,
+  PrescriptionRoute: PrescriptionRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
   RefundPolicyRoute: RefundPolicyRoute,

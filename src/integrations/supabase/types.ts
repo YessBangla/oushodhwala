@@ -2086,6 +2086,9 @@ export type Database = {
           file_urls: string[]
           id: string
           note: string
+          parse_note: string
+          parsed: Json
+          parsed_at: string | null
           phone: string
           status: string
           updated_at: string
@@ -2097,6 +2100,9 @@ export type Database = {
           file_urls?: string[]
           id?: string
           note?: string
+          parse_note?: string
+          parsed?: Json
+          parsed_at?: string | null
           phone?: string
           status?: string
           updated_at?: string
@@ -2108,6 +2114,9 @@ export type Database = {
           file_urls?: string[]
           id?: string
           note?: string
+          parse_note?: string
+          parsed?: Json
+          parsed_at?: string | null
           phone?: string
           status?: string
           updated_at?: string
