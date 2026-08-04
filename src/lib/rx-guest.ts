@@ -40,3 +40,10 @@ export function guestRxIds(): string[] {
     return [];
   }
 }
+
+/** এই ডিভাইসের তালিকা থেকে একটি প্রেসক্রিপশন সরায় */
+export function forgetGuestRx(id: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LIST, JSON.stringify(guestRxIds().filter((x) => x !== id)));
+}
+
