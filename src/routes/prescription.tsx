@@ -1,12 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Zap } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
+import { useStore } from "@/lib/store";
+import { quickReorderRx } from "@/lib/rx-read.functions";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+
 
 export const Route = createFileRoute("/prescription")({
   head: () => ({
@@ -32,10 +36,38 @@ function Prescription() {
   const t = useT();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { add } = useStore();
+  const reorder = useServerFn(quickReorderRx);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+
+  /** যাচাই ছাড়াই এক-ক্লিক রি-অর্ডার */
+  const quickReorder = async (id: string) => {
+    setBusyId(id);
+    try {
+      const res = await reorder({ data: { id } });
+      if (res.lines.length === 0) {
+        toast.error(t("ক্যাটালগে কোনো ঔষধ মেলেনি", "No medicine matched in the catalogue"));
+        return;
+      }
+      res.lines.forEach((l) => add({ id: l.id, kind: "product", name: l.name, price: l.price }, l.qty));
+      toast.success(
+        `${t.n(res.lines.length)} ${t("ঔষধ কার্টে যোগ হয়েছে", "medicines added to cart")}${
+          res.missing.length ? ` · ${t.n(res.missing.length)} ${t("পাওয়া যায়নি", "unavailable")}` : ""
+        }`,
+      );
+      void navigate({ to: "/cart" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
 
   const { data: list } = useQuery({
     queryKey: ["my-prescriptions"],
@@ -170,6 +202,19 @@ function Prescription() {
                 >
                   {t("ঔষধের দাম ও বিস্তারিত দেখুন", "See medicines, price & details")}
                 </Link>
+                {r.parsed_at && (
+                  <button
+                    onClick={() => quickReorder(r.id)}
+                    disabled={busyId === r.id}
+                    className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary py-2 text-[11px] font-bold text-primary disabled:opacity-60"
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    {busyId === r.id
+                      ? t("কার্টে যোগ হচ্ছে...", "Adding to cart...")
+                      : t("এক-ক্লিক রি-অর্ডার (যাচাই ছাড়াই)", "One-click re-order (skip verification)")}
+                  </button>
+                )}
+
               </li>
             ))}
           </ul>

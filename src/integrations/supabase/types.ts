@@ -2086,7 +2086,9 @@ export type Database = {
           created_at: string
           id: string
           prescription_id: string
+          snapshot: Json
           user_id: string
+          version: number
         }
         Insert: {
           action?: string
@@ -2094,7 +2096,9 @@ export type Database = {
           created_at?: string
           id?: string
           prescription_id: string
+          snapshot?: Json
           user_id: string
+          version?: number
         }
         Update: {
           action?: string
@@ -2102,11 +2106,57 @@ export type Database = {
           created_at?: string
           id?: string
           prescription_id?: string
+          snapshot?: Json
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
             foreignKeyName: "prescription_audit_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescription_shares: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          prescription_id: string
+          revoked: boolean
+          scopes: Json
+          token: string
+          user_id: string
+          views: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          prescription_id: string
+          revoked?: boolean
+          scopes?: Json
+          token: string
+          user_id: string
+          views?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          prescription_id?: string
+          revoked?: boolean
+          scopes?: Json
+          token?: string
+          user_id?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_shares_prescription_id_fkey"
             columns: ["prescription_id"]
             isOneToOne: false
             referencedRelation: "prescriptions"
@@ -4217,6 +4267,8 @@ export type Database = {
             }
           }
       run_stock_alerts: { Args: { _expiry_days?: number }; Returns: number }
+      rx_share_hit: { Args: { _token: string }; Returns: undefined }
+      rx_share_open: { Args: { _token: string }; Returns: Json }
       save_order_location: {
         Args: {
           _area?: string

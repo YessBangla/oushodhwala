@@ -13,7 +13,7 @@ import {
   Plus,
   FileText,
   Share2,
-  History,
+  
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +32,10 @@ import {
   type RxChange,
 } from "@/lib/rx-read.functions";
 import { printRxSummary, rxSummaryText, type RxSummary } from "@/lib/rx-summary";
+import { RxInteractions } from "@/components/RxInteractions";
+import { RxShareManager } from "@/components/RxShareManager";
+import { RxVersions } from "@/components/RxVersions";
+
 
 export const Route = createFileRoute("/prescription/$id")({
   head: () => ({
@@ -144,6 +148,25 @@ function RxReading() {
       mrp: lines.reduce((a, l) => a + (l.p.mrp || l.p.price) * l.qty, 0),
     };
   }, [data, sel]);
+
+  /** ইন্টার‍্যাকশন পরীক্ষার জন্য নির্বাচিত ঔষধ */
+  const interactionMeds = useMemo(() => {
+    const src = draft ?? data?.read.items ?? [];
+    return src
+      .map((it, i) => {
+        const s = sel[i] ?? DEF_SEL;
+        if (s.skip) return null;
+        const p = data?.items[i]?.matches[s.match];
+        return {
+          name: p?.en || p?.name || it.name || it.raw,
+          generic: p?.generic || it.generic,
+          strength: p?.strength || it.strength,
+        };
+      })
+      .filter(Boolean) as Array<{ name: string; generic: string; strength: string }>;
+  }, [draft, data, sel]);
+
+
 
   if (!user) {
     return (
@@ -453,7 +476,12 @@ function RxReading() {
             </>
           )}
 
-          <AuditLog rows={auditQ.data ?? []} />
+          <RxInteractions meds={interactionMeds} />
+
+          <RxShareManager id={id} />
+
+          <RxVersions rows={auditQ.data ?? []} />
+
         </>
       )}
     </div>
@@ -788,48 +816,6 @@ function VerifyRow({
   );
 }
 
-function AuditLog({ rows }: { rows: Awaited<ReturnType<typeof listRxAudit>> }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  if (rows.length === 0) return null;
-  return (
-    <section className="mt-6 rounded-xl border border-border bg-card p-3">
-      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2 text-xs font-bold">
-        <History className="h-3.5 w-3.5 text-primary" />
-        {t("যাচাইয়ের পরিবর্তন লগ", "Verification audit log")}
-        <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">{t.n(rows.length)}</span>
-        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <ul className="mt-2 space-y-2">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg border border-border p-2">
-              <p className="text-[10px] font-semibold text-muted-foreground">
-                {new Date(r.createdAt).toLocaleString(t.en ? "en-US" : "bn-BD")} ·{" "}
-                {r.action === "verify_save" ? t("যাচাই সেভ", "Verification saved") : t("সেভ", "Saved")}
-              </p>
-              {r.changes.length === 0 ? (
-                <p className="mt-1 text-[11px] text-muted-foreground">{t("কোনো পরিবর্তন ছাড়াই সেভ", "Saved without changes")}</p>
-              ) : (
-                <ul className="mt-1 space-y-0.5 text-[11px]">
-                  {r.changes.map((c, i) => (
-                    <li key={i}>
-                      <span className="font-semibold">
-                        #{t.n(c.line)} {c.medicine}
-                      </span>{" "}
-                      · {c.field}: <span className="text-muted-foreground line-through">{c.from}</span>{" "}
-                      <span className="font-semibold text-primary">→ {c.to}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
 
 function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; onSel: (s: Partial<Sel>) => void }) {
   const t = useT();
