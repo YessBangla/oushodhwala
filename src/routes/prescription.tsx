@@ -431,15 +431,29 @@ function Prescription() {
         </div>
       )}
 
-      <button
-        onClick={() => submit.mutate()}
-        className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-        disabled={!user || picked.length === 0 || submit.isPending}
-      >
-        {submit.isPending
-          ? t("জমা হচ্ছে...", "Submitting...")
-          : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
-      </button>
+      {!user ? (
+        <Link
+          to="/auth"
+          className="mt-3 block w-full rounded-lg bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground"
+        >
+          {t("লগইন করে জমা দিন", "Log in to submit")}
+        </Link>
+      ) : (
+        <button
+          onClick={() => submit.mutate()}
+          className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          disabled={picked.length === 0 || submit.isPending}
+        >
+          {submit.isPending
+            ? t("জমা হচ্ছে...", "Submitting...")
+            : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
+        </button>
+      )}
+      {!user && (
+        <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+          {t("লগইন ছাড়া প্রেসক্রিপশন প্রসেস করা যায় না।", "Prescriptions cannot be processed without login.")}
+        </p>
+      )}
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-bold">{t("আপলোড করা প্রেসক্রিপশন", "Uploaded prescriptions")}</h2>
