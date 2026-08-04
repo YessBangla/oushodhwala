@@ -816,48 +816,6 @@ function VerifyRow({
   );
 }
 
-function AuditLog({ rows }: { rows: Awaited<ReturnType<typeof listRxAudit>> }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  if (rows.length === 0) return null;
-  return (
-    <section className="mt-6 rounded-xl border border-border bg-card p-3">
-      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2 text-xs font-bold">
-        <History className="h-3.5 w-3.5 text-primary" />
-        {t("যাচাইয়ের পরিবর্তন লগ", "Verification audit log")}
-        <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">{t.n(rows.length)}</span>
-        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <ul className="mt-2 space-y-2">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg border border-border p-2">
-              <p className="text-[10px] font-semibold text-muted-foreground">
-                {new Date(r.createdAt).toLocaleString(t.en ? "en-US" : "bn-BD")} ·{" "}
-                {r.action === "verify_save" ? t("যাচাই সেভ", "Verification saved") : t("সেভ", "Saved")}
-              </p>
-              {r.changes.length === 0 ? (
-                <p className="mt-1 text-[11px] text-muted-foreground">{t("কোনো পরিবর্তন ছাড়াই সেভ", "Saved without changes")}</p>
-              ) : (
-                <ul className="mt-1 space-y-0.5 text-[11px]">
-                  {r.changes.map((c, i) => (
-                    <li key={i}>
-                      <span className="font-semibold">
-                        #{t.n(c.line)} {c.medicine}
-                      </span>{" "}
-                      · {c.field}: <span className="text-muted-foreground line-through">{c.from}</span>{" "}
-                      <span className="font-semibold text-primary">→ {c.to}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
 
 function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; onSel: (s: Partial<Sel>) => void }) {
   const t = useT();
