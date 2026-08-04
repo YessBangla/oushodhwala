@@ -459,10 +459,16 @@ function Prescription() {
                 ) : failed.includes(p.id) ? (
                   <span className="text-destructive">✕ {t("ব্যর্থ", "Failed")}</span>
                 ) : retrying[p.id] ? (
-                  <span className="text-muted-foreground">
+                  <span className="text-sale">
                     {t(`রিট্রাই ${retrying[p.id]}/৩`, `Retry ${retrying[p.id]}/3`)}
                   </span>
-                ) : null}
+                ) : submit.isPending ? (
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Loader2 className="h-2.5 w-2.5 animate-spin" /> {t("আপলোড হচ্ছে...", "Uploading...")}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">• {t("অপেক্ষায়", "Queued")}</span>
+                )}
               </p>
               <button
                 onClick={() => setPicked((prev) => prev.filter((x) => x.id !== p.id))}
@@ -476,19 +482,29 @@ function Prescription() {
         </ul>
       )}
 
-      {failed.length > 0 && !submit.isPending && (
+      {(failed.length > 0 || errMsg) && !submit.isPending && (
         <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
           <p className="text-[11px] font-semibold text-destructive">
-            {t.n(failed.length)} {t("টি ফাইল আপলোড হয়নি — বাকিগুলো সংরক্ষিত আছে।", "file(s) failed — the rest are saved.")}
+            {errMsg ||
+              `${t.n(failed.length)} ${t("টি ফাইল আপলোড হয়নি — বাকিগুলো সংরক্ষিত আছে।", "file(s) failed — the rest are saved.")}`}
           </p>
-          <button
-            onClick={() => submit.mutate(undefined)}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[11px] font-bold text-primary-foreground"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> {t("পুনরায় চেষ্টা করুন", "Retry")}
-          </button>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[10px] text-muted-foreground">
+            <li>{t("ইন্টারনেট সংযোগ (Wi-Fi/মোবাইল ডেটা) ঠিক আছে কি না দেখুন।", "Check your Wi-Fi / mobile data connection.")}</li>
+            <li>{t("ছবিটি ২০MB-এর কম ও JPG/PNG/PDF কি না নিশ্চিত করুন।", "Make sure the file is under 20MB and is JPG/PNG/PDF.")}</li>
+            <li>{t("ফোনে জায়গা কম থাকলে ছবি ছোট করে আবার তুলুন।", "If storage is low, retake a smaller photo.")}</li>
+            <li>{t("বারবার ব্যর্থ হলে লগইন করে জমা দিন বা ০৯৬xxxx নম্বরে কল করুন।", "If it keeps failing, log in and submit, or call support.")}</li>
+          </ul>
+          {failed.length > 0 && (
+            <button
+              onClick={() => submit.mutate(undefined)}
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[11px] font-bold text-primary-foreground"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> {t("পুনরায় চেষ্টা করুন", "Retry")}
+            </button>
+          )}
         </div>
       )}
+
 
 
       <input
