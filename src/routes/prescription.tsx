@@ -36,10 +36,38 @@ function Prescription() {
   const t = useT();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { add } = useStore();
+  const reorder = useServerFn(quickReorderRx);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+
+  /** যাচাই ছাড়াই এক-ক্লিক রি-অর্ডার */
+  const quickReorder = async (id: string) => {
+    setBusyId(id);
+    try {
+      const res = await reorder({ data: { id } });
+      if (res.lines.length === 0) {
+        toast.error(t("ক্যাটালগে কোনো ঔষধ মেলেনি", "No medicine matched in the catalogue"));
+        return;
+      }
+      res.lines.forEach((l) => add({ id: l.id, kind: "product", name: l.name, price: l.price }, l.qty));
+      toast.success(
+        `${t.n(res.lines.length)} ${t("ঔষধ কার্টে যোগ হয়েছে", "medicines added to cart")}${
+          res.missing.length ? ` · ${t.n(res.missing.length)} ${t("পাওয়া যায়নি", "unavailable")}` : ""
+        }`,
+      );
+      void navigate({ to: "/cart" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
 
   const { data: list } = useQuery({
     queryKey: ["my-prescriptions"],
