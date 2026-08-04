@@ -415,7 +415,9 @@ function Prescription() {
         className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         disabled={!user || picked.length === 0 || submit.isPending}
       >
-        {submit.isPending ? t("জমা হচ্ছে...", "Submitting...") : t("জমা দিন ও AI দিয়ে পড়ুন", "Submit & read with AI")}
+        {submit.isPending
+          ? t("জমা হচ্ছে...", "Submitting...")
+          : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
       </button>
 
       <section className="mt-6">
