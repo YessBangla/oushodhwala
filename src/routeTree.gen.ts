@@ -40,6 +40,7 @@ import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
 import { Route as PrescriptionIdRouteImport } from './routes/prescription.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as RxShareTokenRouteImport } from './routes/rx-share.$token'
 import { Route as RxIdRouteImport } from './routes/rx.$id'
 import { Route as TTokenRouteImport } from './routes/t.$token'
 import { Route as TrackNoRouteImport } from './routes/track.$no'
@@ -202,6 +203,11 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RxShareTokenRoute = RxShareTokenRouteImport.update({
+  id: '/rx-share/$token',
+  path: '/rx-share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RxIdRoute = RxIdRouteImport.update({
   id: '/rx/$id',
   path: '/rx/$id',
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/consultation/$id': typeof ConsultationIdRoute
   '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/rx-share/$token': typeof RxShareTokenRoute
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
@@ -304,6 +311,7 @@ export interface FileRoutesByTo {
   '/consultation/$id': typeof ConsultationIdRoute
   '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/rx-share/$token': typeof RxShareTokenRoute
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/consultation/$id': typeof ConsultationIdRoute
   '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/rx-share/$token': typeof RxShareTokenRoute
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/prescription/$id'
     | '/product/$id'
+    | '/rx-share/$token'
     | '/rx/$id'
     | '/t/$token'
     | '/track/$no'
@@ -424,6 +434,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/prescription/$id'
     | '/product/$id'
+    | '/rx-share/$token'
     | '/rx/$id'
     | '/t/$token'
     | '/track/$no'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/consultation/$id'
     | '/prescription/$id'
     | '/product/$id'
+    | '/rx-share/$token'
     | '/rx/$id'
     | '/t/$token'
     | '/track/$no'
@@ -502,6 +514,7 @@ export interface RootRouteChildren {
   CategorySlugRoute: typeof CategorySlugRoute
   ConsultationIdRoute: typeof ConsultationIdRoute
   ProductIdRoute: typeof ProductIdRoute
+  RxShareTokenRoute: typeof RxShareTokenRoute
   RxIdRoute: typeof RxIdRoute
   TTokenRoute: typeof TTokenRoute
   TrackNoRoute: typeof TrackNoRoute
@@ -729,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rx-share/$token': {
+      id: '/rx-share/$token'
+      path: '/rx-share/$token'
+      fullPath: '/rx-share/$token'
+      preLoaderRoute: typeof RxShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rx/$id': {
       id: '/rx/$id'
       path: '/rx/$id'
@@ -817,6 +837,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategorySlugRoute: CategorySlugRoute,
   ConsultationIdRoute: ConsultationIdRoute,
   ProductIdRoute: ProductIdRoute,
+  RxShareTokenRoute: RxShareTokenRoute,
   RxIdRoute: RxIdRoute,
   TTokenRoute: TTokenRoute,
   TrackNoRoute: TrackNoRoute,
