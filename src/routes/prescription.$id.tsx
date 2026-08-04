@@ -21,6 +21,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { ProductImage } from "@/components/ProductImage";
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { MedSections, type MedSection } from "@/components/MedSections";
 import { cleanMedText, dedupeSections } from "@/lib/medtext";
 import {
