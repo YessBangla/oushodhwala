@@ -254,7 +254,7 @@ function RxRow({ row, index }: { row: Result["items"][number]; index: number }) 
           </button>
           {open && (
             <div className="mt-2">
-              <MedSections sections={sectionsOf(p, t.en, t)} />
+              <MedSections sections={sectionsOf(p, t.en, t)} reading={false} />
             </div>
           )}
         </>
@@ -265,15 +265,15 @@ function RxRow({ row, index }: { row: Result["items"][number]; index: number }) 
 
 function sectionsOf(p: Product, en: boolean, t: ReturnType<typeof useT>): MedSection[] {
   const pick = (bn: string, eng: string) => cleanMedText(en ? eng || bn : bn || eng);
-  const list: MedSection[] = [
-    { kind: "plain", title: t("থেরাপিউটিক ক্লাস", "Therapeutic class"), body: pick(p.therapeutic_class, p.therapeutic_class_en) },
-    { kind: "plain", title: t("নির্দেশনা", "Indications"), body: pick(p.indications, p.indications_en) },
-    { kind: "dosage", title: t("মাত্রা ও সেবনবিধি", "Dosage & administration"), body: pick(p.dosage, p.dosage_en) },
-    { kind: "warning", title: t("প্রতিনির্দেশনা", "Contraindications"), body: pick(p.contraindications, p.contraindications_en) },
-    { kind: "side-effects", title: t("পার্শ্ব প্রতিক্রিয়া", "Side effects"), body: pick(p.side_effects, p.side_effects_en) },
-    { kind: "pregnancy", title: t("গর্ভাবস্থা ও স্তন্যদান", "Pregnancy & lactation"), body: pick(p.pregnancy, p.pregnancy_en) },
-    { kind: "warning", title: t("সতর্কতা", "Precautions"), body: pick(p.precautions, p.precautions_en) },
-  ].filter((s) => s.body.trim() !== "");
+  const list = [
+    { kind: "plain" as const, title: t("থেরাপিউটিক ক্লাস", "Therapeutic class"), body: pick(p.therapeutic_class, p.therapeutic_class_en) },
+    { kind: "plain" as const, title: t("নির্দেশনা", "Indications"), body: pick(p.indications, p.indications_en) },
+    { kind: "dosage" as const, title: t("মাত্রা ও সেবনবিধি", "Dosage & administration"), body: pick(p.dosage, p.dosage_en) },
+    { kind: "warning" as const, title: t("প্রতিনির্দেশনা", "Contraindications"), body: pick(p.contraindications, p.contraindications_en) },
+    { kind: "side-effects" as const, title: t("পার্শ্ব প্রতিক্রিয়া", "Side effects"), body: pick(p.side_effects, p.side_effects_en) },
+    { kind: "pregnancy" as const, title: t("গর্ভাবস্থা ও স্তন্যদান", "Pregnancy & lactation"), body: pick(p.pregnancy, p.pregnancy_en) },
+    { kind: "warning" as const, title: t("সতর্কতা", "Precautions"), body: pick(p.precautions, p.precautions_en) },
+  ].filter((s) => s.body.trim() !== "") as MedSection[];
   return dedupeSections(list);
 }
 
