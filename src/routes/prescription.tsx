@@ -213,18 +213,18 @@ function Prescription() {
         );
       }
       const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
-      const { data, error } = await supabase
+      // আইডি ক্লায়েন্টেই তৈরি — গেস্ট ইনসার্টে সারি ফেরত আনার দরকার হয় না
+      const newId = crypto.randomUUID();
+      const { error } = await supabase
         .from("prescriptions")
-        .insert({ user_id: uid, guest_token: uid ? null : token, note, phone, file_urls: urls })
-        .select("id")
-        .single();
+        .insert({ id: newId, user_id: uid, guest_token: uid ? null : token, note, phone, file_urls: urls });
       if (error) {
         opsFailure("prescription_upload", error, { files: urls.length });
         throw error;
       }
       opsSuccess("prescription_upload", "", { files: urls.length });
-      if (!uid) rememberGuestRx(data.id as string);
-      return data.id as string;
+      if (!uid) rememberGuestRx(newId);
+      return newId;
     },
 
     onSuccess: (id) => {
