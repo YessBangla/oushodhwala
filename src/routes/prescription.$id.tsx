@@ -2,7 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, ShoppingCart, AlertTriangle, ChevronDown, Check, Pencil, Minus, Plus } from "lucide-react";
+import {
+  RefreshCw,
+  ShoppingCart,
+  AlertTriangle,
+  ChevronDown,
+  Check,
+  Pencil,
+  Minus,
+  Plus,
+  FileText,
+  Share2,
+  History,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +23,15 @@ import { useStore } from "@/lib/store";
 import { ProductImage } from "@/components/ProductImage";
 import { MedSections, type MedSection } from "@/components/MedSections";
 import { cleanMedText, dedupeSections } from "@/lib/medtext";
-import { readPrescription, saveRxEdits, type RxRead, type RxReadItem } from "@/lib/rx-read.functions";
+import {
+  readPrescription,
+  saveRxEdits,
+  listRxAudit,
+  type RxRead,
+  type RxReadItem,
+  type RxChange,
+} from "@/lib/rx-read.functions";
+import { printRxSummary, rxSummaryText, type RxSummary } from "@/lib/rx-summary";
 
 export const Route = createFileRoute("/prescription/$id")({
   head: () => ({
@@ -39,6 +59,8 @@ type Product = Row["matches"][number];
 /** প্রতিটি ঔষধের জন্য ব্যবহারকারীর সিলেকশন — localStorage-এ সেভ থাকে */
 type Sel = { match: number; qty: number; skip: boolean };
 
+const DEF_SEL: Sel = { match: 0, qty: 1, skip: false };
+
 const selKey = (id: string) => `rx-sel-${id}`;
 const stepKey = (id: string) => `rx-verified-${id}`;
 
@@ -52,18 +74,22 @@ function loadJson<T>(key: string, fallback: T): T {
   }
 }
 
+const packLabel = (p: Product) => (p.pack || p.form || "—").trim();
+
 function RxReading() {
   const { id } = Route.useParams();
   const t = useT();
   const { user } = useAuth();
   const read = useServerFn(readPrescription);
   const save = useServerFn(saveRxEdits);
+  const audit = useServerFn(listRxAudit);
   const { add } = useStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState<"verify" | "details">("verify");
   const [draft, setDraft] = useState<RxReadItem[] | null>(null);
+  const [base, setBase] = useState<RxReadItem[] | null>(null);
   const [sel, setSel] = useState<Record<number, Sel>>({});
   const [edited, setEdited] = useState<Result | null>(null);
 
@@ -74,18 +100,26 @@ function RxReading() {
     queryFn: () => read({ data: { id } }),
   });
 
+  const auditQ = useQuery({
+    queryKey: ["rx-audit", id],
+    enabled: !!user,
+    retry: false,
+    queryFn: () => audit({ data: { id } }),
+  });
+
   const data = edited ?? fetched ?? null;
 
   // প্রথমবার লোড হলে সেভ করা সিলেকশন ও ধাপ ফিরিয়ে আনি
   useEffect(() => {
     if (!fetched) return;
     setDraft(fetched.read.items.map((it) => ({ ...it })));
+    setBase(fetched.read.items.map((it) => ({ ...it })));
     const savedSel = loadJson<Record<number, Sel>>(selKey(id), {});
-    const base: Record<number, Sel> = {};
+    const next: Record<number, Sel> = {};
     fetched.items.forEach((_, i) => {
-      base[i] = savedSel[i] ?? { match: 0, qty: 1, skip: false };
+      next[i] = savedSel[i] ?? { ...DEF_SEL };
     });
-    setSel(base);
+    setSel(next);
     setStep(loadJson<boolean>(stepKey(id), false) ? "details" : "verify");
   }, [fetched, id]);
 
@@ -122,21 +156,57 @@ function RxReading() {
     );
   }
 
+  const setSelAt = (i: number, s: Partial<Sel>) =>
+    setSel((p) => ({ ...p, [i]: { ...(p[i] ?? DEF_SEL), ...s } }));
+
+  /** যাচাইয়ের সময় কী কী বদলেছে তার তালিকা */
+  const diffChanges = (): RxChange[] => {
+    if (!draft || !base) return [];
+    const fields: Array<[keyof RxReadItem, string]> = [
+      ["name", t("ব্র্যান্ড", "Brand")],
+      ["generic", t("জেনেরিক", "Generic")],
+      ["strength", t("মাত্রা", "Strength")],
+      ["form", t("ফর্ম", "Form")],
+      ["dose", t("সেবনবিধি", "Frequency")],
+      ["duration", t("সময়কাল", "Duration")],
+      ["instruction", t("নির্দেশনা", "Timing")],
+    ];
+    const out: RxChange[] = [];
+    draft.forEach((it, i) => {
+      const b = base[i];
+      const label = it.name || it.raw;
+      for (const [f, fl] of fields) {
+        const from = String(b?.[f] ?? "");
+        const to = String(it[f] ?? "");
+        if (b && from !== to) out.push({ line: i + 1, medicine: label, field: fl, from: from || "—", to: to || "—" });
+      }
+      const s = sel[i] ?? DEF_SEL;
+      if (s.qty !== 1) out.push({ line: i + 1, medicine: label, field: t("পরিমাণ", "Qty"), from: "1", to: String(s.qty) });
+      if (s.skip) out.push({ line: i + 1, medicine: label, field: t("অর্ডার", "Order"), from: t("অন্তর্ভুক্ত", "included"), to: t("বাদ", "excluded") });
+      const p = data?.items[i]?.matches[s.match];
+      if (p && s.match !== 0) out.push({ line: i + 1, medicine: label, field: t("প্যাক/ইউনিট", "Pack/unit"), from: "—", to: `${p.name} · ${packLabel(p)}` });
+    });
+    return out;
+  };
+
   const confirm = async () => {
     if (!data || !draft) return;
     setSaving(true);
     try {
+      const changes = diffChanges();
       const payload: RxRead = { ...data.read, items: draft };
-      const res = (await save({ data: { id, read: payload, confirmed: true } })) as Result;
+      const res = (await save({ data: { id, read: payload, confirmed: true, changes } })) as Result;
       setEdited(res);
       setDraft(res.read.items.map((it) => ({ ...it })));
+      setBase(res.read.items.map((it) => ({ ...it })));
       setSel((prev) => {
         const next: Record<number, Sel> = {};
-        res.items.forEach((_, i) => (next[i] = prev[i] ?? { match: 0, qty: 1, skip: false }));
+        res.items.forEach((_, i) => (next[i] = prev[i] ?? { ...DEF_SEL }));
         return next;
       });
       setStep("details");
       if (typeof window !== "undefined") window.localStorage.setItem(stepKey(id), "true");
+      void auditQ.refetch();
       toast.success(t("যাচাই সম্পন্ন — দাম ও বিস্তারিত দেখানো হচ্ছে", "Verified — showing prices and details"));
     } catch (e) {
       toast.error((e as Error).message);
@@ -152,6 +222,63 @@ function RxReading() {
     }
     order.lines.forEach((l) => add({ id: l.p.id, kind: "product", name: l.p.name, price: l.p.price }, l.qty));
     toast.success(t("সব ঔষধ কার্টে যোগ হয়েছে", "All medicines added to cart"));
+  };
+
+  const buildSummary = (): RxSummary | null => {
+    if (!data) return null;
+    return {
+      id: data.id,
+      patientName: data.read.patientName,
+      doctorName: data.read.doctorName,
+      date: data.read.date,
+      advice: data.read.advice,
+      note: data.read.note,
+      verifiedAt: data.parsedAt,
+      total: order.total,
+      lines: data.items.map((row, i) => {
+        const s = sel[i] ?? DEF_SEL;
+        const p = row.matches[s.match];
+        return {
+          no: i + 1,
+          name: p ? (t.en ? p.en || p.name : p.name) : row.item.name || row.item.raw,
+          generic: p?.generic || row.item.generic,
+          strength: p?.strength || row.item.strength,
+          form: p?.form || row.item.form,
+          pack: p?.pack ?? "",
+          dose: row.item.dose,
+          duration: row.item.duration,
+          instruction: row.item.instruction,
+          qty: s.qty,
+          price: p?.price ?? 0,
+          confidence: row.item.confidence,
+          excluded: s.skip,
+        };
+      }),
+    };
+  };
+
+  const exportPdf = () => {
+    const s = buildSummary();
+    if (!s) return;
+    if (!printRxSummary(s, { en: t.en, n: t.n })) {
+      toast.error(t("পপ-আপ ব্লক করা আছে — অনুমতি দিন", "Pop-up blocked — please allow pop-ups"));
+    }
+  };
+
+  const shareSummary = async () => {
+    const s = buildSummary();
+    if (!s) return;
+    const text = rxSummaryText(s, { en: t.en, n: t.n });
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: t("প্রেসক্রিপশন সারাংশ", "Prescription summary"), text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success(t("সারাংশ কপি হয়েছে", "Summary copied"));
+    } catch {
+      /* user cancelled */
+    }
   };
 
   return (
@@ -225,8 +352,8 @@ function RxReading() {
             <>
               <p className="mt-4 text-xs text-muted-foreground">
                 {t(
-                  "প্রতিটি ঔষধের নাম, জেনেরিক, মাত্রা ও প্যাক যাচাই করুন — প্রয়োজনে সম্পাদনা করুন। এরপর দাম ও স্টক দেখানো হবে।",
-                  "Check each medicine's brand, generic, strength and pack — edit if needed. Prices and stock come next.",
+                  "প্রতিটি ঔষধের নাম, জেনেরিক, মাত্রা, প্যাক ও সেবনবিধি যাচাই করুন — প্রয়োজনে সম্পাদনা করুন। পরিমাণ ও প্যাক এখানেই ঠিক করলে অর্ডার প্রিভিউতে সঙ্গে সঙ্গে দেখা যাবে।",
+                  "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Quantity and pack set here update the order preview instantly.",
                 )}
               </p>
               <ul className="mt-3 space-y-3">
@@ -236,18 +363,24 @@ function RxReading() {
                     index={i}
                     item={item}
                     matches={data.items[i]?.matches ?? []}
-                    sel={sel[i] ?? { match: 0, qty: 1, skip: false }}
-                    onSel={(s) => setSel((p) => ({ ...p, [i]: { ...(p[i] ?? { match: 0, qty: 1, skip: false }), ...s } }))}
-                    onChange={(patch) =>
-                      setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)
-                    }
+                    sel={sel[i] ?? DEF_SEL}
+                    onSel={(s) => setSelAt(i, s)}
+                    onChange={(patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
                   />
                 ))}
               </ul>
+
+              <div className="mt-4 rounded-xl border border-border bg-card p-3">
+                <p className="text-[11px] text-muted-foreground">
+                  {t("চলতি অর্ডার প্রিভিউ", "Live order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")}
+                </p>
+                <p className="text-base font-extrabold text-primary">৳{t.n(order.total)}</p>
+              </div>
+
               <button
                 onClick={confirm}
                 disabled={saving}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
               >
                 <Check className="h-4 w-4" />
                 {saving ? t("সেভ হচ্ছে...", "Saving...") : t("নিশ্চিত করে দাম দেখুন", "Confirm & see prices")}
@@ -255,25 +388,33 @@ function RxReading() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => {
-                  setStep("verify");
-                  if (typeof window !== "undefined") window.localStorage.removeItem(stepKey(id));
-                }}
-                className="mt-4 flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
-              >
-                <Pencil className="h-3.5 w-3.5" /> {t("আবার যাচাই করুন", "Edit verification")}
-              </button>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    setStep("verify");
+                    if (typeof window !== "undefined") window.localStorage.removeItem(stepKey(id));
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <Pencil className="h-3.5 w-3.5" /> {t("আবার যাচাই করুন", "Edit verification")}
+                </button>
+                <button
+                  onClick={exportPdf}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <FileText className="h-3.5 w-3.5" /> {t("PDF / প্রিন্ট", "PDF / Print")}
+                </button>
+                <button
+                  onClick={shareSummary}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <Share2 className="h-3.5 w-3.5" /> {t("সারাংশ শেয়ার", "Share summary")}
+                </button>
+              </div>
 
               <ul className="mt-3 space-y-3">
                 {data.items.map((row, i) => (
-                  <RxRow
-                    key={i}
-                    index={i}
-                    row={row}
-                    sel={sel[i] ?? { match: 0, qty: 1, skip: false }}
-                    onSel={(s) => setSel((p) => ({ ...p, [i]: { ...(p[i] ?? { match: 0, qty: 1, skip: false }), ...s } }))}
-                  />
+                  <RxRow key={i} index={i} row={row} sel={sel[i] ?? DEF_SEL} onSel={(s) => setSelAt(i, s)} />
                 ))}
               </ul>
 
@@ -304,16 +445,15 @@ function RxReading() {
                   >
                     <ShoppingCart className="h-4 w-4" /> {t("সব কার্টে যোগ করুন", "Add all to cart")}
                   </button>
-                  <Link
-                    to="/cart"
-                    className="rounded-xl border border-border px-3 py-2.5 text-xs font-bold"
-                  >
+                  <Link to="/cart" className="rounded-xl border border-border px-3 py-2.5 text-xs font-bold">
                     {t("কার্ট", "Cart")}
                   </Link>
                 </div>
               </section>
             </>
           )}
+
+          <AuditLog rows={auditQ.data ?? []} />
         </>
       )}
     </div>
@@ -345,6 +485,63 @@ function ConfBadge({ c }: { c: number }) {
   );
 }
 
+/** প্রতিটি অংশের আলাদা OCR কনফিডেন্স — কোনটা কেন অনিশ্চিত */
+function ConfBreakdown({ item }: { item: RxReadItem }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const fc = item.fieldConf ?? { name: 0, strength: 0, form: 0, dose: 0, duration: 0, instruction: 0 };
+  const rows: Array<{ label: string; value: string; c: number }> = [
+    { label: t("ব্র্যান্ড নাম", "Brand"), value: item.name, c: fc.name },
+    { label: t("মাত্রা", "Strength"), value: item.strength, c: fc.strength },
+    { label: t("ফর্ম", "Form"), value: item.form, c: fc.form },
+    { label: t("সেবনবিধি", "Frequency"), value: item.dose, c: fc.dose },
+    { label: t("সময়কাল", "Duration"), value: item.duration, c: fc.duration },
+    { label: t("নির্দেশনা", "Timing"), value: item.instruction, c: fc.instruction },
+  ];
+  const weak = rows.filter((r) => r.c < 0.6).length;
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between rounded-lg bg-secondary px-2.5 py-1.5 text-[10px] font-bold"
+      >
+        <span>
+          {t("OCR কনফিডেন্স বিশ্লেষণ", "OCR confidence breakdown")}
+          {weak > 0 && <span className="ml-1.5 text-sale">· {t.n(weak)} {t("অংশ অনিশ্চিত", "uncertain")}</span>}
+        </span>
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-1.5 space-y-1.5 rounded-lg border border-border p-2">
+          {rows.map((r) => {
+            const pct = Math.round(r.c * 100);
+            const tone = r.c >= 0.75 ? "bg-primary" : r.c >= 0.5 ? "bg-accent-foreground" : "bg-sale";
+            return (
+              <div key={r.label} className="text-[10px]">
+                <div className="flex items-center gap-2">
+                  <span className="w-20 shrink-0 font-semibold text-muted-foreground">{r.label}</span>
+                  <span className="min-w-0 flex-1 truncate">{r.value || t("লেখা নেই", "not written")}</span>
+                  <span className={`shrink-0 font-bold ${r.c >= 0.75 ? "text-primary" : r.c >= 0.5 ? "text-foreground" : "text-sale"}`}>
+                    {t.n(pct)}%
+                  </span>
+                </div>
+                <div className="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-secondary">
+                  <div className={`h-full ${tone}`} style={{ width: `${Math.max(3, pct)}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          <p className="pt-1 text-[10px] text-muted-foreground">
+            <span className="font-semibold">{t("কারণ", "Why")}: </span>
+            {item.reason || t("হাতের লেখা স্পষ্ট — উল্লেখযোগ্য সন্দেহ নেই।", "Handwriting is clear — no notable doubt.")}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Inp({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="block">
@@ -355,6 +552,141 @@ function Inp({ label, value, onChange }: { label: string; value: string; onChang
         className="mt-0.5 w-full rounded-lg border border-border bg-background px-2.5 py-2 text-xs"
       />
     </label>
+  );
+}
+
+const DOSE_OPTS = ["0", "½", "1", "1½", "2", "3"];
+
+/** ফ্রিকোয়েন্সি, সময় ও সময়কাল যাচাই করার এডিটর */
+function DosageEditor({ item, onChange }: { item: RxReadItem; onChange: (patch: Partial<RxReadItem>) => void }) {
+  const t = useT();
+  const parts = (item.dose || "").split("+").map((s) => s.trim());
+  const slot = (i: number) => (parts.length === 3 ? parts[i] ?? "0" : "");
+  const setSlot = (i: number, v: string) => {
+    const cur = parts.length === 3 ? [...parts] : ["0", "0", "0"];
+    cur[i] = v;
+    onChange({ dose: cur.join("+") });
+  };
+
+  const durNum = (item.duration.match(/\d+/) ?? [""])[0];
+  const durUnit = /সপ্তাহ|week/i.test(item.duration)
+    ? "week"
+    : /মাস|month/i.test(item.duration)
+      ? "month"
+      : /চলবে|continue/i.test(item.duration)
+        ? "cont"
+        : "day";
+  const setDur = (num: string, unit: string) => {
+    if (unit === "cont") return onChange({ duration: t("চলবে", "Continue") });
+    if (!num) return onChange({ duration: "" });
+    const label = unit === "week" ? t("সপ্তাহ", "weeks") : unit === "month" ? t("মাস", "months") : t("দিন", "days");
+    onChange({ duration: `${num} ${label}` });
+  };
+
+  const timings = [
+    { v: "before", bn: "খাবারের আগে", en: "Before food" },
+    { v: "after", bn: "খাবারের পরে", en: "After food" },
+    { v: "with", bn: "খাবারের সাথে", en: "With food" },
+    { v: "empty", bn: "খালি পেটে", en: "Empty stomach" },
+    { v: "bed", bn: "ঘুমানোর আগে", en: "At bedtime" },
+  ];
+  const activeTiming = timings.find((x) => item.instruction.includes(x.bn) || item.instruction.toLowerCase().includes(x.en.toLowerCase()));
+
+  return (
+    <div className="mt-2 rounded-lg border border-border bg-secondary/40 p-2">
+      <p className="text-[10px] font-bold">{t("সেবনবিধি এডিটর — যাচাই করুন", "Dosage editor — verify before saving")}</p>
+
+      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+        {[t("সকাল", "Morning"), t("দুপুর", "Noon"), t("রাত", "Night")].map((lbl, i) => (
+          <label key={lbl} className="block">
+            <span className="text-[10px] font-semibold text-muted-foreground">{lbl}</span>
+            <select
+              value={slot(i) || "0"}
+              onChange={(e) => setSlot(i, e.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs"
+            >
+              {DOSE_OPTS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </div>
+
+      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+        <label className="block">
+          <span className="text-[10px] font-semibold text-muted-foreground">{t("সময়", "Timing")}</span>
+          <select
+            value={activeTiming?.v ?? ""}
+            onChange={(e) => {
+              const found = timings.find((x) => x.v === e.target.value);
+              onChange({ instruction: found ? t(found.bn, found.en) : "" });
+            }}
+            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs"
+          >
+            <option value="">{t("উল্লেখ নেই", "Not specified")}</option>
+            {timings.map((x) => (
+              <option key={x.v} value={x.v}>
+                {t(x.bn, x.en)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="grid grid-cols-2 gap-1.5">
+          <label className="block">
+            <span className="text-[10px] font-semibold text-muted-foreground">{t("সময়কাল", "Duration")}</span>
+            <input
+              inputMode="numeric"
+              value={durUnit === "cont" ? "" : durNum}
+              onChange={(e) => setDur(e.target.value.replace(/\D/g, ""), durUnit === "cont" ? "day" : durUnit)}
+              className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[10px] font-semibold text-muted-foreground">{t("একক", "Unit")}</span>
+            <select
+              value={durUnit}
+              onChange={(e) => setDur(durNum, e.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs"
+            >
+              <option value="day">{t("দিন", "Days")}</option>
+              <option value="week">{t("সপ্তাহ", "Weeks")}</option>
+              <option value="month">{t("মাস", "Months")}</option>
+              <option value="cont">{t("চলবে", "Continue")}</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <p className="mt-1.5 text-[10px] text-muted-foreground">
+        {t("সারাংশ", "Summary")}:{" "}
+        <span className="font-semibold text-foreground">
+          {[item.dose, item.duration, item.instruction].filter(Boolean).join(" · ") || t("কিছু নির্ধারণ করা হয়নি", "nothing set")}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function QtyBox({ qty, onQty }: { qty: number; onQty: (n: number) => void }) {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-border">
+      <button onClick={() => onQty(Math.max(1, qty - 1))} className="px-2 py-2" aria-label={t("কমান", "Decrease")}>
+        <Minus className="h-3 w-3" />
+      </button>
+      <input
+        inputMode="numeric"
+        value={String(qty)}
+        onChange={(e) => onQty(Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 1))}
+        className="w-10 bg-transparent text-center text-xs font-bold outline-none"
+      />
+      <button onClick={() => onQty(qty + 1)} className="px-2 py-2" aria-label={t("বাড়ান", "Increase")}>
+        <Plus className="h-3 w-3" />
+      </button>
+    </div>
   );
 }
 
@@ -374,6 +706,9 @@ function VerifyRow({
   onChange: (patch: Partial<RxReadItem>) => void;
 }) {
   const t = useT();
+  const picked = matches[sel.match];
+  const lineTotal = picked ? picked.price * sel.qty : 0;
+
   return (
     <li className={`rounded-xl border p-3 ${sel.skip ? "border-dashed border-border opacity-60" : "border-border bg-card"}`}>
       <div className="flex items-start gap-2">
@@ -386,15 +721,43 @@ function VerifyRow({
         <ConfBadge c={item.confidence} />
       </div>
 
+      <ConfBreakdown item={item} />
+
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Inp label={t("ব্র্যান্ড নাম", "Brand")} value={item.name} onChange={(v) => onChange({ name: v })} />
         <Inp label={t("জেনেরিক", "Generic")} value={item.generic} onChange={(v) => onChange({ generic: v })} />
         <Inp label={t("মাত্রা", "Strength")} value={item.strength} onChange={(v) => onChange({ strength: v })} />
-        <Inp label={t("ফর্ম / প্যাক", "Form / pack")} value={item.form} onChange={(v) => onChange({ form: v })} />
-        <Inp label={t("সেবনবিধি", "Frequency")} value={item.dose} onChange={(v) => onChange({ dose: v })} />
-        <Inp label={t("সময়কাল", "Duration")} value={item.duration} onChange={(v) => onChange({ duration: v })} />
-        <div className="col-span-2">
-          <Inp label={t("নির্দেশনা (খাবার আগে/পরে)", "Timing / instruction")} value={item.instruction} onChange={(v) => onChange({ instruction: v })} />
+        <Inp label={t("ফর্ম", "Form")} value={item.form} onChange={(v) => onChange({ form: v })} />
+      </div>
+
+      <DosageEditor item={item} onChange={onChange} />
+
+      <div className="mt-2 grid grid-cols-2 items-end gap-2">
+        <label className="block">
+          <span className="text-[10px] font-semibold text-muted-foreground">{t("ইউনিট / প্যাক", "Unit / pack")}</span>
+          <select
+            value={String(sel.match)}
+            onChange={(e) => onSel({ match: Number(e.target.value), skip: false })}
+            disabled={matches.length === 0}
+            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs disabled:opacity-50"
+          >
+            {matches.length === 0 ? (
+              <option value="0">{t("ক্যাটালগে পাওয়া যায়নি", "Not in catalogue")}</option>
+            ) : (
+              matches.map((m, i) => (
+                <option key={m.id} value={i}>
+                  {(t.en ? m.en || m.name : m.name)} · {packLabel(m)} · ৳{Math.round(m.price)}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
+        <div>
+          <span className="text-[10px] font-semibold text-muted-foreground">{t("পরিমাণ", "Quantity")}</span>
+          <div className="mt-0.5 flex items-center gap-2">
+            <QtyBox qty={sel.qty} onQty={(n) => onSel({ qty: n })} />
+            <span className="text-[11px] font-bold text-primary">{picked ? `৳${t.n(lineTotal)}` : "—"}</span>
+          </div>
         </div>
       </div>
 
@@ -425,6 +788,49 @@ function VerifyRow({
   );
 }
 
+function AuditLog({ rows }: { rows: Awaited<ReturnType<typeof listRxAudit>> }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  if (rows.length === 0) return null;
+  return (
+    <section className="mt-6 rounded-xl border border-border bg-card p-3">
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2 text-xs font-bold">
+        <History className="h-3.5 w-3.5 text-primary" />
+        {t("যাচাইয়ের পরিবর্তন লগ", "Verification audit log")}
+        <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">{t.n(rows.length)}</span>
+        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-2">
+          {rows.map((r) => (
+            <li key={r.id} className="rounded-lg border border-border p-2">
+              <p className="text-[10px] font-semibold text-muted-foreground">
+                {new Date(r.createdAt).toLocaleString(t.en ? "en-US" : "bn-BD")} ·{" "}
+                {r.action === "verify_save" ? t("যাচাই সেভ", "Verification saved") : t("সেভ", "Saved")}
+              </p>
+              {r.changes.length === 0 ? (
+                <p className="mt-1 text-[11px] text-muted-foreground">{t("কোনো পরিবর্তন ছাড়াই সেভ", "Saved without changes")}</p>
+              ) : (
+                <ul className="mt-1 space-y-0.5 text-[11px]">
+                  {r.changes.map((c, i) => (
+                    <li key={i}>
+                      <span className="font-semibold">
+                        #{t.n(c.line)} {c.medicine}
+                      </span>{" "}
+                      · {c.field}: <span className="text-muted-foreground line-through">{c.from}</span>{" "}
+                      <span className="font-semibold text-primary">→ {c.to}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; onSel: (s: Partial<Sel>) => void }) {
   const t = useT();
   const { add } = useStore();
@@ -450,6 +856,8 @@ function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; 
         </div>
         <ConfBadge c={item.confidence} />
       </div>
+
+      <ConfBreakdown item={item} />
 
       {(item.dose || item.duration || item.instruction) && (
         <div className="mt-2 flex flex-wrap gap-1.5 rounded-lg bg-secondary p-2 text-[11px]">
@@ -506,22 +914,8 @@ function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; 
                   {p.stock > 0 ? t("স্টকে আছে", "In stock") : t("স্টক নেই", "Out of stock")}
                 </span>
 
-                <div className="ml-auto flex items-center gap-1 rounded-lg border border-border">
-                  <button
-                    onClick={() => onSel({ qty: Math.max(1, sel.qty - 1) })}
-                    className="px-2 py-1.5"
-                    aria-label={t("কমান", "Decrease")}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                  <span className="min-w-6 text-center text-[11px] font-bold">{t.n(sel.qty)}</span>
-                  <button
-                    onClick={() => onSel({ qty: sel.qty + 1 })}
-                    className="px-2 py-1.5"
-                    aria-label={t("বাড়ান", "Increase")}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
+                <div className="ml-auto">
+                  <QtyBox qty={sel.qty} onQty={(n) => onSel({ qty: n })} />
                 </div>
                 <button
                   onClick={() => {
@@ -550,7 +944,7 @@ function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; 
                     i === sel.match ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
                   }`}
                 >
-                  {(t.en ? m.en || m.name : m.name)} · ৳{t.n(m.price)}
+                  {(t.en ? m.en || m.name : m.name)} · {packLabel(m)} · ৳{t.n(m.price)}
                 </button>
               ))}
             </div>
