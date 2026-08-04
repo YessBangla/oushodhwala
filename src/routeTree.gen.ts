@@ -28,7 +28,6 @@ import { Route as LabTestRouteImport } from './routes/lab-test'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as OrdersRouteImport } from './routes/orders'
-import { Route as PrescriptionRouteImport } from './routes/prescription'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
@@ -38,6 +37,7 @@ import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
+import { Route as PrescriptionIndexRouteImport } from './routes/prescription.index'
 import { Route as PrescriptionIdRouteImport } from './routes/prescription.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as RxShareTokenRouteImport } from './routes/rx-share.$token'
@@ -143,11 +143,6 @@ const OrdersRoute = OrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PrescriptionRoute = PrescriptionRouteImport.update({
-  id: '/prescription',
-  path: '/prescription',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -193,10 +188,15 @@ const ConsultationIdRoute = ConsultationIdRouteImport.update({
   path: '/consultation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrescriptionIndexRoute = PrescriptionIndexRouteImport.update({
+  id: '/prescription/',
+  path: '/prescription/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrescriptionIdRoute = PrescriptionIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => PrescriptionRoute,
+  id: '/prescription/$id',
+  path: '/prescription/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
@@ -259,7 +259,6 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
-  '/prescription': typeof PrescriptionRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -275,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
+  '/prescription/': typeof PrescriptionIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
@@ -299,7 +299,6 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
-  '/prescription': typeof PrescriptionRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -315,6 +314,7 @@ export interface FileRoutesByTo {
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
+  '/prescription': typeof PrescriptionIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
@@ -340,7 +340,6 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
-  '/prescription': typeof PrescriptionRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/products': typeof ProductsRoute
   '/refund-policy': typeof RefundPolicyRoute
@@ -356,6 +355,7 @@ export interface FileRoutesById {
   '/rx/$id': typeof RxIdRoute
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
+  '/prescription/': typeof PrescriptionIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
@@ -382,7 +382,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/offers'
     | '/orders'
-    | '/prescription'
     | '/privacy'
     | '/products'
     | '/refund-policy'
@@ -398,6 +397,7 @@ export interface FileRouteTypes {
     | '/rx/$id'
     | '/t/$token'
     | '/track/$no'
+    | '/prescription/'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
     | '/api/public/img/$'
@@ -422,7 +422,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/offers'
     | '/orders'
-    | '/prescription'
     | '/privacy'
     | '/products'
     | '/refund-policy'
@@ -438,6 +437,7 @@ export interface FileRouteTypes {
     | '/rx/$id'
     | '/t/$token'
     | '/track/$no'
+    | '/prescription'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
     | '/api/public/img/$'
@@ -462,7 +462,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/offers'
     | '/orders'
-    | '/prescription'
     | '/privacy'
     | '/products'
     | '/refund-policy'
@@ -478,6 +477,7 @@ export interface FileRouteTypes {
     | '/rx/$id'
     | '/t/$token'
     | '/track/$no'
+    | '/prescription/'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
     | '/api/public/img/$'
@@ -503,7 +503,6 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
   OrdersRoute: typeof OrdersRoute
-  PrescriptionRoute: typeof PrescriptionRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProductsRoute: typeof ProductsRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
@@ -513,11 +512,13 @@ export interface RootRouteChildren {
   BookDoctorIdRoute: typeof BookDoctorIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
   ConsultationIdRoute: typeof ConsultationIdRoute
+  PrescriptionIdRoute: typeof PrescriptionIdRoute
   ProductIdRoute: typeof ProductIdRoute
   RxShareTokenRoute: typeof RxShareTokenRoute
   RxIdRoute: typeof RxIdRoute
   TTokenRoute: typeof TTokenRoute
   TrackNoRoute: typeof TrackNoRoute
+  PrescriptionIndexRoute: typeof PrescriptionIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicSitemapDotxmlRoute: typeof ApiPublicSitemapDotxmlRoute
   ApiPublicImgSplatRoute: typeof ApiPublicImgSplatRoute
@@ -658,13 +659,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/prescription': {
-      id: '/prescription'
-      path: '/prescription'
-      fullPath: '/prescription'
-      preLoaderRoute: typeof PrescriptionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -728,12 +722,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsultationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prescription/': {
+      id: '/prescription/'
+      path: '/prescription'
+      fullPath: '/prescription/'
+      preLoaderRoute: typeof PrescriptionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prescription/$id': {
       id: '/prescription/$id'
-      path: '/$id'
+      path: '/prescription/$id'
       fullPath: '/prescription/$id'
       preLoaderRoute: typeof PrescriptionIdRouteImport
-      parentRoute: typeof PrescriptionRoute
+      parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
       id: '/product/$id'
@@ -794,18 +795,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface PrescriptionRouteChildren {
-  PrescriptionIdRoute: typeof PrescriptionIdRoute
-}
-
-const PrescriptionRouteChildren: PrescriptionRouteChildren = {
-  PrescriptionIdRoute: PrescriptionIdRoute,
-}
-
-const PrescriptionRouteWithChildren = PrescriptionRoute._addFileChildren(
-  PrescriptionRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
@@ -826,7 +815,6 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
   OrdersRoute: OrdersRoute,
-  PrescriptionRoute: PrescriptionRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProductsRoute: ProductsRoute,
   RefundPolicyRoute: RefundPolicyRoute,
@@ -836,11 +824,13 @@ const rootRouteChildren: RootRouteChildren = {
   BookDoctorIdRoute: BookDoctorIdRoute,
   CategorySlugRoute: CategorySlugRoute,
   ConsultationIdRoute: ConsultationIdRoute,
+  PrescriptionIdRoute: PrescriptionIdRoute,
   ProductIdRoute: ProductIdRoute,
   RxShareTokenRoute: RxShareTokenRoute,
   RxIdRoute: RxIdRoute,
   TTokenRoute: TTokenRoute,
   TrackNoRoute: TrackNoRoute,
+  PrescriptionIndexRoute: PrescriptionIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicSitemapDotxmlRoute: ApiPublicSitemapDotxmlRoute,
   ApiPublicImgSplatRoute: ApiPublicImgSplatRoute,

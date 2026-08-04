@@ -23,7 +23,7 @@ import {
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
 
-export const Route = createFileRoute("/prescription")({
+export const Route = createFileRoute("/prescription/")({
   head: () => ({
     meta: [
       { title: "প্রেসক্রিপশন আপলোড — ঔষধওয়ালা" },

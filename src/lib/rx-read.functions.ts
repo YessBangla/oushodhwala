@@ -170,7 +170,36 @@ async function toParts(supabase: { storage: any }, paths: string[]) {
   return parts;
 }
 
-/** এক প্রেসক্রিপশন পড়া ও ম্যাচ করা — লগইন ও গেস্ট দুই পথেই ব্যবহৃত */
+/** মডেল কখনো কখনো এক ফিল্ডে অনেক বকবক করে — ছোট করে পরিষ্কার করি */
+const cut = (s: string, n: number) => {
+  const one = (s ?? "").replace(/\s+/g, " ").trim();
+  return one.length > n ? one.slice(0, n).trim() + "…" : one;
+};
+
+function tidy(r: RxRead): RxRead {
+  return {
+    ...r,
+    patientName: cut(r.patientName, 60),
+    doctorName: cut(r.doctorName, 80),
+    date: cut(r.date, 30),
+    advice: cut(r.advice, 400),
+    note: cut(r.note, 400),
+    items: r.items.map((it) => ({
+      ...it,
+      raw: cut(it.raw, 160),
+      name: cut(it.name, 60),
+      generic: cut(it.generic, 80),
+      strength: cut(it.strength, 40),
+      form: cut(it.form, 30),
+      dose: cut(it.dose, 40),
+      duration: cut(it.duration, 40),
+      instruction: cut(it.instruction, 120),
+      reason: cut(it.reason, 200),
+    })),
+  };
+}
+
+
 async function performRead(supabase: any, id: string, force?: boolean) {
   const { data: row, error } = await supabase
     .from("prescriptions")
@@ -184,7 +213,8 @@ async function performRead(supabase: any, id: string, force?: boolean) {
   let read: RxRead;
 
   if (!force && row.parsed_at && cached && Array.isArray(cached.items) && cached.items.length) {
-    read = ReadSchema.parse(cached);
+    read = tidy(ReadSchema.parse(cached));
+
   } else {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI সার্ভিস কনফিগার করা নেই");
@@ -211,7 +241,7 @@ async function performRead(supabase: any, id: string, force?: boolean) {
       ],
     });
     try {
-      read = ReadSchema.parse(await result.output);
+      read = tidy(ReadSchema.parse(await result.output));
     } catch (e) {
       console.error("rx-read failed", e);
       throw new Error("AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন");
