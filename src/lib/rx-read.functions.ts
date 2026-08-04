@@ -195,7 +195,8 @@ export const readPrescription = createServerFn({ method: "POST" })
       if (parts.length === 0) throw new Error("প্রেসক্রিপশনের ফাইল পড়া যায়নি");
 
       const gateway = createLovableAiGatewayProvider(key);
-      const result = await generateText({
+      // দীর্ঘ রিডিং যেন ২ মিনিটে কেটে না যায় — স্ট্রিমিং কলে হ্যান্ডলারের ভেতরেই শেষ করি
+      const result = streamText({
         model: gateway("google/gemini-3.6-flash"),
         system: SYSTEM,
         output: Output.object({ schema: ReadSchema }),
@@ -212,7 +213,13 @@ export const readPrescription = createServerFn({ method: "POST" })
           },
         ],
       });
-      read = ReadSchema.parse(await result.output);
+      try {
+        read = ReadSchema.parse(await result.output);
+      } catch (e) {
+        console.error("rx-read failed", e);
+        throw new Error("AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন");
+      }
+
       await supabase
         .from("prescriptions")
         .update({ parsed: read as never, parsed_at: new Date().toISOString(), parse_note: read.note })
