@@ -275,7 +275,7 @@ function RxReading() {
       advice: data.read.advice,
       note: data.read.note,
       verifiedAt: data.parsedAt,
-      total: order.total,
+      total: order.payable,
       lines: data.items.map((row, i) => {
         const s = sel[i] ?? DEF_SEL;
         const p = row.matches[s.match];
