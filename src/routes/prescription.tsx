@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
-import { quickReorderRx } from "@/lib/rx-read.functions";
+import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
