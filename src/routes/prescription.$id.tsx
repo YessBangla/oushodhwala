@@ -516,7 +516,7 @@ function ConfBreakdown({ item }: { item: RxReadItem }) {
         <div className="mt-1.5 space-y-1.5 rounded-lg border border-border p-2">
           {rows.map((r) => {
             const pct = Math.round(r.c * 100);
-            const tone = r.c >= 0.75 ? "bg-primary" : r.c >= 0.5 ? "bg-warning" : "bg-sale";
+            const tone = r.c >= 0.75 ? "bg-primary" : r.c >= 0.5 ? "bg-accent-foreground" : "bg-sale";
             return (
               <div key={r.label} className="text-[10px]">
                 <div className="flex items-center gap-2">
