@@ -232,7 +232,9 @@ function Prescription() {
       opsStart("prescription_upload", { files: picked.length });
       const ok: Record<string, string> = { ...uploaded };
       const bad: string[] = [];
+      setErrMsg("");
       setFailed([]);
+      setPhase("upload");
       setDone(Object.keys(ok).length);
       for (const p of picked) {
         if (ok[p.id]) continue;
@@ -247,32 +249,41 @@ function Prescription() {
       setRetrying({});
       if (bad.length) {
         setFailed(bad);
+        setPhase("idle");
         opsFailure("prescription_upload", new Error("upload failed"), { files: bad.length });
         throw new Error(
           t(
-            `${bad.length}টি ফাইল আপলোড হয়নি — "পুনরায় চেষ্টা করুন" চাপুন`,
-            `${bad.length} file(s) failed — tap "Retry"`,
+            `${bad.length}টি ফাইল আপলোড হয়নি — ইন্টারনেট সংযোগ যাচাই করে "পুনরায় চেষ্টা করুন" চাপুন। আপলোড হয়ে যাওয়া ফাইলগুলো আবার পাঠাতে হবে না।`,
+            `${bad.length} file(s) failed — check your connection and tap "Retry". Already uploaded files are kept.`,
           ),
         );
       }
       const urls = picked.map((p) => ok[p.id]!).filter(Boolean);
       // আইডি ক্লায়েন্টেই তৈরি — গেস্ট ইনসার্টে সারি ফেরত আনার দরকার হয় না
       const newId = crypto.randomUUID();
+      setPhase("save");
       const { error } = await supabase
         .from("prescriptions")
         .insert({ id: newId, user_id: uid, guest_token: uid ? null : token, note, phone, file_urls: urls });
       if (error) {
+        setPhase("idle");
         opsFailure("prescription_upload", error, { files: urls.length });
-        throw error;
+        throw new Error(
+          t(
+            "প্রেসক্রিপশন সংরক্ষণ করা যায়নি — কিছুক্ষণ পর আবার চেষ্টা করুন, সমস্যা থাকলে লগইন করে জমা দিন।",
+            "Could not save the prescription — try again shortly, or log in and submit if it persists.",
+          ),
+        );
       }
       opsSuccess("prescription_upload", "", { files: urls.length });
       if (!uid) rememberGuestRx(newId);
+      setPhase("read");
       return newId;
     },
 
     onSuccess: (id) => {
       toast.success(
-        t("প্রেসক্রিপশন জমা হয়েছে — AI পড়া শুরু হচ্ছে", "Prescription submitted — AI reading starts now"),
+        t("প্রেসক্রিপশন জমা হয়েছে — ঔষধওয়ালা পড়া শুরু করছে", "Prescription submitted — Oushodhwala starts reading"),
       );
       picked.forEach((p) => URL.revokeObjectURL(p.url));
       setPicked([]);
@@ -280,10 +291,17 @@ function Prescription() {
       setDone(0);
       setUploaded({});
       setFailed([]);
+      setErrMsg("");
+      setPhase("idle");
       void qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+      void qc.invalidateQueries({ queryKey: ["guest-prescriptions"] });
       void navigate({ to: "/prescription/$id", params: { id } });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      setPhase("idle");
+      setErrMsg(e.message);
+      toast.error(e.message);
+    },
   });
 
   /** অনুমতি নিয়ে সঙ্গে সঙ্গে প্রেসক্রিপশন প্রসেস শুরু — লগইন ছাড়াও চলবে */
@@ -292,6 +310,7 @@ function Prescription() {
     setPermOpen(false);
     submit.mutate(undefined);
   };
+
 
 
 
