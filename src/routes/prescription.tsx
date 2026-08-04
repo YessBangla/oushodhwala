@@ -715,8 +715,8 @@ function Prescription() {
         </section>
       )}
 
-        </DialogContent>
-      </Dialog>
+
+
 
 
       <section className="mt-6">
