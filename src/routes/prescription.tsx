@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
-import { quickReorderRx } from "@/lib/rx-read.functions";
+import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
@@ -61,11 +61,32 @@ function Prescription() {
   const [failed, setFailed] = useState<string[]>([]);
   const [retrying, setRetrying] = useState<Record<string, number>>({});
   const [delId, setDelId] = useState<string | null>(null);
+  const [readId, setReadId] = useState<string | null>(null);
   const [retDays, setRetDays] = useState(0);
   const removeRx = useServerFn(deleteRx);
+  const rereadRx = useServerFn(readPrescription);
   const saveSettings = useServerFn(saveRxSettings);
   const loadSettings = useServerFn(getRxSettings);
   const housekeep = useServerFn(rxHousekeeping);
+
+  /** নির্বাচিত প্রেসক্রিপশনের OCR/রিডিং আবার চালায় */
+  const rereadOne = async (id: string) => {
+    setReadId(id);
+    try {
+      await rereadRx({ data: { id, force: true } });
+      await qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+      await qc.invalidateQueries({ queryKey: ["rx-read", id] });
+      toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
+    } catch (e) {
+      toast.error(
+        (e as Error).message ||
+          t("পড়া যায়নি — স্পষ্ট ছবি দিয়ে আবার চেষ্টা করুন।", "Could not read — try again with a clearer photo."),
+      );
+    } finally {
+      setReadId(null);
+    }
+  };
+
 
 
   useEffect(() => () => picked.forEach((p) => URL.revokeObjectURL(p.url)), [picked]);
@@ -415,7 +436,9 @@ function Prescription() {
         className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         disabled={!user || picked.length === 0 || submit.isPending}
       >
-        {submit.isPending ? t("জমা হচ্ছে...", "Submitting...") : t("জমা দিন ও AI দিয়ে পড়ুন", "Submit & read with AI")}
+        {submit.isPending
+          ? t("জমা হচ্ছে...", "Submitting...")
+          : t("জমা দিন — ঔষধওয়ালা পড়ছে", "Submit — Oushodhwala is reading")}
       </button>
 
       <section className="mt-6">
@@ -469,6 +492,14 @@ function Prescription() {
                   >
                     {t("ঔষধের দাম ও বিস্তারিত দেখুন", "See medicines, price & details")}
                   </Link>
+                  <button
+                    onClick={() => void rereadOne(r.id)}
+                    disabled={readId === r.id}
+                    className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-[11px] font-bold disabled:opacity-60"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${readId === r.id ? "animate-spin" : ""}`} />
+                    {readId === r.id ? t("ঔষধওয়ালা পড়ছে...", "Oushodhwala is reading...") : t("আবার পড়ুন", "Re-read")}
+                  </button>
                   {r.parsed_at && (
                     <button
                       onClick={() => quickReorder(r.id)}
@@ -481,6 +512,7 @@ function Prescription() {
                         : t("এক-ক্লিক রি-অর্ডার (যাচাই ছাড়াই)", "One-click re-order (skip verification)")}
                     </button>
                   )}
+
                   <button
                     onClick={() => void removeOne(r.id)}
                     disabled={delId === r.id}
