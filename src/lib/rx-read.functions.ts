@@ -209,3 +209,44 @@ export const readPrescription = createServerFn({ method: "POST" })
       items,
     };
   });
+
+/** ব্যবহারকারীর যাচাই/সম্পাদনা করা ঔষধ তালিকা সেভ করে আবার ম্যাচ করে ফেরত দেয় */
+export const saveRxEdits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; read: unknown; confirmed?: boolean }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const read = ReadSchema.parse(data.read);
+
+    const { data: row, error } = await supabase
+      .from("prescriptions")
+      .select("id, status, admin_note, created_at, parsed_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("প্রেসক্রিপশন পাওয়া যায়নি");
+
+    await supabase
+      .from("prescriptions")
+      .update({
+        parsed: read as never,
+        parsed_at: row.parsed_at ?? new Date().toISOString(),
+        parse_note: read.note,
+      })
+      .eq("id", data.id);
+
+    const items = [];
+    for (const item of read.items) {
+      items.push({ item, matches: await matchItem(supabase, item) });
+    }
+
+    return {
+      id: row.id,
+      status: row.status,
+      adminNote: row.admin_note,
+      createdAt: row.created_at,
+      parsedAt: row.parsed_at ?? new Date().toISOString(),
+      read,
+      items,
+    };
+  });
