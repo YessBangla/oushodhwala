@@ -272,12 +272,20 @@ export const saveRxEdits = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (upErr) throw new Error(upErr.message);
 
+    const { count } = await supabase
+      .from("prescription_audit")
+      .select("id", { count: "exact", head: true })
+      .eq("prescription_id", data.id);
+
     await supabase.from("prescription_audit").insert({
       prescription_id: data.id,
       user_id: userId,
       action: data.confirmed ? "verify_save" : "save",
       changes: changes as never,
+      snapshot: read as never,
+      version: (count ?? 0) + 1,
     });
+
 
     const items = [];
     for (const item of read.items) {
