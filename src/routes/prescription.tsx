@@ -1,12 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Zap } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/i18n";
+import { useStore } from "@/lib/store";
+import { quickReorderRx } from "@/lib/rx-read.functions";
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+
 
 export const Route = createFileRoute("/prescription")({
   head: () => ({
