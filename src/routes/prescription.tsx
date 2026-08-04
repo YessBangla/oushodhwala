@@ -74,7 +74,7 @@ function Prescription() {
     setReadId(id);
     try {
       await rereadRx({ data: { id, force: true } });
-      await qc.invalidateQueries({ queryKey: ["my-rx"] });
+      await qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
       await qc.invalidateQueries({ queryKey: ["rx-read", id] });
       toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
     } catch (e) {
