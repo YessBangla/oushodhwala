@@ -10,6 +10,13 @@ import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { quickReorderRx, readPrescription } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
 
