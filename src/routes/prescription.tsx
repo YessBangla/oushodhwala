@@ -471,6 +471,14 @@ function Prescription() {
                   >
                     {t("ঔষধের দাম ও বিস্তারিত দেখুন", "See medicines, price & details")}
                   </Link>
+                  <button
+                    onClick={() => void rereadOne(r.id)}
+                    disabled={readId === r.id}
+                    className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-[11px] font-bold disabled:opacity-60"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${readId === r.id ? "animate-spin" : ""}`} />
+                    {readId === r.id ? t("ঔষধওয়ালা পড়ছে...", "Oushodhwala is reading...") : t("আবার পড়ুন", "Re-read")}
+                  </button>
                   {r.parsed_at && (
                     <button
                       onClick={() => quickReorder(r.id)}
@@ -483,6 +491,7 @@ function Prescription() {
                         : t("এক-ক্লিক রি-অর্ডার (যাচাই ছাড়াই)", "One-click re-order (skip verification)")}
                     </button>
                   )}
+
                   <button
                     onClick={() => void removeOne(r.id)}
                     disabled={delId === r.id}
