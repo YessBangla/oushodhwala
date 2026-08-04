@@ -485,7 +485,89 @@ function RxReading() {
                 </button>
               </div>
 
-              <ul className="mt-3 space-y-3">
+              {/* ঔষধওয়ালার নিজস্ব ফরম্যাটে প্রেসক্রিপশন শিট — বিস্তারিত + দাম + ১০% ছাড় */}
+              <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-2.5">
+                  <BrandLogo size={30} />
+                  <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    {t("প্রেসক্রিপশন শিট", "Prescription sheet")}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 border-b border-border px-3 py-2.5 text-[11px]">
+                  <Field t={t("রোগী", "Patient")} v={data.read.patientName || "—"} />
+                  <Field t={t("ডাক্তার", "Doctor")} v={data.read.doctorName || "—"} />
+                  <Field t={t("প্রেসক্রিপশনের তারিখ", "Rx date")} v={data.read.date || "—"} />
+                  <Field t={t("রিডিং আইডি", "Reading ID")} v={id.slice(0, 8)} />
+                </div>
+
+                <ul className="divide-y divide-border">
+                  {data.items.map((row, i) => {
+                    const s = sel[i] ?? DEF_SEL;
+                    const p = row.matches[s.match];
+                    const name = p ? (t.en ? p.en || p.name : p.name) : row.item.name || row.item.raw;
+                    const lineTotal = (p?.price ?? 0) * s.qty;
+                    return (
+                      <li key={i} className={`px-3 py-2.5 text-[11px] ${s.skip ? "opacity-50" : ""}`}>
+                        <div className="flex items-start gap-2">
+                          <span className="mt-0.5 text-[10px] font-bold text-muted-foreground">{t.n(i + 1)}.</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold">{name}</p>
+                            <p className="truncate text-[10px] text-muted-foreground">
+                              {[p?.generic || row.item.generic, p?.strength || row.item.strength, p?.form || row.item.form]
+                                .filter(Boolean)
+                                .join(" · ") || "—"}
+                            </p>
+                            <p className="mt-0.5 text-[10px]">
+                              <span className="font-semibold">{t("সেবনবিধি", "Dosage")}:</span>{" "}
+                              {[row.item.dose, row.item.duration, row.item.instruction].filter(Boolean).join(" · ") || "—"}
+                            </p>
+                            {p?.pack && (
+                              <p className="text-[10px] text-muted-foreground">
+                                {t("প্যাক", "Pack")}: {p.pack}
+                              </p>
+                            )}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-[10px] text-muted-foreground">
+                              {t.n(s.qty)} × ৳{t.n(p?.price ?? 0)}
+                            </p>
+                            <p className="text-xs font-extrabold">
+                              {s.skip ? t("বাদ", "Excluded") : `৳${t.n(lineTotal)}`}
+                            </p>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="space-y-1 border-t border-border bg-secondary/40 px-3 py-2.5 text-[11px]">
+                  <p className="flex justify-between">
+                    <span className="text-muted-foreground">{t("সাবটোটাল", "Subtotal")}</span>
+                    <span className="font-semibold">৳{t.n(order.total)}</span>
+                  </p>
+                  <p className="flex justify-between text-primary">
+                    <span className="font-semibold">{t("ঔষধওয়ালা ছাড় (১০%)", "Oushodhwala discount (10%)")}</span>
+                    <span className="font-bold">− ৳{t.n(order.discount)}</span>
+                  </p>
+                  <p className="flex justify-between border-t border-border pt-1.5 text-sm">
+                    <span className="font-bold">{t("সর্বমোট", "Payable")}</span>
+                    <span className="font-extrabold text-primary">৳{t.n(order.payable)}</span>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {t(
+                      "ডেলিভারি চার্জ প্রযোজ্য হতে পারে। লাইসেন্সপ্রাপ্ত ফার্মাসিস্ট যাচাইয়ের পর অর্ডার নিশ্চিত হবে।",
+                      "Delivery charge may apply. The order is confirmed after licensed pharmacist verification.",
+                    )}
+                  </p>
+                </div>
+              </section>
+
+              <p className="mt-4 text-[11px] font-bold text-muted-foreground">
+                {t("ঔষধের বিস্তারিত ও বিকল্প", "Medicine details & alternatives")}
+              </p>
+              <ul className="mt-2 space-y-3">
                 {data.items.map((row, i) => (
                   <RxRow key={i} index={i} row={row} sel={sel[i] ?? DEF_SEL} onSel={(s) => setSelAt(i, s)} />
                 ))}
@@ -502,15 +584,17 @@ function RxReading() {
                 <div className="mx-auto flex max-w-3xl items-center gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] text-muted-foreground">
-                      {t("অর্ডার প্রিভিউ", "Order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")}
+                      {t("অর্ডার প্রিভিউ", "Order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")} ·{" "}
+                      <span className="font-semibold text-primary">{t("১০% ছাড়সহ", "incl. 10% off")}</span>
                     </p>
                     <p className="text-base font-extrabold text-primary">
-                      ৳{t.n(order.total)}
-                      {order.mrp > order.total && (
-                        <span className="ml-2 text-[11px] font-semibold text-muted-foreground line-through">৳{t.n(order.mrp)}</span>
+                      ৳{t.n(order.payable)}
+                      {order.total > order.payable && (
+                        <span className="ml-2 text-[11px] font-semibold text-muted-foreground line-through">৳{t.n(order.total)}</span>
                       )}
                     </p>
                   </div>
+
                   <button
                     onClick={addAll}
                     disabled={order.lines.length === 0}
