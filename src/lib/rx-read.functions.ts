@@ -310,7 +310,7 @@ export const listRxAudit = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("prescription_audit")
-      .select("id, action, changes, created_at")
+      .select("id, action, changes, snapshot, version, created_at")
       .eq("prescription_id", data.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -319,7 +319,39 @@ export const listRxAudit = createServerFn({ method: "POST" })
       id: r.id as string,
       action: r.action as string,
       createdAt: r.created_at as string,
+      version: (r.version ?? 0) as number,
+      snapshot: (r.snapshot ?? null) as RxRead | null,
       changes: (r.changes ?? []) as RxChange[],
     }));
   });
+
+/** যাচাই ছাড়াই এক-ক্লিক রি-অর্ডার — সেভ করা রিডিং থেকে সেরা মিল */
+export const quickReorderRx = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("prescriptions")
+      .select("id, parsed, parsed_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row?.parsed_at) throw new Error("এই প্রেসক্রিপশনটি এখনো পড়া হয়নি — আগে খুলে যাচাই করুন");
+
+    const read = ReadSchema.parse(row.parsed as unknown);
+    const lines: Array<{ id: string; name: string; en: string; price: number; stock: number; qty: number }> = [];
+    const missing: string[] = [];
+    for (const item of read.items) {
+      const matches = await matchItem(supabase, item);
+      const best = matches.find((m) => m.stock > 0) ?? matches[0];
+      if (!best) {
+        missing.push(item.name || item.raw);
+        continue;
+      }
+      lines.push({ id: best.id, name: best.name, en: best.en, price: best.price, stock: best.stock, qty: 1 });
+    }
+    return { lines, missing };
+  });
+
 
