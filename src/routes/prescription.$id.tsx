@@ -25,12 +25,14 @@ import { MedSections, type MedSection } from "@/components/MedSections";
 import { cleanMedText, dedupeSections } from "@/lib/medtext";
 import {
   readPrescription,
+  readPrescriptionGuest,
   saveRxEdits,
   listRxAudit,
   type RxRead,
   type RxReadItem,
   type RxChange,
 } from "@/lib/rx-read.functions";
+import { getGuestToken } from "@/lib/rx-guest";
 import { printRxSummary, rxSummaryText, type RxSummary } from "@/lib/rx-summary";
 import { RxInteractions } from "@/components/RxInteractions";
 import { RxShareManager } from "@/components/RxShareManager";
