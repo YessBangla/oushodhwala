@@ -440,7 +440,7 @@ function RxReading() {
         setSavedAt(new Date().toISOString());
         if (typeof window !== "undefined")
           window.localStorage.setItem(`rx-draft-${id}`, JSON.stringify({ meta, items: draft }));
-        if (user) void auditQ.refetch();
+        if (user && !viaGuest) void auditQ.refetch();
         if (!silent) toast.success(t("সংরক্ষিত হয়েছে", "Saved"));
         return true;
       } catch (e) {
