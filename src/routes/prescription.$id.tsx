@@ -105,6 +105,8 @@ function RxReading() {
   const [base, setBase] = useState<RxReadItem[] | null>(null);
   const [sel, setSel] = useState<Record<number, Sel>>({});
   const [edited, setEdited] = useState<Result | null>(null);
+  /** প্রেসক্রিপশনের হেডার তথ্য — হাসপাতাল, ডাক্তার, রোগী, বয়স, ঠিকানা, পরামর্শ */
+  const [meta, setMeta] = useState<RxMeta>(EMPTY_META);
 
   /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
   const guestToken = useMemo(() => getGuestToken(), []);
@@ -149,6 +151,7 @@ function RxReading() {
     if (!fetched) return;
     setDraft(fetched.read.items.map((it) => ({ ...it })));
     setBase(fetched.read.items.map((it) => ({ ...it })));
+    setMeta(metaOf(fetched.read));
     const savedSel = loadJson<Record<number, Sel>>(selKey(id), {});
     const next: Record<number, Sel> = {};
     fetched.items.forEach((_, i) => {
@@ -246,13 +249,14 @@ function RxReading() {
     setSaving(true);
     try {
       const changes = diffChanges();
-      const payload: RxRead = { ...data.read, items: draft };
+      const payload: RxRead = { ...data.read, ...meta, items: draft };
       // গেস্ট হলে সার্ভারে সেভ না করে স্থানীয়ভাবেই যাচাই সম্পন্ন হয়
       const res = user
         ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
         : ({ ...data, read: payload } as Result);
 
       setEdited(res);
+      setMeta(metaOf(res.read));
       setDraft(res.read.items.map((it) => ({ ...it })));
       setBase(res.read.items.map((it) => ({ ...it })));
       setSel((prev) => {
@@ -284,10 +288,14 @@ function RxReading() {
     if (!data) return null;
     return {
       id: data.id,
-      patientName: data.read.patientName,
-      doctorName: data.read.doctorName,
-      date: data.read.date,
-      advice: data.read.advice,
+      patientName: meta.patientName,
+      patientAge: meta.patientAge,
+      patientAddress: meta.patientAddress,
+      hospital: meta.hospital,
+      doctorQualification: meta.doctorQualification,
+      doctorName: meta.doctorName,
+      date: meta.date,
+      advice: meta.advice,
       note: data.read.note,
       verifiedAt: data.parsedAt,
       total: order.payable,
@@ -416,11 +424,15 @@ function RxReading() {
 
       {data && (
         <>
-          <section className="mt-4 grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-3 text-xs">
-            <Field t={t("রোগী", "Patient")} v={data.read.patientName || "—"} />
-            <Field t={t("ডাক্তার", "Doctor")} v={data.read.doctorName || "—"} />
-            <Field t={t("তারিখ", "Date")} v={data.read.date || "—"} />
+          <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
+            <Field t={t("হাসপাতাল / চেম্বার", "Hospital")} v={meta.hospital || "—"} />
+            <Field t={t("ডাক্তার", "Doctor")} v={meta.doctorName || "—"} />
+            <Field t={t("রোগী", "Patient")} v={meta.patientName || "—"} />
+            <Field t={t("বয়স", "Age")} v={meta.patientAge || "—"} />
+            <Field t={t("ঠিকানা", "Address")} v={meta.patientAddress || "—"} />
+            <Field t={t("তারিখ", "Date")} v={meta.date || "—"} />
             <Field t={t("শনাক্ত ঔষধ", "Medicines found")} v={t.n(data.items.length)} />
+            <Field t={t("রিডিং আইডি", "Reading ID")} v={id.slice(0, 8)} />
           </section>
 
           <p className="mt-3 flex items-start gap-2 rounded-lg bg-secondary p-3 text-[11px] text-muted-foreground">
@@ -446,19 +458,15 @@ function RxReading() {
                   "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Quantity and pack set here update the order preview instantly.",
                 )}
               </p>
-              <ul className="mt-3 space-y-3">
-                {draft?.map((item, i) => (
-                  <VerifyRow
-                    key={i}
-                    index={i}
-                    item={item}
-                    matches={data.items[i]?.matches ?? []}
-                    sel={sel[i] ?? DEF_SEL}
-                    onSel={(s) => setSelAt(i, s)}
-                    onChange={(patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
-                  />
-                ))}
-              </ul>
+              <MetaEditor meta={meta} onChange={(patch) => setMeta((m) => ({ ...m, ...patch }))} />
+
+              <RxTable
+                items={draft ?? []}
+                rows={data.items}
+                sel={sel}
+                onSel={setSelAt}
+                onChange={(i, patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
+              />
 
               <div className="mt-4 rounded-xl border border-border bg-card p-3">
                 <p className="text-[11px] text-muted-foreground">
@@ -511,11 +519,13 @@ function RxReading() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 border-b border-border px-3 py-2.5 text-[11px]">
-                  <Field t={t("রোগী", "Patient")} v={data.read.patientName || "—"} />
-                  <Field t={t("ডাক্তার", "Doctor")} v={data.read.doctorName || "—"} />
-                  <Field t={t("প্রেসক্রিপশনের তারিখ", "Rx date")} v={data.read.date || "—"} />
-                  <Field t={t("রিডিং আইডি", "Reading ID")} v={id.slice(0, 8)} />
+                <div className="grid grid-cols-2 gap-px border-b border-border bg-border sm:grid-cols-3">
+                  <Field t={t("হাসপাতাল / চেম্বার", "Hospital / chamber")} v={meta.hospital || "—"} />
+                  <Field t={t("ডাক্তার", "Doctor")} v={[meta.doctorName, meta.doctorQualification].filter(Boolean).join(", ") || "—"} />
+                  <Field t={t("প্রেসক্রিপশনের তারিখ", "Rx date")} v={meta.date || "—"} />
+                  <Field t={t("রোগী", "Patient")} v={meta.patientName || "—"} />
+                  <Field t={t("বয়স", "Age")} v={meta.patientAge || "—"} />
+                  <Field t={t("ঠিকানা", "Address")} v={meta.patientAddress || "—"} />
                 </div>
 
                 <ul className="divide-y divide-border">
@@ -590,10 +600,10 @@ function RxReading() {
                 ))}
               </ul>
 
-              {data.read.advice && (
+              {meta.advice && (
                 <section className="mt-5 rounded-xl border border-border bg-card p-3">
                   <h2 className="text-xs font-bold">{t("ডাক্তারের পরামর্শ", "Doctor's advice")}</h2>
-                  <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{data.read.advice}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{meta.advice}</p>
                 </section>
               )}
 
@@ -1133,11 +1143,14 @@ function sectionsOf(p: Product, en: boolean, t: ReturnType<typeof useT>): MedSec
   return dedupeSections(list);
 }
 
+/** আলাদা সেল — কর্পোরেট শিটের প্রতিটি তথ্য নিজের ঘরে */
 function Field({ t, v }: { t: string; v: string }) {
   return (
-    <p className="text-xs">
-      <span className="text-muted-foreground">{t}: </span>
-      <span className="font-semibold">{v}</span>
-    </p>
+    <div className="min-w-0 bg-card px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t}</p>
+      <p className="truncate text-xs font-bold" title={v}>
+        {v}
+      </p>
+    </div>
   );
 }
