@@ -9,7 +9,8 @@ import {
   ArrowLeft, 
   Save, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Activity
 } from "lucide-react";
 import { 
   Card, 
