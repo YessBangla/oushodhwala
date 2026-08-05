@@ -218,20 +218,28 @@ function RxReading() {
 
   /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
   const guestToken = useMemo(() => getGuestToken(), []);
+  /** প্রেসক্রিপশনটি গেস্ট-কোড দিয়ে পড়া হয়েছে কিনা — তাহলে সার্ভারে সেভ করা যাবে না */
+  const [viaGuest, setViaGuest] = useState(false);
+  /** ড্রাফট একবারই ইনিশিয়ালাইজ হবে — রিফেচ হলে ব্যবহারকারীর এডিট মুছে যাবে না */
+  const initRef = useRef(false);
 
   /** আগে লগইন-পাথে পড়ি; না পেলে (গেস্ট হিসেবে আপলোড করা) গেস্ট কোড দিয়ে পড়ি */
   const runRead = useCallback(
     async (force?: boolean): Promise<Result> => {
       if (user) {
         try {
-          return (await read({ data: force ? { id, force: true } : { id } })) as Result;
+          const r = (await read({ data: force ? { id, force: true } : { id } })) as Result;
+          setViaGuest(false);
+          return r;
         } catch (e) {
           if (!guestToken) throw e;
         }
       }
-      return (await readGuest({
+      const g = (await readGuest({
         data: force ? { id, token: guestToken, force: true } : { id, token: guestToken },
       })) as Result;
+      setViaGuest(true);
+      return g;
     },
     [user, read, readGuest, id, guestToken],
   );
@@ -240,8 +248,11 @@ function RxReading() {
     queryKey: ["rx-read", id, user ? "user" : "guest"],
     enabled: !!user || !!guestToken,
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: () => runRead(),
   });
+
 
 
   const auditQ = useQuery({
