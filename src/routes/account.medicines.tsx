@@ -1057,6 +1057,24 @@ function MedicineManagement() {
               </Select>
             </div>
 
+            {getReminderErrors().length > 0 && (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 space-y-1.5">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-[10px] font-bold uppercase">{t("ভ্যালিডেশন ত্রুটি", "Validation Errors")}</span>
+                </div>
+                <ul className="space-y-1">
+                  {getReminderErrors().map((err, idx) => (
+                    <li key={idx} className="text-[9px] text-destructive flex items-center gap-1.5">
+                      <div className="h-1 w-1 rounded-full bg-destructive" />
+                      {err}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+
             {checkReminderConflicts(reminderConfig.time).length > 0 && (
               <div className="rounded bg-amber-50 p-2 text-[9px] text-amber-700 flex items-start gap-1.5 border border-amber-200">
                 <AlertTriangle className="h-3 w-3 shrink-0" />
