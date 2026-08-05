@@ -11,6 +11,7 @@ export async function getFavorites(userId: string): Promise<MedSuggestion[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
+  // @ts-ignore - dynamic product structure
   return (data?.map((d: any) => ({ ...d.product, reminder_config: d.reminder_config })) || []) as MedSuggestion[];
 }
 
@@ -23,13 +24,14 @@ export async function getRecent(userId: string): Promise<MedSuggestion[]> {
     .limit(20);
 
   if (error) throw error;
+  // @ts-ignore - dynamic product structure
   return (data?.map((d: any) => d.product) || []) as MedSuggestion[];
 }
 
 export async function syncMedicines(userId: string, localFavIds: string[], localRecentIds: string[]) {
   const { data: existingFavs } = await supabaseAdmin
     .from("user_favorites")
-    .select("product_id, updated_at")
+    .select("product_id")
     .eq("user_id", userId);
   
   const existingIds = new Set(existingFavs?.map(e => e.product_id) || []);
