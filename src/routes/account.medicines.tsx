@@ -94,6 +94,16 @@ function MedicineManagement() {
   const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
   const [configProduct, setConfigProduct] = useState<MedSuggestion | null>(null);
   const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1 });
+  const [notificationHistory, setNotificationHistory] = useState<any[]>([]);
+
+  // Import/Preview State
+  const [importPreviewOpen, setImportPreviewOpen] = useState(false);
+  const [importData, setImportData] = useState<{ raw: any[], mapping: Record<string, string>, errors: any[] }>({
+    raw: [],
+    mapping: {},
+    errors: []
+  });
+  const [importStep, setImportStep] = useState<"preview" | "mapping" | "results">("preview");
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-medicines"],
