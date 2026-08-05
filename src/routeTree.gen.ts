@@ -47,6 +47,7 @@ import { Route as TTokenRouteImport } from './routes/t.$token'
 import { Route as TrackNoRouteImport } from './routes/track.$no'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicSitemapDotxmlRouteImport } from './routes/api/public/sitemap[.]xml'
+import { Route as SharedProductRouteImport } from './routes/shared/product.'
 import { Route as ApiPublicImgSplatRouteImport } from './routes/api/public/img/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -239,6 +240,11 @@ const ApiPublicSitemapDotxmlRoute = ApiPublicSitemapDotxmlRouteImport.update({
   path: '/api/public/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SharedProductRoute = SharedProductRouteImport.update({
+  id: '/shared/product/',
+  path: '/shared/product/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicImgSplatRoute = ApiPublicImgSplatRouteImport.update({
   id: '/api/public/img/$',
   path: '/api/public/img/$',
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
   '/prescription/': typeof PrescriptionIndexRoute
+  '/shared/product/': typeof SharedProductRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
@@ -323,6 +330,7 @@ export interface FileRoutesByTo {
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
   '/prescription': typeof PrescriptionIndexRoute
+  '/shared/product': typeof SharedProductRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
@@ -365,6 +373,7 @@ export interface FileRoutesById {
   '/t/$token': typeof TTokenRoute
   '/track/$no': typeof TrackNoRoute
   '/prescription/': typeof PrescriptionIndexRoute
+  '/shared/product/': typeof SharedProductRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/api/public/img/$': typeof ApiPublicImgSplatRoute
@@ -408,6 +417,7 @@ export interface FileRouteTypes {
     | '/t/$token'
     | '/track/$no'
     | '/prescription/'
+    | '/shared/product/'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
     | '/api/public/img/$'
@@ -449,6 +459,7 @@ export interface FileRouteTypes {
     | '/t/$token'
     | '/track/$no'
     | '/prescription'
+    | '/shared/product'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
     | '/api/public/img/$'
@@ -490,6 +501,7 @@ export interface FileRouteTypes {
     | '/t/$token'
     | '/track/$no'
     | '/prescription/'
+    | '/shared/product/'
     | '/api/public/health'
     | '/api/public/sitemap.xml'
     | '/api/public/img/$'
@@ -531,6 +543,7 @@ export interface RootRouteChildren {
   TTokenRoute: typeof TTokenRoute
   TrackNoRoute: typeof TrackNoRoute
   PrescriptionIndexRoute: typeof PrescriptionIndexRoute
+  SharedProductRoute: typeof SharedProductRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicSitemapDotxmlRoute: typeof ApiPublicSitemapDotxmlRoute
   ApiPublicImgSplatRoute: typeof ApiPublicImgSplatRoute
@@ -804,6 +817,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shared/product/': {
+      id: '/shared/product/'
+      path: '/shared/product'
+      fullPath: '/shared/product/'
+      preLoaderRoute: typeof SharedProductRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/img/$': {
       id: '/api/public/img/$'
       path: '/api/public/img/$'
@@ -861,6 +881,7 @@ const rootRouteChildren: RootRouteChildren = {
   TTokenRoute: TTokenRoute,
   TrackNoRoute: TrackNoRoute,
   PrescriptionIndexRoute: PrescriptionIndexRoute,
+  SharedProductRoute: SharedProductRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicSitemapDotxmlRoute: ApiPublicSitemapDotxmlRoute,
   ApiPublicImgSplatRoute: ApiPublicImgSplatRoute,
