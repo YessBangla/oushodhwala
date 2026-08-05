@@ -127,7 +127,8 @@ function Account() {
 
       <section className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card text-xs">
         {isAdmin && <Row to="/admin" icon={ShieldCheck} t={t("অ্যাডমিন প্যানেল", "Admin panel")} />}
-        <Row to="/notifications" icon={Bell} t={t("নোটিফিকেশন", "Notifications")} />
+        <Row to="/account/notifications" icon={Bell} t={t("নোটিফিকেশন", "Notifications")} />
+        <Row to="/account/audit-logs" icon={Activity} t={t("অডিট লগ", "Audit Logs")} />
         <Row to="/help" icon={HelpCircle} t={t("সহায়তা ও FAQ", "Help & FAQ")} />
         <Row to="/about" icon={FileText} t={t("আমাদের সম্পর্কে", "About us")} />
       </section>
