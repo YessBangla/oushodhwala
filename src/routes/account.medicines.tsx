@@ -114,7 +114,7 @@ function MedicineManagement() {
   // Reminder State
   const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
   const [configProduct, setConfigProduct] = useState<MedWithReminder | null>(null);
-  const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  const [reminderConfig, setReminderConfig] = useState<{ type: string; time: string; frequency: number; timezone: string }>({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   const [notificationHistory, setNotificationHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_delivery_logs") || "[]"));
   const [showLogs, setShowLogs] = useState(false);
   const [logFilter, setLogFilter] = useState<string>("all");
