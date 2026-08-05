@@ -46,6 +46,8 @@ import {
 } from "@/lib/rx-read.functions";
 import { getGuestToken } from "@/lib/rx-guest";
 import { printRxSummary, rxSummaryText, type RxSummary } from "@/lib/rx-summary";
+import { MedicinePicker } from "@/components/MedicinePicker";
+import type { MedSuggestion } from "@/lib/rx-suggest.server";
 import { RxInteractions } from "@/components/RxInteractions";
 import { RxShareManager } from "@/components/RxShareManager";
 import { RxVersions } from "@/components/RxVersions";
@@ -396,6 +398,27 @@ function RxReading() {
     setSel((p) => ({ ...p, [(draft?.length ?? 0)]: { ...DEF_SEL } }));
     touch();
     setShowErrors(true);
+  };
+
+  /** সাজেশন থেকে ঔষধ বেছে নিলে — ঘরগুলো পূরণ ও ম্যাচ তালিকায় যুক্ত */
+  const pickProduct = (i: number, p: MedSuggestion) => {
+    patchItem(i, {
+      name: t.en ? p.en || p.name : p.name,
+      generic: p.generic || "",
+      strength: p.strength || "",
+      form: p.form || "",
+    });
+    setEdited((prev) => {
+      const b = prev ?? fetched ?? null;
+      if (!b) return prev;
+      const items = [...b.items];
+      while (items.length <= i) items.push({ item: emptyItem(), matches: [] } as unknown as Row);
+      const cur = items[i]!;
+      const rest = (cur.matches ?? []).filter((m) => m.id !== p.id);
+      items[i] = { ...cur, matches: [p as unknown as Product, ...rest].slice(0, 6) };
+      return { ...b, items };
+    });
+    setSelAt(i, { match: 0, skip: false });
   };
 
   /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয়, ভুল হলে ফিরিয়ে আনা যায় */
@@ -836,6 +859,7 @@ function RxReading() {
                 errors={showErrors ? errors.items : {}}
                 onRemove={removeRow}
                 onAdd={addRow}
+                onPick={pickProduct}
               />
 
               {/* যাচাই ধাপে স্টিকি বার — চলতি দাম ও নিশ্চিতকরণ সবসময় হাতের নাগালে */}
@@ -1569,6 +1593,7 @@ function RxTable({
   errors = {},
   onAdd,
   onRemove,
+  onPick,
 }: {
   items: RxReadItem[];
   rows: Row[];
@@ -1578,6 +1603,7 @@ function RxTable({
   errors?: Record<string, string>;
   onAdd?: () => void;
   onRemove?: (i: number) => void;
+  onPick?: (i: number, p: MedSuggestion) => void;
 }) {
 
   const t = useT();
@@ -1647,7 +1673,14 @@ function RxTable({
                       </button>
                     </td>
                     <td className={CELL}>
-                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" err={errors[`${i}.name`] ?? ""} />
+                      <MedicinePicker
+                        value={item.name}
+                        onChange={(v) => onChange(i, { name: v })}
+                        onPick={(p) => onPick?.(i, p)}
+                        w="w-36"
+                        err={errors[`${i}.name`] ?? ""}
+                        ph={t("ঔষধের নাম লিখুন", "Type medicine name")}
+                      />
                     </td>
                     <td className={`${CELL} w-32`}>
                       <p className="w-32 truncate px-1.5 py-1 text-[11px] font-semibold text-muted-foreground" title={p?.manufacturer || p?.brand || ""}>
