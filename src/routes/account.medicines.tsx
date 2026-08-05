@@ -856,7 +856,32 @@ function MedicineManagement() {
             </>
           )}
         </TabsContent>
+        <TabsContent value="calendar" className="mt-4">
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold">{t("পরবর্তী ৩০ দিনের রিমাইন্ডার", "Reminders for the next 30 days")}</h3>
+            <ScrollArea className="h-[500px] pr-4">
+              <div className="space-y-2">
+                {favorites.filter(f => f.reminder_config?.time).sort((a, b) => (a.reminder_config?.time || "").localeCompare(b.reminder_config?.time || "")).map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border bg-card">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-bold">{item.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.reminder_config?.time} • {item.reminder_config?.type}</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">{item.strength}</Badge>
+                  </div>
+                ))}
+                {favorites.filter(f => f.reminder_config?.time).length === 0 && (
+                  <div className="py-10 text-center text-muted-foreground text-xs">{t("কোনো রিমাইন্ডার সেট করা নেই।", "No reminders set.")}</div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </TabsContent>
       </Tabs>
+
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
