@@ -40,7 +40,6 @@ export function MedicinePicker({
   const [position, setPosition] = useState({ left: 0, top: 0, width: 288 });
   const cache = useRef<Record<string, MedSuggestion[]>>({}); // একই সার্চ টেক্সটের জন্য ফলাফল ক্যাশ
 
-
   const positionPopup = () => {
     const box = boxRef.current;
     if (!box) return;
@@ -94,8 +93,7 @@ export function MedicinePicker({
     return () => window.clearTimeout(id);
   }, [term, open, suggest]);
 
-
-  // টেবিলের overflow পপ-আপ কেটে ফেলতে পারে, তাই portal-এর অবস্থান ইনপুটের সাথে রাখি।
+  // পপ-আপের অবস্থান ঠিক রাখা
   useEffect(() => {
     if (!open) return;
     positionPopup();
@@ -142,13 +140,11 @@ export function MedicinePicker({
   const choose = (p: MedSuggestion) => {
     const text = t.en ? p.en || p.name : p.name;
     onChange(text);
-    setTerm(text); // ইনপুট টেক্সট এবং টার্ম আপডেট
+    setTerm(text);
     onPick?.(p);
-
     setOpen(false);
     setRows([]);
   };
-
 
   return (
     <div className={`relative ${w}`} ref={boxRef}>
@@ -160,7 +156,7 @@ export function MedicinePicker({
         aria-autocomplete="list"
         aria-expanded={open && list.length > 0}
         aria-controls="med-picker-listbox"
-        aria-activedescendant={open ? `med-option-${active}` : undefined}
+        aria-activedescendant={open && list.length > 0 ? `med-option-${active}` : undefined}
         aria-invalid={!!err}
         autoComplete="off"
         onChange={(e) => {
@@ -174,8 +170,19 @@ export function MedicinePicker({
           setOpen(true);
           positionPopup();
         }}
-
         onKeyDown={(e) => {
+          if (e.key === "Tab" && open) {
+            setOpen(false);
+            return;
+          }
+          if (!open) {
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              setOpen(true);
+              setTerm(value);
+              positionPopup();
+              return;
+            }
+          }
           if (!open || !list.length) return;
           if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -188,6 +195,7 @@ export function MedicinePicker({
             const p = list[active];
             if (p) choose(p);
           } else if (e.key === "Escape") {
+            e.preventDefault();
             setOpen(false);
           }
         }}
@@ -196,6 +204,14 @@ export function MedicinePicker({
         }`}
       />
       {err && <p className="px-1 pt-0.5 text-[9px] font-semibold leading-tight text-destructive">{err}</p>}
+
+      {/* Screen Reader Announcements */}
+      <div className="sr-only" aria-live="polite" role="status">
+        {loading && t("খুঁজছি…", "Searching…")}
+        {!loading && list.length > 0 && `${list.length} ${t("টি ঔষধ পাওয়া গেছে", "medicines found")}`}
+        {failed && t("ঔষধ খোঁজা যায়নি", "Search failed")}
+        {!failed && !loading && term.length > 0 && list.length === 0 && t("কিছু পাওয়া যায়নি", "No results found")}
+      </div>
 
       {open && term.trim().length > 0 && typeof document !== "undefined" && createPortal(
         <div
@@ -206,7 +222,6 @@ export function MedicinePicker({
           style={{ left: position.left, top: position.top, width: position.width }}
           className="fixed z-[100] max-h-72 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-xl"
         >
-
           {loading && list.length === 0 && (
             <p className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> {t("খুঁজছি…", "Searching…")}
@@ -218,7 +233,6 @@ export function MedicinePicker({
               id={`med-option-${i}`}
               role="option"
               aria-selected={i === active}
-
               type="button"
               onMouseEnter={() => setActive(i)}
               onMouseDown={(e) => e.preventDefault()}
@@ -242,8 +256,6 @@ export function MedicinePicker({
                     </span>
                   )}
                 </span>
-
-
               </span>
               <span className="shrink-0 text-[10px] font-bold text-primary">৳{Math.round(p.price)}</span>
             </button>
