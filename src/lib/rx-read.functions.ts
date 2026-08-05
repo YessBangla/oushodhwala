@@ -67,7 +67,9 @@ Rules (critical — a wrong medicine can harm a patient):
 - For EVERY line give "reason": a short plain explanation of exactly which parts are uncertain and why (empty string when everything is clear).
 - Also return patient name, doctor name, date and any general advice if present.
 - Also return the hospital/chamber name, doctor qualification, patient age and patient address when they are printed or written on the page (empty string when absent).
-- Output must be valid JSON matching the schema.`;
+- Output exactly one JSON object matching the schema.
+- Return JSON only. Do not add markdown, explanations, verification chatter, or text after the closing brace.
+- Keep every string concise. When a value is absent, return an empty string instead of explaining its absence.`;
 
 
 type ProductRow = {
@@ -233,9 +235,19 @@ async function performRead(supabase: any, id: string, force?: boolean) {
     const gateway = createLovableAiGatewayProvider(key);
     // দীর্ঘ রিডিং যেন ২ মিনিটে কেটে না যায় — স্ট্রিমিং কলে হ্যান্ডলারের ভেতরেই শেষ করি
     const result = streamText({
-      model: gateway("google/gemini-3.6-flash"),
+      model: gateway("openai/gpt-5.6-sol"),
       system: SYSTEM,
-      output: Output.object({ schema: ReadSchema }),
+      output: Output.object({
+        schema: ReadSchema,
+        name: "prescription_read",
+        description: "Structured transcription of one Bangladeshi medical prescription",
+      }),
+      providerOptions: {
+        lovable: {
+          reasoningEffort: "none",
+          strictJsonSchema: true,
+        },
+      },
       messages: [
         {
           role: "user",
