@@ -278,7 +278,7 @@ async function callModel(
   note: string,
   strict: boolean,
 ): Promise<{ read: RxRead; runId: string }> {
-  const gateway = createLovableAiGatewayProvider(key, undefined, { structuredOutputs: true });
+  const gateway = createLovableAiGatewayProvider(key);
   const result = streamText({
     model: gateway("openai/gpt-5.6-sol"),
     system: strict ? SYSTEM + STRICTER : SYSTEM,
