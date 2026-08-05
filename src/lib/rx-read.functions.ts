@@ -40,7 +40,11 @@ const ItemSchema = z.object({
 
 const ReadSchema = z.object({
   patientName: z.string().default(""),
+  patientAge: z.string().default("").describe("রোগীর বয়স, যেমন '৩৫ বছর'"),
+  patientAddress: z.string().default("").describe("রোগীর ঠিকানা যদি লেখা থাকে"),
+  hospital: z.string().default("").describe("হাসপাতাল / চেম্বার / ক্লিনিকের নাম"),
   doctorName: z.string().default(""),
+  doctorQualification: z.string().default("").describe("ডাক্তারের ডিগ্রি/পদবি, যেমন MBBS, FCPS"),
   date: z.string().default(""),
   advice: z.string().default(""),
   items: z.array(ItemSchema).default([]),
