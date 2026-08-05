@@ -36,7 +36,8 @@ import {
   bulkRemoveUserRecent,
   syncUserMedicines,
   updateMedicineReminder,
-  toggleUserFavorite
+  toggleUserFavorite,
+  updateUserMedicineOrder
 } from "@/lib/user-meds.functions";
 import type { MedSuggestion } from "@/lib/rx-suggest.server";
 import { Button } from "@/components/ui/button";
