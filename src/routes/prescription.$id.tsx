@@ -502,25 +502,27 @@ function RxReading() {
       note: data.read.note,
       verifiedAt: data.parsedAt,
       total: order.payable,
-      lines: data.items.map((row, i) => {
+      // সবসময় সর্বশেষ এডিট করা (draft) লাইনগুলো প্রিন্টে যায়
+      lines: (draft ?? data.read.items).map((item, i) => {
         const s = sel[i] ?? DEF_SEL;
-        const p = row.matches[s.match];
+        const p = data.items[i]?.matches[s.match];
         return {
           no: i + 1,
-          name: p ? (t.en ? p.en || p.name : p.name) : row.item.name || row.item.raw,
-          generic: p?.generic || row.item.generic,
-          strength: p?.strength || row.item.strength,
-          form: p?.form || row.item.form,
+          name: p ? (t.en ? p.en || p.name : p.name) : item.name || item.raw,
+          generic: p?.generic || item.generic,
+          strength: p?.strength || item.strength,
+          form: p?.form || item.form,
           pack: p?.pack ?? "",
-          dose: row.item.dose,
-          duration: row.item.duration,
-          instruction: row.item.instruction,
+          dose: item.dose,
+          duration: item.duration,
+          instruction: item.instruction,
           qty: s.qty,
           price: p?.price ?? 0,
-          confidence: row.item.confidence,
+          confidence: item.confidence,
           excluded: s.skip,
         };
       }),
+
     };
   };
 
