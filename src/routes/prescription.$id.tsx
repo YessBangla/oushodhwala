@@ -1485,7 +1485,9 @@ function RxTable({
                         <select
                           value={d[k] || "0"}
                           onChange={(e) => setSlot(i, item.dose, k, e.target.value)}
-                          className="w-14 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary"
+                          className={`w-14 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary ${
+                            errors[`${i}.dose`] ? "ring-1 ring-destructive/60" : ""
+                          }`}
                         >
                           {DOSE_OPTS.map((o) => (
                             <option key={o} value={o}>
@@ -1493,14 +1495,24 @@ function RxTable({
                             </option>
                           ))}
                         </select>
+                        {k === 2 && errors[`${i}.dose`] && (
+                          <p className="pt-0.5 text-[9px] font-semibold leading-tight text-destructive">{errors[`${i}.dose`]}</p>
+                        )}
                       </td>
                     ))}
                     <td className={CELL}>
-                      <CellInput value={item.duration} onChange={(v) => onChange(i, { duration: v })} w="w-20" ph={t("৭ দিন", "7 days")} />
+                      <CellInput
+                        value={item.duration}
+                        onChange={(v) => onChange(i, { duration: v })}
+                        w="w-20"
+                        ph={t("৭ দিন", "7 days")}
+                        err={errors[`${i}.duration`] ?? ""}
+                      />
                     </td>
                     <td className={CELL}>
                       <CellInput value={item.instruction} onChange={(v) => onChange(i, { instruction: v })} w="w-28" ph={t("খাবারের পরে", "After food")} />
                     </td>
+
                     <td className={CELL}>
                       <select
                         value={String(s.match)}
