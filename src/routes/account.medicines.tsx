@@ -308,8 +308,8 @@ function MedicineManagement() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => {
-                        // We'll implement the preview modal next
-                        toast.info(t("বিস্তারিত শীঘ্রই আসছে", "Details coming soon"));
+                        setPreviewProduct(item);
+                        setPreviewOpen(true);
                       }}>
                         <Info className="h-4 w-4" />
                       </Button>
@@ -321,6 +321,12 @@ function MedicineManagement() {
           )}
         </TabsContent>
       </Tabs>
+
+      <ProductPreview 
+        product={previewProduct}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </div>
   );
 }
