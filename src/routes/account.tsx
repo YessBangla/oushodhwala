@@ -78,7 +78,7 @@ function Account() {
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat icon={FileText} t={t("অর্ডার", "Orders")} v={t.n(orderCount ?? 0)} to="/orders" />
-        <Stat icon={Heart} t={t("উইশলিস্ট", "Wishlist")} v={t.n(wishlist.length)} to="/wishlist" />
+        <Stat icon={Heart} t={t("প্রিয় ঔষধ", "Favorites")} v={t.n(wishlist.length)} to="/account/medicines" />
         <Stat icon={FileText} t={t("প্রেসক্রিপশন", "Prescriptions")} v={t.n(prescriptions.length)} to="/prescription" />
         <Stat icon={CalendarDays} t={t("অ্যাপয়েন্টমেন্ট", "Appointments")} v={t.n(apptCount ?? 0)} to="/appointments" />
         <Stat icon={FlaskConical} t={t("ল্যাব টেস্ট", "Lab test")} v={t("বুক", "Book")} to="/lab-test" />

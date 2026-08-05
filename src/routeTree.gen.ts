@@ -34,6 +34,7 @@ import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WishlistRouteImport } from './routes/wishlist'
+import { Route as AccountMedicinesRouteImport } from './routes/account.medicines'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
@@ -173,6 +174,11 @@ const WishlistRoute = WishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountMedicinesRoute = AccountMedicinesRouteImport.update({
+  id: '/medicines',
+  path: '/medicines',
+  getParentRoute: () => AccountRoute,
+} as any)
 const BookDoctorIdRoute = BookDoctorIdRouteImport.update({
   id: '/book-doctor/$id',
   path: '/book-doctor/$id',
@@ -242,7 +248,7 @@ const ApiPublicImgSplatRoute = ApiPublicImgSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/account': typeof AccountRoute
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRoute
   '/appointments': typeof AppointmentsRoute
   '/auth': typeof AuthRoute
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
+  '/account/medicines': typeof AccountMedicinesRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
@@ -282,7 +289,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/account': typeof AccountRoute
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRoute
   '/appointments': typeof AppointmentsRoute
   '/auth': typeof AuthRoute
@@ -305,6 +312,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
+  '/account/medicines': typeof AccountMedicinesRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
@@ -323,7 +331,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/account': typeof AccountRoute
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRoute
   '/appointments': typeof AppointmentsRoute
   '/auth': typeof AuthRoute
@@ -346,6 +354,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
+  '/account/medicines': typeof AccountMedicinesRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/wishlist'
+    | '/account/medicines'
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/wishlist'
+    | '/account/medicines'
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/wishlist'
+    | '/account/medicines'
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
@@ -486,7 +498,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AccountRoute: typeof AccountRoute
+  AccountRoute: typeof AccountRouteWithChildren
   AdminRoute: typeof AdminRoute
   AppointmentsRoute: typeof AppointmentsRoute
   AuthRoute: typeof AuthRoute
@@ -701,6 +713,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/medicines': {
+      id: '/account/medicines'
+      path: '/medicines'
+      fullPath: '/account/medicines'
+      preLoaderRoute: typeof AccountMedicinesRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/book-doctor/$id': {
       id: '/book-doctor/$id'
       path: '/book-doctor/$id'
@@ -795,10 +814,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AccountRouteChildren {
+  AccountMedicinesRoute: typeof AccountMedicinesRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountMedicinesRoute: AccountMedicinesRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AccountRoute: AccountRoute,
+  AccountRoute: AccountRouteWithChildren,
   AdminRoute: AdminRoute,
   AppointmentsRoute: AppointmentsRoute,
   AuthRoute: AuthRoute,
