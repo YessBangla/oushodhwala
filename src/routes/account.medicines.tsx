@@ -891,24 +891,64 @@ function MedicineManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-muted-foreground uppercase">{t("সময়", "Time")}</label>
-              <Input 
-                type="time" 
-                value={reminderConfig.time} 
-                onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
-              />
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">{t("সময়", "Time")}</label>
+                <Input 
+                  type="time" 
+                  value={reminderConfig.time} 
+                  onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
+                  className={!reminderConfig.time ? "border-destructive" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">{t("ফ্রিকোয়েন্সি (ঘন্টা)", "Frequency (hrs)")}</label>
+                <Input 
+                  type="number" 
+                  min="1"
+                  max="24"
+                  value={reminderConfig.frequency} 
+                  onChange={(e) => setReminderConfig(c => ({...c, frequency: parseInt(e.target.value)}))}
+                />
+              </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">{t("টাইমজোন", "Timezone")}</label>
+              <Select value={reminderConfig.timezone} onValueChange={(v) => setReminderConfig(c => ({...c, timezone: v}))}>
+                <SelectTrigger className="text-[10px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["UTC", "Asia/Dhaka", "America/New_York", "Europe/London"].map(tz => (
+                    <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {checkReminderConflicts(reminderConfig.time).length > 0 && (
+              <div className="rounded bg-amber-50 p-2 text-[9px] text-amber-700 flex items-start gap-1.5 border border-amber-200">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span>
+                  {t("সতর্কতা: এই সময়ে আপনার অন্য রিমাইন্ডার আছে", "Warning: Overlap with other reminders at this time")}: 
+                  {checkReminderConflicts(reminderConfig.time).map(i => i.name).join(", ")}
+                </span>
+              </div>
+            )}
             
             <div className="space-y-3 pt-4 border-t">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("নোটিফিকেশন যাচাই", "Verify Notification")}</label>
-                <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
-              <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>
-                <History className="h-3 w-3" /> {t("ডেলিভারি লগ", "Delivery Logs")}
-              </Button>
-                  {t("টেস্ট নোটিফিকেশন", "Test Notification")}
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>
+                    <History className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
+                    {t("টেস্ট", "Test")}
+                  </Button>
+                </div>
               </div>
 
               {notificationHistory.length > 0 && (
@@ -930,10 +970,10 @@ function MedicineManagement() {
           </div>
           <DialogFooter>
             <div className="flex gap-2 w-full">
-              <Button variant="outline" className="flex-1" onClick={() => exportToICS(reminderConfig, configProduct)}>
-                <Calendar className="mr-2 h-4 w-4" /> ICS Export
+              <Button variant="outline" className="flex-1 text-[10px]" onClick={() => exportToICS(reminderConfig, configProduct)}>
+                <Calendar className="mr-2 h-3 w-3" /> ICS
               </Button>
-              <Button className="flex-1" onClick={handleSaveReminder}>
+              <Button className="flex-1 text-[10px]" onClick={handleSaveReminder} disabled={!reminderConfig.time}>
                 {t("সেভ করুন", "Save")}
               </Button>
             </div>
