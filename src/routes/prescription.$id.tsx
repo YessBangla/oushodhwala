@@ -1324,10 +1324,15 @@ function MetaEditor({
               value={meta[c.k]}
               placeholder={c.ph}
               onChange={(e) => onChange({ [c.k]: e.target.value } as Partial<RxMeta>)}
-              className="mt-0.5 w-full bg-transparent text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
+              aria-invalid={!!errors[c.k]}
+              className={`mt-0.5 w-full bg-transparent text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60 ${
+                errors[c.k] ? "text-destructive" : ""
+              }`}
             />
+            {errors[c.k] && <span className="mt-0.5 block text-[10px] font-semibold text-destructive">{errors[c.k]}</span>}
           </label>
         ))}
+
         <label className="col-span-2 block bg-card px-3 py-2 sm:col-span-3">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t("ডাক্তারের পরামর্শ", "Doctor's advice")}
