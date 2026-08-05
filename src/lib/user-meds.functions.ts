@@ -48,3 +48,11 @@ export const bulkRemoveUserRecent = createServerFn({ method: "POST" })
     await server.bulkRemoveRecent(context.userId, data.ids);
     return { success: true };
   });
+
+export const updateMedicineReminder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { productId: string; config: any }) => d)
+  .handler(async ({ data, context }) => {
+    await server.updateReminder(context.userId, data.productId, data.config);
+    return { success: true };
+  });
