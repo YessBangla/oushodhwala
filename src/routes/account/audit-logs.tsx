@@ -29,19 +29,22 @@ function AuditLogsPage() {
   const getLogs = useServerFn(getUserAuditLogs);
   const [filter, setFilter] = useState("");
 
-  const { data: logs, isLoading } = useQuery({
+  const { data: logsData, isLoading } = useQuery({
     queryKey: ["user-audit-logs"],
     enabled: !!user,
     queryFn: () => getLogs(),
   });
 
-  const filteredLogs = logs?.filter(log => 
-    log.action.toLowerCase().includes(filter.toLowerCase()) ||
-    JSON.stringify(log.metadata).toLowerCase().includes(filter.toLowerCase())
-  ) || [];
+  // Handle potential error response or array
+  const logs = Array.isArray(logsData) ? (logsData as any[]) : [];
+
+  const filteredLogs = logs.filter(log => 
+    log.action?.toLowerCase().includes(filter.toLowerCase()) ||
+    JSON.stringify(log.metadata || {}).toLowerCase().includes(filter.toLowerCase())
+  );
 
   const exportLogs = () => {
-    if (!logs) return;
+    if (!logs.length) return;
     const csv = [
       ["Date", "Action", "Metadata"],
       ...logs.map(l => [l.created_at, l.action, JSON.stringify(l.metadata)])
@@ -75,7 +78,7 @@ function AuditLogsPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={exportLogs} disabled={!logs?.length}>
+        <Button variant="outline" size="sm" onClick={exportLogs} disabled={!logs.length}>
           <Download className="mr-2 h-4 w-4" />
           {t("এক্সপোর্ট", "Export")}
         </Button>
@@ -119,15 +122,15 @@ function AuditLogsPage() {
               filteredLogs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="text-xs font-medium">
-                    {format(new Date(log.created_at), "PPp")}
+                    {log.created_at ? format(new Date(log.created_at), "PPp") : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="capitalize">
-                      {log.action.replace(/_/g, " ")}
+                      {log.action?.replace(/_/g, " ") || "Unknown"}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-xs truncate text-[10px] text-muted-foreground font-mono">
-                    {JSON.stringify(log.metadata)}
+                    {JSON.stringify(log.metadata || {})}
                   </TableCell>
                 </TableRow>
               ))
