@@ -127,6 +127,64 @@ function loadJson<T>(key: string, fallback: T): T {
 
 const packLabel = (p: Product) => (p.pack || p.form || "—").trim();
 
+/** নতুন ঔষধের খালি লাইন */
+const emptyItem = (): RxReadItem => ({
+  raw: "",
+  name: "",
+  generic: "",
+  strength: "",
+  form: "",
+  dose: "",
+  duration: "",
+  instruction: "",
+  confidence: 1,
+  fieldConf: { name: 1, strength: 1, form: 1, dose: 1, duration: 1, instruction: 1 },
+  reason: "হাতে যোগ করা লাইন",
+});
+
+const hasDigit = (s: string) => /\d|[০-৯]/.test(s);
+const ageNum = (s: string) => Number((s.match(/\d+/) ?? ["NaN"])[0]);
+
+export type RxErrors = { meta: Partial<Record<keyof RxMeta, string>>; items: Record<string, string> };
+
+/** ব্যবহারকারী-বান্ধব ভ্যালিডেশন — ডাক্তার, রোগী ও ডোজ/সময়কাল */
+function validateRx(meta: RxMeta, items: RxReadItem[], en: boolean): RxErrors {
+  const tr = (bn: string, eng: string) => (en ? eng : bn);
+  const m: RxErrors["meta"] = {};
+  const it: Record<string, string> = {};
+
+  if (!meta.doctorName.trim()) m.doctorName = tr("ডাক্তারের নাম লিখুন", "Doctor name is required");
+  else if (meta.doctorName.trim().length < 3)
+    m.doctorName = tr("নামটি খুব ছোট — অন্তত ৩ অক্ষর", "Name is too short — at least 3 characters");
+  else if (/^\d+$/.test(meta.doctorName.trim()))
+    m.doctorName = tr("শুধু সংখ্যা নয়, নাম লিখুন", "Enter a name, not only digits");
+
+  if (meta.patientAge.trim()) {
+    const n = ageNum(meta.patientAge);
+    if (Number.isNaN(n)) m.patientAge = tr("বয়সে সংখ্যা থাকতে হবে, যেমন ৩৫ বছর", "Age must contain a number, e.g. 35 years");
+    else if (n < 0 || n > 120) m.patientAge = tr("বয়স ০–১২০ এর মধ্যে হতে হবে", "Age must be between 0 and 120");
+  }
+
+  if (meta.patientAddress.trim() && meta.patientAddress.trim().length < 5)
+    m.patientAddress = tr("ঠিকানা অন্তত ৫ অক্ষরের হতে হবে", "Address must be at least 5 characters");
+
+  items.forEach((x, i) => {
+    if (!x.name.trim() && !x.raw.trim()) it[`${i}.name`] = tr("ঔষধের নাম দিন", "Medicine name is required");
+    if (x.strength.trim() && !hasDigit(x.strength))
+      it[`${i}.strength`] = tr("মাত্রায় সংখ্যা থাকতে হবে, যেমন 500 mg", "Strength must contain a number, e.g. 500 mg");
+    if (x.duration.trim() && !hasDigit(x.duration) && !/চলবে|continue/i.test(x.duration))
+      it[`${i}.duration`] = tr("সময়কালে সংখ্যা দিন, যেমন ৭ দিন", "Duration needs a number, e.g. 7 days");
+    const slots = (x.dose || "").split("+").map((s) => s.trim());
+    if (slots.length === 3 && slots.every((s) => !s || s === "0"))
+      it[`${i}.dose`] = tr("সকাল/দুপুর/রাতের অন্তত একটি ডোজ দিন", "Set at least one morning/noon/night dose");
+  });
+
+  return { meta: m, items: it };
+}
+
+const errCount = (e: RxErrors) => Object.keys(e.meta).length + Object.keys(e.items).length;
+
+
 function RxReading() {
   const { id } = Route.useParams();
   const t = useT();
