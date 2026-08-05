@@ -730,6 +730,31 @@ function MedicineManagement() {
                 onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
               />
             </div>
+            
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("নোটিফিকেশন যাচাই", "Verify Notification")}</label>
+                <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
+                  {t("টেস্ট নোটিফিকেশন", "Test Notification")}
+                </Button>
+              </div>
+
+              {notificationHistory.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">{t("ইতিহাস", "History")}</label>
+                  <ScrollArea className="h-20 rounded border bg-secondary/20 p-2">
+                    {notificationHistory.map(h => (
+                      <div key={h.id} className="flex items-center justify-between py-1 border-b last:border-0">
+                        <span className="text-[9px] flex items-center gap-1">
+                          <Clock className="h-2 w-2" /> {new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <Badge variant="secondary" className="text-[8px] h-3.5 px-1 capitalize">{h.status}</Badge>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button className="w-full" onClick={handleSaveReminder}>
