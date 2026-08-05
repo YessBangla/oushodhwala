@@ -37,6 +37,7 @@ import { PosTerminal } from "@/components/PosTerminal";
 import { ExpensesAdmin, ChartOfAccounts, JournalAdmin, DayBook, Financials, PartyStatement } from "@/components/FinanceAdmin";
 import { StockAdjustments, StockCount, LabelPrint } from "@/components/StockOpsAdmin";
 import { BranchesAdmin, StockTransfers, DeliveryZonesAdmin } from "@/components/BranchesAdmin";
+import { TestReportView } from "@/components/TestReportView";
 import { Workspace } from "@/components/Workspace";
 
 
