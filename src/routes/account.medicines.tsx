@@ -280,44 +280,100 @@ function MedicineManagement() {
       try {
         const content = event.target?.result as string;
         let importedMeds: any[] = [];
+        let errors: any[] = [];
         
         if (file.name.endsWith(".json")) {
-          importedMeds = JSON.parse(content);
+          try {
+            importedMeds = JSON.parse(content);
+            if (!Array.isArray(importedMeds)) {
+              importedMeds = [importedMeds];
+            }
+          } catch (err) {
+            errors.push({ row: 0, error: "Invalid JSON format" });
+          }
         } else if (file.name.endsWith(".csv")) {
           const lines = content.split("\n");
-          const headers = lines[0]?.split(",") || [];
-          importedMeds = lines.slice(1).filter(line => line.trim()).map(line => {
-            const values = line.split(",");
-            const obj: any = {};
+          const headers = lines[0]?.split(",").map(h => h.trim().toLowerCase()) || [];
+          
+          // Initial mapping guess
+          const initialMapping: Record<string, string> = {};
+          const possibleFields = ["id", "name", "brand", "generic", "form", "strength", "price"];
+          headers.forEach(h => {
+            const match = possibleFields.find(f => h.includes(f));
+            if (match) initialMapping[h] = match;
+          });
+
+          importedMeds = lines.slice(1).filter(line => line.trim()).map((line, idx) => {
+            const values = line.split(",").map(v => v.trim());
+            const obj: any = { _row: idx + 1 };
             headers.forEach((h, i) => {
-              const key = h.trim().toLowerCase();
-              obj[key === "id" ? "id" : key] = values[i]?.trim();
+              obj[h] = values[i];
             });
+            
+            // Basic validation
+            if (!values[0]) errors.push({ row: idx + 1, error: "Missing required identifier" });
+            
             return obj;
           });
+
+          setImportData({ raw: importedMeds, mapping: initialMapping, errors });
+          setImportStep("preview");
+          setImportPreviewOpen(true);
+          return;
         }
 
-        if (Array.isArray(importedMeds)) {
-          const ids = importedMeds.map(m => m.id);
-          if (tab === "favorites") {
-            const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
-            const next = [...local, ...importedMeds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
-            await sync({ data: { favIds: ids, recentIds: [] } });
-          } else {
-            const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
-            const next = [...local, ...importedMeds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            localStorage.setItem("rx_recent_meds", JSON.stringify(next));
-            await sync({ data: { favIds: [], recentIds: ids } });
-          }
-          qc.invalidateQueries({ queryKey: ["user-medicines"] });
-          toast.success(t("ইম্পোর্ট সফল হয়েছে", "Import successful"));
+        if (importedMeds.length > 0) {
+          await processImport(importedMeds);
         }
       } catch (e) {
         toast.error(t("ইম্পোর্ট করতে সমস্যা হয়েছে", "Error importing data"));
       }
     };
     reader.readAsText(file);
+    e.target.value = ""; // Reset
+  };
+
+  const processImport = async (meds: any[]) => {
+    try {
+      const ids = meds.map(m => m.id).filter(Boolean);
+      if (tab === "favorites") {
+        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
+        const next = [...local, ...meds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
+        await sync({ data: { favIds: ids, recentIds: [] } });
+      } else {
+        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
+        const next = [...local, ...meds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        localStorage.setItem("rx_recent_meds", JSON.stringify(next));
+        await sync({ data: { favIds: [], recentIds: ids } });
+      }
+      qc.invalidateQueries({ queryKey: ["user-medicines"] });
+      toast.success(t("ইম্পোর্ট সফল হয়েছে", "Import successful"));
+      setImportPreviewOpen(false);
+    } catch (err) {
+      toast.error(t("সিঙ্ক করতে সমস্যা হয়েছে", "Sync error"));
+    }
+  };
+
+  const downloadErrorReport = () => {
+    if (importData.errors.length === 0) return;
+    const csv = ["Row,Error", ...importData.errors.map(e => `${e.row},${e.error}`)].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "import-errors.csv";
+    a.click();
+  };
+
+  const testNotification = () => {
+    toast.info(t("টেস্ট নোটিফিকেশন পাঠানো হয়েছে", "Test notification sent"), {
+      description: t("আপনার ডিভাইস এবং ইমেইল চেক করুন।", "Check your device and email.")
+    });
+    setNotificationHistory(prev => [
+      { id: Date.now(), type: 'test', status: 'delivered', time: new Date().toISOString() },
+      ...prev
+    ]);
   };
 
   if (!user) return null;
