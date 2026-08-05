@@ -1507,6 +1507,8 @@ function RxTable({
                       <p className="w-32 truncate px-1.5 py-1 text-[11px] font-semibold text-muted-foreground" title={p?.manufacturer || p?.brand || ""}>
                         {p?.manufacturer || p?.brand || "—"}
                       </p>
+                    </td>
+
 
                     <td className={CELL}>
                       <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
