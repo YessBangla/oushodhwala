@@ -544,9 +544,14 @@ function MedicineManagement() {
                         <span className="text-[10px] font-bold">{new Date(h.timestamp).toLocaleString()}</span>
                         <span className="text-[8px] text-muted-foreground">{h.count} {t("টি আইটেম", "items")} ({h.type})</span>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-7 text-[8px] text-destructive" onClick={() => rollbackImport(h.id)}>
-                        <RotateCcw className="h-3 w-3 mr-1" /> {t("রোলব্যাক", "Rollback")}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-[8px]" onClick={() => exportHistoryBatch(h.id)}>
+                          <Download className="h-3 w-3 mr-1" /> {t("এক্সপোর্ট CSV", "Export CSV")}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-[8px] text-destructive" onClick={() => rollbackImport(h.id)}>
+                          <RotateCcw className="h-3 w-3 mr-1" /> {t("রোলব্যাক", "Rollback")}
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -853,6 +858,9 @@ function MedicineManagement() {
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("নোটিফিকেশন যাচাই", "Verify Notification")}</label>
                 <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
+              <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>
+                <History className="h-3 w-3" /> {t("ডেলিভারি লগ", "Delivery Logs")}
+              </Button>
                   {t("টেস্ট নোটিফিকেশন", "Test Notification")}
                 </Button>
               </div>
@@ -887,6 +895,43 @@ function MedicineManagement() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
       />
+
+      {/* Delivery Logs Dialog */}
+      <Dialog open={showLogs} onOpenChange={setShowLogs}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t("নোটিফিকেশন ডেলিভারি লগ", "Notification Delivery Logs")}</DialogTitle>
+            <DialogDescription>{t("টাইমজোন এবং ডেলিভারি স্ট্যাটাস চেক করুন।", "Check timezone and delivery status.")}</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-2">
+              {notificationHistory.map((log: any) => (
+                <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-secondary/5 text-xs">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">{new Date(log.time).toLocaleString()}</span>
+                      <Badge variant={log.status === 'success' ? 'secondary' : log.status === 'failed' ? 'destructive' : 'outline'} className="text-[8px] h-4">
+                        {log.status === 'success' ? t('সফল', 'Success') : log.status === 'failed' ? t('ব্যর্থ', 'Failed') : t('পেন্ডিং', 'Pending')}
+                      </Badge>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">Timezone: {log.timezone}</span>
+                    {log.error && <span className="text-destructive font-mono text-[9px]">{log.error}</span>}
+                  </div>
+                  {log.status === 'failed' && (
+                    <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => triggerNotification({ id: log.reminderId, timezone: log.timezone })}>
+                      <RotateCcw className="h-3 w-3 mr-1" /> {t("আবার চেষ্টা করুন", "Retry")}
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {notificationHistory.length === 0 && (
+                <div className="py-10 text-center text-muted-foreground text-xs">{t("কোন লগ পাওয়া যায়নি।", "No logs found.")}</div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

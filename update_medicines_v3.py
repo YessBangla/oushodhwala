@@ -63,13 +63,10 @@ logs_dialog = """
 content = content.replace('    </div>\n  );\n}', logs_dialog + '\n    </div>\n  );\n}')
 
 # 3. Add "View Logs" button to the header or reminder setup
-logs_btn = """<Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>
-                <History className="h-3 w-3" /> {t("ডেলিভারি লগ", "Delivery Logs")}
-              </Button>"""
-
+# I'll use a direct string replacement without Python variables to avoid NameErrors
 content = content.replace(
-    '<Button variant="outline" size="sm" className="h-7 text-[10px] gap-1.5" onClick={testNotification}>',
-    f'{logs_btn}\n              <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1.5" onClick={testNotification}>'
+    'onClick={testNotification}>',
+    'onClick={testNotification}>\n              <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>\n                <History className="h-3 w-3" /> {t("ডেলিভারি লগ", "Delivery Logs")}\n              </Button>'
 )
 
 with open(file_path, "w") as f:
