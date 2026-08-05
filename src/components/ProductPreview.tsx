@@ -15,9 +15,9 @@ import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
 import { Share2, Copy, Check, Lock, Globe, Clock } from "lucide-react";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
-import { toast } from "sonner";
 
 export function ProductPreview({ 
   product, 
@@ -39,11 +39,20 @@ export function ProductPreview({
     const base = `${window.location.origin}/store/product/${product.id}`;
     if (access === "private") {
       const token = shareToken || Math.random().toString(36).substring(2, 15);
-      if (!shareToken) setShareToken(token);
-      return `${base}?token=${token}&expires=${expiry}`;
+      if (!shareToken && typeof window !== 'undefined') {
+        // We shouldn't set state during render, but for simplicity in this preview:
+        setTimeout(() => setShareToken(token), 0);
+      }
+      return `${base}?token=${token || shareToken}&expires=${expiry}`;
     }
     return base;
   }, [product, access, expiry, shareToken]);
+
+  if (!product) return null;
+
+  const indications = t.en ? product.indications_en : product.indications;
+  const sideEffects = t.en ? product.side_effects_en : product.side_effects;
+  const dosage = t.en ? product.dosage_en : product.dosage;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -107,8 +116,49 @@ export function ProductPreview({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[50vh] p-4">
+        <ScrollArea className="max-h-[40vh] p-4">
           <div className="space-y-4">
+            <div className="rounded-lg border bg-secondary/20 p-3 space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Share2 className="h-3 w-3" />
+                {t("শেয়ারিং সেটিংস", "Sharing Settings")}
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] flex items-center gap-1">
+                    <Lock className="h-2.5 w-2.5" /> {t("অ্যাক্সেস", "Access")}
+                  </Label>
+                  <Select value={access} onValueChange={(v: any) => setAccess(v)}>
+                    <SelectTrigger className="h-7 text-[10px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">{t("পাবলিক", "Public")}</SelectItem>
+                      <SelectItem value="private">{t("প্রাইভেট", "Private")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] flex items-center gap-1">
+                    <Clock className="h-2.5 w-2.5" /> {t("মেয়াদ", "Expiry")}
+                  </Label>
+                  <Select value={expiry} onValueChange={(v: any) => setExpiry(v)}>
+                    <SelectTrigger className="h-7 text-[10px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="never">{t("কখনো নয়", "Never")}</SelectItem>
+                      <SelectItem value="1h">{t("১ ঘণ্টা", "1 Hour")}</SelectItem>
+                      <SelectItem value="1d">{t("১ দিন", "1 Day")}</SelectItem>
+                      <SelectItem value="7d">{t("৭ দিন", "7 Days")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                 {t("ইঙ্গ্রেডিয়েন্ট / জেনেরিক", "Ingredients / Generic")}
