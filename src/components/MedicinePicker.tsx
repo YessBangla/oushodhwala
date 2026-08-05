@@ -140,8 +140,11 @@ export function MedicinePicker({
   };
 
   const choose = (p: MedSuggestion) => {
-    onChange(t.en ? p.en || p.name : p.name);
+    const text = t.en ? p.en || p.name : p.name;
+    onChange(text);
+    setTerm(text); // ইনপুট টেক্সট এবং টার্ম আপডেট
     onPick?.(p);
+
     setOpen(false);
     setRows([]);
   };
@@ -228,8 +231,18 @@ export function MedicinePicker({
                   {highlight(t.en ? p.en || p.name : p.name, term)} {p.strength}
                 </span>
                 <span className="block truncate text-[10px] text-muted-foreground">
-                  {[highlight(p.generic || "", term), highlight(p.manufacturer || p.brand || "", term), p.pack || p.form].filter(Boolean).reduce((prev, curr, i) => [prev, i > 0 ? " · " : "", curr], [] as any)}
+                  {p.generic && (
+                    <span className="block truncate">
+                      {highlight(p.generic, term)}
+                    </span>
+                  )}
+                  {p.manufacturer && (
+                    <span className="block truncate opacity-80">
+                      {highlight(p.manufacturer, term)} {p.brand && `(${p.brand})`}
+                    </span>
+                  )}
                 </span>
+
 
               </span>
               <span className="shrink-0 text-[10px] font-bold text-primary">৳{Math.round(p.price)}</span>
