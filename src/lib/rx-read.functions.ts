@@ -341,16 +341,17 @@ async function performRead(supabase: any, id: string, force?: boolean) {
     let got: RxRead | null = null;
     for (let attempt = 1; attempt <= 3 && !got; attempt++) {
       const started = Date.now();
+      const sink = { runId: "", status: 0 };
       try {
-        const r = await callModel(key, parts, row.note ?? "", attempt > 1);
-        got = r.read;
+        got = await callModel(key, parts, row.note ?? "", attempt > 1, sink);
         debug.attempts.push({
           attempt,
           model: "openai/gpt-5.6-sol",
           strict: attempt > 1,
           ok: true,
           ms: Date.now() - started,
-          runId: r.runId,
+          runId: sink.runId,
+          status: sink.status,
           error: "",
         });
       } catch (e) {
@@ -362,10 +363,12 @@ async function performRead(supabase: any, id: string, force?: boolean) {
           strict: attempt > 1,
           ok: false,
           ms: Date.now() - started,
-          runId: "",
+          runId: sink.runId,
+          status: sink.status,
           error: cut(msg, 400),
         });
       }
+
     }
 
     if (!got) {
