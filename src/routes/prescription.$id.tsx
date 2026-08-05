@@ -1548,10 +1548,20 @@ function RxTable({
                         {s.skip ? t("বাদ", "Off") : t("আছে", "On")}
                       </label>
                     </td>
+                    <td className={CELL}>
+                      <button
+                        onClick={() => onRemove?.(i)}
+                        aria-label={t("লাইন মুছুন", "Remove line")}
+                        className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
                   </tr>
                   {open === i && (
                     <tr className="border-t border-border bg-secondary/20">
-                      <td colSpan={14} className="px-3 py-2">
+                      <td colSpan={15} className="px-3 py-2">
+
                         <p className="text-[11px] text-muted-foreground">
                           {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
                         </p>
