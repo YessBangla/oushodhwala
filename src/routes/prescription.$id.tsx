@@ -1595,12 +1595,74 @@ function RxTable({
           </tbody>
         </table>
       </div>
-      <p className="border-t border-border bg-secondary/30 px-3 py-2 text-[10px] text-muted-foreground">
-        {t(
-          "মোবাইলে টেবিলটি ডানে-বামে স্ক্রল করুন। নম্বরে ট্যাপ করলে OCR কনফিডেন্স ও বিকল্প ঔষধ দেখা যাবে।",
-          "Scroll the table sideways on mobile. Tap the row number to see OCR confidence and alternative matches.",
-        )}
-      </p>
+      <div className="flex flex-wrap items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2">
+        <button onClick={() => onAdd?.()} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11px] font-bold">
+          <Plus className="h-3.5 w-3.5" /> {t("ঔষধ যোগ করুন", "Add medicine")}
+        </button>
+        <p className="text-[10px] text-muted-foreground">
+          {t(
+            "মোবাইলে টেবিলটি ডানে-বামে স্ক্রল করুন। নম্বরে ট্যাপ করলে OCR কনফিডেন্স ও বিকল্প ঔষধ দেখা যাবে।",
+            "Scroll the table sideways on mobile. Tap the row number to see OCR confidence and alternative matches.",
+          )}
+        </p>
+      </div>
     </section>
   );
 }
+
+/** সেভ/আপডেট বার — অটোসেভের অবস্থা, ম্যানুয়াল সেভ ও প্রিন্ট */
+function SaveBar({
+  t,
+  dirty,
+  saving,
+  savedAt,
+  errTotal,
+  error,
+  onSave,
+  onPrint,
+}: {
+  t: ReturnType<typeof useT>;
+  dirty: boolean;
+  saving: boolean;
+  savedAt: string;
+  errTotal: number;
+  error: string;
+  onSave: () => void;
+  onPrint: () => void;
+}) {
+  const status = saving
+    ? t("সেভ হচ্ছে...", "Saving...")
+    : errTotal > 0
+      ? t(`${errTotal}টি ঘরে সমস্যা — অটোসেভ থেমে আছে`, `${errTotal} field(s) invalid — autosave paused`)
+      : dirty
+        ? t("অসংরক্ষিত পরিবর্তন", "Unsaved changes")
+        : savedAt
+          ? t(`সব সেভ হয়েছে · ${new Date(savedAt).toLocaleTimeString("bn-BD")}`, `All saved · ${new Date(savedAt).toLocaleTimeString()}`)
+          : t("অটোসেভ চালু", "Autosave on");
+
+  return (
+    <div className="sticky top-14 z-20 mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 px-3 py-2 backdrop-blur">
+      <span
+        className={`flex items-center gap-1.5 text-[11px] font-semibold ${
+          errTotal > 0 || error ? "text-destructive" : dirty || saving ? "text-sale" : "text-primary"
+        }`}
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        {error || status}
+      </span>
+      <div className="ml-auto flex items-center gap-2">
+        <button onClick={onPrint} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-bold">
+          <Printer className="h-3.5 w-3.5" /> {t("প্রিন্ট / PDF", "Print / PDF")}
+        </button>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground disabled:opacity-60"
+        >
+          <Save className="h-3.5 w-3.5" /> {t("সেভ / আপডেট", "Save / Update")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
