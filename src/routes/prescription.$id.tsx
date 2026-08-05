@@ -1468,14 +1468,15 @@ function RxTable({
                       </button>
                     </td>
                     <td className={CELL}>
-                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" />
+                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" err={errors[`${i}.name`] ?? ""} />
                     </td>
                     <td className={CELL}>
                       <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
                     </td>
                     <td className={CELL}>
-                      <CellInput value={item.strength} onChange={(v) => onChange(i, { strength: v })} w="w-20" />
+                      <CellInput value={item.strength} onChange={(v) => onChange(i, { strength: v })} w="w-20" err={errors[`${i}.strength`] ?? ""} />
                     </td>
+
                     <td className={CELL}>
                       <CellInput value={item.form} onChange={(v) => onChange(i, { form: v })} w="w-20" />
                     </td>
