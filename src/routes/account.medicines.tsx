@@ -406,6 +406,99 @@ function MedicineManagement() {
         </div>
       </header>
 
+      {/* Import Preview/Mapping Dialog */}
+      <Dialog open={importPreviewOpen} onOpenChange={setImportPreviewOpen}>
+        <DialogContent className="max-w-3xl overflow-hidden p-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              {t("ডেটা ইম্পোর্ট প্রিভিউ", "Data Import Preview")}
+            </DialogTitle>
+            <DialogDescription>
+              {importStep === "preview" 
+                ? t("কলাম ম্যাপিং চেক করুন এবং প্রিভিউ দেখুন।", "Check column mapping and see preview.")
+                : t("ইম্পোর্ট রেজাল্ট ও এরর রিপোর্ট।", "Import results and error report.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto p-4 space-y-4">
+            {importData.errors.length > 0 && (
+              <div className="rounded-lg bg-destructive/10 p-3 flex items-start justify-between">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-xs font-bold">{importData.errors.length} {t("টি এরর পাওয়া গেছে", "errors found")}</span>
+                </div>
+                <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={downloadErrorReport}>
+                  <Download className="h-3 w-3 mr-1.5" /> {t("এরর রিপোর্ট ডাউনলোড", "Download Error Report")}
+                </Button>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("কলাম ম্যাপিং", "Column Mapping")}</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {Object.keys(importData.raw[0] || {}).filter(k => k !== "_row").map(csvHeader => (
+                  <div key={csvHeader} className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground truncate block">{csvHeader}</Label>
+                    <Select 
+                      value={importData.mapping[csvHeader] || "skip"} 
+                      onValueChange={(v) => setImportData(prev => ({ ...prev, mapping: { ...prev.mapping, [csvHeader]: v } }))}
+                    >
+                      <SelectTrigger className="h-8 text-[10px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="skip">{t("বাদ দিন", "Skip")}</SelectItem>
+                        <SelectItem value="id">ID</SelectItem>
+                        <SelectItem value="name">{t("নাম", "Name")}</SelectItem>
+                        <SelectItem value="brand">{t("ব্র্যান্ড", "Brand")}</SelectItem>
+                        <SelectItem value="generic">{t("জেনেরিক", "Generic")}</SelectItem>
+                        <SelectItem value="form">{t("ফর্ম", "Form")}</SelectItem>
+                        <SelectItem value="strength">{t("স্ট্রেংথ", "Strength")}</SelectItem>
+                        <SelectItem value="price">{t("মূল্য", "Price")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("প্রিভিউ (প্রথম ৫ রো)", "Preview (First 5 rows)")}</h4>
+              <div className="rounded-md border overflow-x-auto">
+                <table className="w-full text-[11px] text-left border-collapse">
+                  <thead>
+                    <tr className="bg-secondary/30">
+                      {Object.values(importData.mapping).filter(v => v !== "skip").map(v => (
+                        <th key={v} className="p-2 border-b font-bold">{v.toUpperCase()}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mappedData.slice(0, 5).map((row, idx) => (
+                      <tr key={idx} className="border-b last:border-0">
+                        {Object.values(importData.mapping).filter(v => v !== "skip").map(v => (
+                          <td key={v} className="p-2 truncate max-w-[120px]">{row[v] || "-"}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 border-t gap-2 bg-secondary/10">
+            <Button variant="outline" size="sm" onClick={() => setImportPreviewOpen(false)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" onClick={() => processImport(mappedData)} disabled={importData.errors.length > 0}>
+              {t("ইম্পোর্ট কনফার্ম করুন", "Confirm Import")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="mb-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
