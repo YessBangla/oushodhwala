@@ -759,20 +759,25 @@ function MedicineManagement() {
       </div>
 
       <Tabs value={tab} onValueChange={v => { setTab(v as any); setSelected(new Set()); }} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="favorites" className="gap-2">
             <Heart className={`h-4 w-4 ${tab === "favorites" ? "fill-primary" : ""}`} />
-            {t("প্রিয়", "Favorites")}
+            <span className="hidden sm:inline">{t("প্রিয়", "Favorites")}</span>
           </TabsTrigger>
           <TabsTrigger value="recent" className="gap-2">
             <History className="h-4 w-4" />
-            {t("সম্প্রতি", "Recent")}
+            <span className="hidden sm:inline">{t("সম্প্রতি", "Recent")}</span>
           </TabsTrigger>
           <TabsTrigger value="calendar" className="gap-2">
             <Calendar className="h-4 w-4" />
-            {t("ক্যালেন্ডার", "Calendar")}
+            <span className="hidden sm:inline">{t("ক্যালেন্ডার", "Calendar")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="health" className="gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("হেলথ", "Health")}</span>
           </TabsTrigger>
         </TabsList>
+
 
 
         <TabsContent value={tab} className="mt-4 space-y-2">
