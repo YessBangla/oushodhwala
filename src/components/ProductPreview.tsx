@@ -30,16 +30,20 @@ export function ProductPreview({
 }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
+  const [access, setAccess] = useState<"public" | "private">("public");
+  const [expiry, setExpiry] = useState<"never" | "1h" | "1d" | "7d">("never");
+  const [shareToken, setShareToken] = useState<string | null>(null);
 
-  if (!product) return null;
-
-  const indications = t.en ? product.indications_en : product.indications;
-  const sideEffects = t.en ? product.side_effects_en : product.side_effects;
-  const dosage = t.en ? product.dosage_en : product.dosage;
-
-  const shareUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/store/product/${product.id}` 
-    : '';
+  const shareUrl = useMemo(() => {
+    if (typeof window === 'undefined' || !product) return '';
+    const base = `${window.location.origin}/store/product/${product.id}`;
+    if (access === "private") {
+      const token = shareToken || Math.random().toString(36).substring(2, 15);
+      if (!shareToken) setShareToken(token);
+      return `${base}?token=${token}&expires=${expiry}`;
+    }
+    return base;
+  }, [product, access, expiry, shareToken]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
