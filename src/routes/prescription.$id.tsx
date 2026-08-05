@@ -350,6 +350,103 @@ function RxReading() {
     return out;
   };
 
+  /** চলতি ভ্যালিডেশন ত্রুটি */
+  const errors = useMemo(() => validateRx(meta, draft ?? [], t.en), [meta, draft, t.en]);
+  const errTotal = errCount(errors);
+
+  /** এডিট চিহ্নিত করি — অটোসেভ চালু হবে */
+  const touch = () => {
+    setDirty(true);
+    setSaveErr("");
+  };
+
+  const patchMeta = (patch: Partial<RxMeta>) => {
+    setMeta((m) => ({ ...m, ...patch }));
+    touch();
+  };
+
+  const patchItem = (i: number, patch: Partial<RxReadItem>) => {
+    setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d);
+    touch();
+  };
+
+  /** নতুন ঔষধের লাইন যোগ */
+  const addRow = () => {
+    setDraft((d) => [...(d ?? []), emptyItem()]);
+    setSel((p) => ({ ...p, [(draft?.length ?? 0)]: { ...DEF_SEL } }));
+    touch();
+    setShowErrors(true);
+  };
+
+  /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয় */
+  const removeRow = (i: number) => {
+    setDraft((d) => d?.filter((_, j) => j !== i) ?? d);
+    setSel((p) => {
+      const next: Record<number, Sel> = {};
+      Object.keys(p)
+        .map(Number)
+        .sort((a, b) => a - b)
+        .forEach((k) => {
+          if (k === i) return;
+          next[k > i ? k - 1 : k] = p[k]!;
+        });
+      return next;
+    });
+    setEdited((e) => (e ? ({ ...e, items: e.items.filter((_, j) => j !== i) } as Result) : e));
+    touch();
+  };
+
+  /** সেভ / আপডেট — লগইন থাকলে সার্ভারে, গেস্ট হলে এই ডিভাইসে */
+  const persist = useCallback(
+    async (silent: boolean) => {
+      if (!data || !draft) return false;
+      const v = validateRx(meta, draft, t.en);
+      if (errCount(v) > 0) {
+        setShowErrors(true);
+        if (!silent)
+          toast.error(
+            t(`${errCount(v)}টি ঘর ঠিক করা দরকার — লাল লেখা দেখুন`, `${errCount(v)} field(s) need fixing — see the red messages`),
+          );
+        return false;
+      }
+      setAutoSaving(true);
+      try {
+        const payload: RxRead = { ...data.read, ...meta, items: draft };
+        const res = user
+          ? ((await save({ data: { id, read: payload, changes: diffChanges() } })) as Result)
+          : ({ ...data, read: payload } as Result);
+        setEdited(res);
+        setBase(draft.map((x) => ({ ...x })));
+        setDirty(false);
+        setSaveErr("");
+        setSavedAt(new Date().toISOString());
+        if (typeof window !== "undefined")
+          window.localStorage.setItem(`rx-draft-${id}`, JSON.stringify({ meta, items: draft }));
+        if (user) void auditQ.refetch();
+        if (!silent) toast.success(t("সংরক্ষিত হয়েছে", "Saved"));
+        return true;
+      } catch (e) {
+        const msg = (e as Error).message;
+        setSaveErr(msg);
+        if (!silent) toast.error(msg);
+        return false;
+      } finally {
+        setAutoSaving(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data, draft, meta, user, id, t.en, sel],
+  );
+
+  /** অটোসেভ — এডিট থামার ১.৫ সেকেন্ড পর নিজে থেকেই সেভ */
+  useEffect(() => {
+    if (!dirty || errTotal > 0) return;
+    const timer = setTimeout(() => {
+      void persist(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [dirty, errTotal, persist]);
+
   const confirm = async () => {
     if (!data || !draft) return;
     setSaving(true);
