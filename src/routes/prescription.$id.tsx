@@ -577,7 +577,9 @@ function RxReading() {
             try {
               await runRead(true);
               setEdited(null);
+              initRef.current = false;
               await refetch();
+
               toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
             } catch (e) {
               toast.error((e as Error).message);
