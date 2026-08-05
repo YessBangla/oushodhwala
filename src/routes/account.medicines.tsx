@@ -439,8 +439,16 @@ function MedicineManagement() {
 
 
   const checkReminderConflicts = (time: string) => {
-    const existing = (items as MedWithReminder[]).filter(i => i.reminder?.time === time && i.id !== configProduct?.id);
+    const existing = (favorites as MedWithReminder[]).filter(i => i.reminder_config?.time === time && i.id !== configProduct?.id);
     return existing;
+  };
+
+  const getReminderErrors = () => {
+    const errors = [];
+    if (!reminderConfig.time) errors.push(t("সময় প্রদান করা হয়নি", "Time is not provided"));
+    if (reminderConfig.frequency < 1 || reminderConfig.frequency > 24) errors.push(t("ইন্টারভাল ১-২৪ ঘন্টার মধ্যে হতে হবে", "Interval must be between 1-24 hours"));
+    if (!reminderConfig.timezone) errors.push(t("টাইমজোন সিলেক্ট করা হয়নি", "Timezone is not selected"));
+    return errors;
   };
 
   const exportToICS = (reminder: any, product: any) => {
