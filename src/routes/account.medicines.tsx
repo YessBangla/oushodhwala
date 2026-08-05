@@ -475,6 +475,25 @@ function MedicineManagement() {
               </div>
             )}
 
+                        {importHistory.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("ইম্পোর্ট হিস্টরি", "Import History")}</h4>
+                <div className="space-y-2">
+                  {importHistory.map((h: any) => (
+                    <div key={h.id} className="flex items-center justify-between p-2 rounded border bg-secondary/10">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold">{new Date(h.timestamp).toLocaleString()}</span>
+                        <span className="text-[8px] text-muted-foreground">{h.count} {t("টি আইটেম", "items")} ({h.type})</span>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 text-[8px] text-destructive" onClick={() => rollbackImport(h.id)}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> {t("রোলব্যাক", "Rollback")}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("কলাম ম্যাপিং", "Column Mapping")}</h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

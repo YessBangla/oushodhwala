@@ -20,10 +20,11 @@ timezone_ui = """                <div className="space-y-1.5">
                   </Select>
                 </div>"""
 
-content = content.replace(
-    '<div className="grid grid-cols-2 gap-3 pt-2">',
-    f'<div className="grid grid-cols-2 gap-3 pt-2">\n{timezone_ui}'
-)
+# Try to find the grid container inside the reminder dialog
+# Using a more specific marker
+grid_marker = '<div className="grid grid-cols-2 gap-3 pt-2">'
+if grid_marker in content:
+    content = content.replace(grid_marker, f'{grid_marker}\n{timezone_ui}')
 
 # Add Import History section in the Dialog
 history_ui = """            {importHistory.length > 0 && (
@@ -45,21 +46,19 @@ history_ui = """            {importHistory.length > 0 && (
               </div>
             )}"""
 
-# Insert before the mapping UI in the dialog
-content = content.replace(
-    '<div className="space-y-3">\n              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("কলাম ম্যাপিং", "Column Mapping")}</h4>',
-    f'{history_ui}\n\n            <div className="space-y-3">\n              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{{t("কলাম ম্যাপিং", "Column Mapping")}}</h4>'
-)
+mapping_marker = '<div className="space-y-3">\n              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("কলাম ম্যাপিং", "Column Mapping")}</h4>'
+if mapping_marker in content:
+    content = content.replace(mapping_marker, f'{history_ui}\n\n            {mapping_marker}')
 
 # Add "Test Notification" button UI
 test_btn = """              <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1.5" onClick={testNotification}>
                 <Bell className="h-3 w-3" /> {t("টেস্ট নোটিফিকেশন", "Test Notification")}
               </Button>"""
 
-content = content.replace(
-    '<DialogTitle>{t("রিমাইন্ডার সেটআপ", "Reminder Setup")}</DialogTitle>',
-    f'<DialogTitle className="flex items-center justify-between w-full">\n                {t("রিমাইন্ডার সেটআপ", "Reminder Setup")}\n                {test_btn}\n              </DialogTitle>'
-)
+title_marker = '<DialogTitle>{t("রিমাইন্ডার সেটআপ", "Reminder Setup")}</DialogTitle>'
+if title_marker in content:
+    new_title = f'<DialogTitle className="flex items-center justify-between w-full">\n                {{t("রিমাইন্ডার সেটআপ", "Reminder Setup")}}\n                {test_btn}\n              </DialogTitle>'
+    content = content.replace(title_marker, new_title)
 
 with open(file_path, "w") as f:
     f.write(content)
