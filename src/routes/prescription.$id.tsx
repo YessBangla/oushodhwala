@@ -1353,14 +1353,32 @@ function MetaEditor({
 const TH = "whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground";
 const CELL = "border-l border-border px-1.5 py-1.5 align-top";
 
-function CellInput({ value, onChange, w = "w-28", ph }: { value: string; onChange: (v: string) => void; w?: string; ph?: string }) {
+function CellInput({
+  value,
+  onChange,
+  w = "w-28",
+  ph,
+  err,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  w?: string;
+  ph?: string;
+  err?: string;
+}) {
   return (
-    <input
-      value={value}
-      placeholder={ph ?? "—"}
-      onChange={(e) => onChange(e.target.value)}
-      className={`${w} rounded-md bg-transparent px-1.5 py-1 text-[11px] font-semibold outline-none focus:bg-secondary placeholder:font-normal placeholder:text-muted-foreground/50`}
-    />
+    <div className={w}>
+      <input
+        value={value}
+        placeholder={ph ?? "—"}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!err}
+        className={`w-full rounded-md bg-transparent px-1.5 py-1 text-[11px] font-semibold outline-none focus:bg-secondary placeholder:font-normal placeholder:text-muted-foreground/50 ${
+          err ? "text-destructive ring-1 ring-destructive/60" : ""
+        }`}
+      />
+      {err && <p className="px-1 pt-0.5 text-[9px] font-semibold leading-tight text-destructive">{err}</p>}
+    </div>
   );
 }
 
@@ -1371,13 +1389,20 @@ function RxTable({
   sel,
   onSel,
   onChange,
+  errors = {},
+  onAdd,
+  onRemove,
 }: {
   items: RxReadItem[];
   rows: Row[];
   sel: Record<number, Sel>;
   onSel: (i: number, s: Partial<Sel>) => void;
   onChange: (i: number, patch: Partial<RxReadItem>) => void;
+  errors?: Record<string, string>;
+  onAdd?: () => void;
+  onRemove?: (i: number) => void;
 }) {
+
   const t = useT();
   const [open, setOpen] = useState<number | null>(null);
 
