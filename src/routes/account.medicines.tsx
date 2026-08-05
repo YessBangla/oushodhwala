@@ -37,7 +37,8 @@ import {
   syncUserMedicines,
   updateMedicineReminder,
   toggleUserFavorite,
-  updateUserMedicineOrder
+  updateUserMedicineOrder,
+  bulkUpdateMedicineStatus
 } from "@/lib/user-meds.functions";
 import type { MedSuggestion } from "@/lib/rx-suggest.server";
 
