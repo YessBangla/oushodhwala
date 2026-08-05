@@ -135,6 +135,7 @@ function MedicineManagement() {
     
     const reordered = Array.from(items);
     const [removed] = reordered.splice(result.source.index, 1);
+    if (!removed) return;
     reordered.splice(result.destination.index, 0, removed);
 
     // Optimistic update
