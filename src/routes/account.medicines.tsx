@@ -52,6 +52,8 @@ function MedicineManagement() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"name" | "date">("date");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [previewProduct, setPreviewProduct] = useState<MedSuggestion | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-medicines"],
