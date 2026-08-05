@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertCircle, Loader2, Search } from "lucide-react";
+import { AlertCircle, Loader2, Search, Star, Trash2, X } from "lucide-react";
 
 import { useT } from "@/lib/i18n";
 import { suggestMedicines } from "@/lib/rx-suggest.functions";
@@ -41,6 +41,8 @@ export function MedicinePicker({
   const [position, setPosition] = useState({ left: 0, top: 0, width: 288 });
   const cache = useRef<Record<string, MedSuggestion[]>>({});
   const [recent, setRecent] = useState<MedSuggestion[]>([]);
+  const [favorites, setFavorites] = useState<MedSuggestion[]>([]);
+
 
 
   const positionPopup = () => {
@@ -55,15 +57,22 @@ export function MedicinePicker({
     });
   };
 
-  // রিসেন্ট মেডিসিন লোড
+  // রিসেন্ট এবং ফেভারিট মেডিসিন লোড
   useEffect(() => {
-    const saved = localStorage.getItem("rx_recent_meds");
-    if (saved) {
+    const savedRecent = localStorage.getItem("rx_recent_meds");
+    if (savedRecent) {
       try {
-        setRecent(JSON.parse(saved).slice(0, 5));
+        setRecent(JSON.parse(savedRecent).slice(0, 5));
+      } catch (e) {}
+    }
+    const savedFavs = localStorage.getItem("rx_favorite_meds");
+    if (savedFavs) {
+      try {
+        setFavorites(JSON.parse(savedFavs));
       } catch (e) {}
     }
   }, []);
+
 
   // ডিবাউন্স — টাইপ থামার পরই কোয়েরি
 
@@ -151,6 +160,27 @@ export function MedicinePicker({
     );
   };
 
+  const toggleFavorite = (e: React.MouseEvent, p: MedSuggestion) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const isFav = favorites.some((f) => f.id === p.id);
+    let next: MedSuggestion[];
+    if (isFav) {
+      next = favorites.filter((f) => f.id !== p.id);
+    } else {
+      next = [p, ...favorites];
+    }
+    setFavorites(next);
+    localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
+  };
+
+  const clearRecent = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setRecent([]);
+    localStorage.removeItem("rx_recent_meds");
+  };
+
   const choose = (p: MedSuggestion) => {
     const text = t.en ? p.en || p.name : p.name;
     onChange(text);
@@ -168,6 +198,7 @@ export function MedicinePicker({
     inputRef.current?.focus();
     inputRef.current?.select();
   };
+
 
 
   return (
@@ -253,28 +284,74 @@ export function MedicinePicker({
               <Loader2 className="h-3 w-3 animate-spin" /> {t("খুঁজছি…", "Searching…")}
             </p>
           )}
-          {!loading && term.length < 1 && recent.length > 0 && (
-            <div className="mb-1 border-b pb-1">
-              <p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                {t("সম্প্রতি দেখা", "Recently Viewed")}
-              </p>
-              {recent.map((p, i) => (
-                <button
-                  key={`recent-${p.id}`}
-                  type="button"
-                  onClick={() => choose(p)}
-                  onMouseEnter={() => setActive(i)}
-                  className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left ${i === active && term.length < 1 ? "bg-secondary" : ""}`}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[11px] font-bold">
-                      {t.en ? p.en || p.name : p.name} {p.strength}
-                    </span>
-                  </span>
-                </button>
-              ))}
+          {loading && list.length === 0 && (
+            <p className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> {t("খুঁজছি…", "Searching…")}
+            </p>
+          )}
+
+          {!loading && term.length < 1 && (recent.length > 0 || favorites.length > 0) && (
+            <div className="max-h-64 overflow-y-auto">
+              {favorites.length > 0 && (
+                <div className="mb-2">
+                  <p className="flex items-center justify-between px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/5">
+                    <span className="flex items-center gap-1"><Star className="h-2.5 w-2.5 fill-primary" /> {t("প্রিয় ঔষধ", "Favorite Medicines")}</span>
+                  </p>
+                  {favorites.map((p, i) => (
+                    <div key={`fav-${p.id}`} className="group relative">
+                      <button
+                        type="button"
+                        onClick={() => choose(p)}
+                        className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-secondary"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11px] font-bold">
+                            {t.en ? p.en || p.name : p.name} {p.strength}
+                          </span>
+                        </span>
+                      </button>
+                      <button 
+                        onClick={(e) => toggleFavorite(e, p)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-primary opacity-0 group-hover:opacity-100"
+                      >
+                        <Star className="h-3 w-3 fill-primary" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {recent.length > 0 && (
+                <div className="mb-1">
+                  <p className="flex items-center justify-between px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <span>{t("সম্প্রতি দেখা", "Recently Viewed")}</span>
+                    <button 
+                      onClick={clearRecent}
+                      className="flex items-center gap-0.5 hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-2.5 w-2.5" /> {t("মুছুন", "Clear")}
+                    </button>
+                  </p>
+                  {recent.map((p, i) => (
+                    <button
+                      key={`recent-${p.id}`}
+                      type="button"
+                      onClick={() => choose(p)}
+                      onMouseEnter={() => setActive(i)}
+                      className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left ${i === active && term.length < 1 ? "bg-secondary" : ""}`}
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[11px] font-bold">
+                          {t.en ? p.en || p.name : p.name} {p.strength}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
 
           {list.map((p, i) => (
             <button
@@ -306,8 +383,17 @@ export function MedicinePicker({
                   )}
                 </span>
               </span>
-              <span className="shrink-0 text-[10px] font-bold text-primary">৳{Math.round(p.price)}</span>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-[10px] font-bold text-primary">৳{Math.round(p.price)}</span>
+                <button
+                  onClick={(e) => toggleFavorite(e, p)}
+                  className="p-1 hover:text-primary transition-colors"
+                >
+                  <Star className={`h-3 w-3 ${favorites.some(f => f.id === p.id) ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                </button>
+              </div>
             </button>
+
           ))}
           {failed && !loading && (
             <p className="flex items-center gap-2 px-2 py-2 text-[11px] font-semibold text-destructive">
