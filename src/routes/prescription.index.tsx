@@ -107,7 +107,7 @@ function Prescription() {
     if (!tok) return;
     claimedRef.current = true;
     claimGuest({ data: { token: tok } })
-      .then((r) => {
+      .then((r: { claimed: number }) => {
         if ((r as { claimed: number }).claimed > 0) {
           qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
           toast.success(t("আগের প্রেসক্রিপশনগুলো আপনার অ্যাকাউন্টে যুক্ত হয়েছে", "Earlier prescriptions moved to your account"));
