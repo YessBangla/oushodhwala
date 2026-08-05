@@ -91,10 +91,10 @@ export function TestReportView() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard title="Total" value={reportData?.stats.expected + reportData?.stats.unexpected} icon={Terminal} />
-        <StatCard title="Passed" value={reportData?.stats.expected} icon={CheckCircle2} color="text-green-500" />
-        <StatCard title="Failed" value={reportData?.stats.unexpected} icon={XCircle} color="text-destructive" />
-        <StatCard title="Duration" value={`${(reportData?.stats.duration / 1000).toFixed(1)}s`} icon={Clock} />
+        <StatCard title="Total" value={(reportData?.stats.expected || 0) + (reportData?.stats.unexpected || 0)} icon={Terminal} />
+        <StatCard title="Passed" value={reportData?.stats.expected || 0} icon={CheckCircle2} color="text-green-500" />
+        <StatCard title="Failed" value={reportData?.stats.unexpected || 0} icon={XCircle} color="text-destructive" />
+        <StatCard title="Duration" value={`${((reportData?.stats.duration || 0) / 1000).toFixed(1)}s`} icon={Clock} />
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
