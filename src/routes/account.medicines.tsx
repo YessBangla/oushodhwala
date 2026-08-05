@@ -98,6 +98,7 @@ function MedicineManagement() {
   const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   const [notificationHistory, setNotificationHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_delivery_logs") || "[]"));
   const [showLogs, setShowLogs] = useState(false);
+  const [logFilter, setLogFilter] = useState<string>("all");
 
   // Import/Preview State
   const [importPreviewOpen, setImportPreviewOpen] = useState(false);
@@ -408,6 +409,41 @@ function MedicineManagement() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `rollback-data-${batchId}.csv`;
+    a.click();
+  };
+
+
+  const checkReminderConflicts = (time: string) => {
+    const existing = items.filter(i => i.reminder?.time === time && i.id !== configProduct?.id);
+    return existing;
+  };
+
+  const exportToICS = (reminder: any, product: any) => {
+    const [hours, minutes] = reminder.time.split(':');
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes));
+    const end = new Date(start.getTime() + 30 * 60000); // 30 mins duration
+    
+    const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      `SUMMARY:Medicine: ${product.name}`,
+      `DESCRIPTION:Take ${product.name} (${product.strength}). Notes: ${reminder.notes || 'N/A'}`,
+      `DTSTART:${formatDate(start)}`,
+      `DTEND:${formatDate(end)}`,
+      'RRULE:FREQ=DAILY;INTERVAL=1',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${product.name}-reminder.ics`;
     a.click();
   };
 
@@ -883,7 +919,11 @@ function MedicineManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button className="w-full" onClick={handleSaveReminder}>
+            <div className="flex gap-2 w-full">
+                  <Button variant="outline" className="flex-1" onClick={() => exportToICS(reminderConfig, configProduct)}>
+                    <Calendar className="mr-2 h-4 w-4" /> ICS Export
+                  </Button>
+                  <Button className="flex-1" onClick={handleSaveReminder}>
               {t("সেভ করুন", "Save")}
             </Button>
           </DialogFooter>
@@ -903,9 +943,23 @@ function MedicineManagement() {
             <DialogTitle>{t("নোটিফিকেশন ডেলিভারি লগ", "Notification Delivery Logs")}</DialogTitle>
             <DialogDescription>{t("টাইমজোন এবং ডেলিভারি স্ট্যাটাস চেক করুন।", "Check timezone and delivery status.")}</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
+          
+          <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+            {['all', 'success', 'failed', 'pending'].map((f) => (
+              <Button 
+                key={f} 
+                variant={logFilter === f ? "secondary" : "ghost"} 
+                size="sm" 
+                className="h-7 text-[10px] capitalize"
+                onClick={() => setLogFilter(f)}
+              >
+                {t(f, f)}
+              </Button>
+            ))}
+          </div>
+<ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2">
-              {notificationHistory.map((log: any) => (
+              {notificationHistory.filter(l => logFilter === "all" || l.status === logFilter).map((log: any) => (
                 <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-secondary/5 text-xs">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
