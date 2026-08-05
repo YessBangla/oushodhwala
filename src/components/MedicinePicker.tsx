@@ -34,11 +34,14 @@ export function MedicinePicker({
   const [active, setActive] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const seq = useRef(0);
   const [term, setTerm] = useState("");
   const [failed, setFailed] = useState(false);
   const [position, setPosition] = useState({ left: 0, top: 0, width: 288 });
-  const cache = useRef<Record<string, MedSuggestion[]>>({}); // একই সার্চ টেক্সটের জন্য ফলাফল ক্যাশ
+  const cache = useRef<Record<string, MedSuggestion[]>>({});
+  const [recent, setRecent] = useState<MedSuggestion[]>([]);
+
 
   const positionPopup = () => {
     const box = boxRef.current;
@@ -52,7 +55,18 @@ export function MedicinePicker({
     });
   };
 
+  // রিসেন্ট মেডিসিন লোড
+  useEffect(() => {
+    const saved = localStorage.getItem("rx_recent_meds");
+    if (saved) {
+      try {
+        setRecent(JSON.parse(saved).slice(0, 5));
+      } catch (e) {}
+    }
+  }, []);
+
   // ডিবাউন্স — টাইপ থামার পরই কোয়েরি
+
   useEffect(() => {
     const q = term.trim();
     if (!open || q.length < 1) {
@@ -142,14 +156,26 @@ export function MedicinePicker({
     onChange(text);
     setTerm(text);
     onPick?.(p);
+    
+    // রিসেন্ট লিস্টে সেভ
+    const next = [p, ...recent.filter(r => r.id !== p.id)].slice(0, 10);
+    setRecent(next.slice(0, 5));
+    localStorage.setItem("rx_recent_meds", JSON.stringify(next));
+
     setOpen(false);
     setRows([]);
+    // ইনপুটে ফোকাস ফেরত পাঠানো
+    inputRef.current?.focus();
+    inputRef.current?.select();
   };
+
 
   return (
     <div className={`relative ${w}`} ref={boxRef}>
       <input
+        ref={inputRef}
         value={value}
+
         placeholder={ph ?? "—"}
         role="combobox"
         aria-label={t("ঔষধ খুঁজুন", "Search medicine")}
@@ -227,6 +253,29 @@ export function MedicinePicker({
               <Loader2 className="h-3 w-3 animate-spin" /> {t("খুঁজছি…", "Searching…")}
             </p>
           )}
+          {!loading && term.length < 1 && recent.length > 0 && (
+            <div className="mb-1 border-b pb-1">
+              <p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t("সম্প্রতি দেখা", "Recently Viewed")}
+              </p>
+              {recent.map((p, i) => (
+                <button
+                  key={`recent-${p.id}`}
+                  type="button"
+                  onClick={() => choose(p)}
+                  onMouseEnter={() => setActive(i)}
+                  className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left ${i === active && term.length < 1 ? "bg-secondary" : ""}`}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[11px] font-bold">
+                      {t.en ? p.en || p.name : p.name} {p.strength}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {list.map((p, i) => (
             <button
               key={p.id}
