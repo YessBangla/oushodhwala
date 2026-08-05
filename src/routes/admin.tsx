@@ -37,6 +37,7 @@ import { PosTerminal } from "@/components/PosTerminal";
 import { ExpensesAdmin, ChartOfAccounts, JournalAdmin, DayBook, Financials, PartyStatement } from "@/components/FinanceAdmin";
 import { StockAdjustments, StockCount, LabelPrint } from "@/components/StockOpsAdmin";
 import { BranchesAdmin, StockTransfers, DeliveryZonesAdmin } from "@/components/BranchesAdmin";
+import { TestReportView } from "@/components/TestReportView";
 import { Workspace } from "@/components/Workspace";
 
 
@@ -109,6 +110,7 @@ const TABS = [
   { id: "branches", t: "শাখা (মাল্টি ব্রাঞ্চ)" },
   { id: "transfers", t: "স্টক ট্রান্সফার" },
   { id: "zones", t: "ডেলিভারি জোন" },
+  { id: "tests", t: "Playwright টেস্ট রিপোর্ট" },
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
@@ -128,7 +130,7 @@ const NAV_GROUPS: AdminNavGroup[] = [
   { label: "ক্যাটালগ", items: pickTabs(["products", "categories", "offers", "campaigns", "loyalty"]) },
   { label: "সেবা", items: pickTabs(["support", "lab", "diagnostics", "services", "doctors", "consults", "rx"]) },
   { label: "মিডিয়া", items: pickTabs(["gallery", "imgupload", "imgaudit", "imgrev"]) },
-  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles", "staff", "permissions"]) },
+  { label: "মনিটরিং", items: pickTabs(["apihub", "monitor", "audit", "erproles", "staff", "permissions", "tests"]) },
   { label: "সিস্টেম", items: pickTabs(["customers", "reviews", "health", "settings"]) },
 ];
 
@@ -281,6 +283,7 @@ function Admin() {
       {tab === "erproles" && <ErpRoles />}
       {tab === "staff" && <StaffRoles />}
       {tab === "permissions" && <PermissionMatrix />}
+      {tab === "tests" && <TestReportView />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );

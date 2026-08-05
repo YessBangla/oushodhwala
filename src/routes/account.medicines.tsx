@@ -269,10 +269,22 @@ function MedicineManagement() {
     reader.onload = async (event) => {
       try {
         const content = event.target?.result as string;
-        let importedMeds: MedSuggestion[] = [];
+        let importedMeds: any[] = [];
         
         if (file.name.endsWith(".json")) {
           importedMeds = JSON.parse(content);
+        } else if (file.name.endsWith(".csv")) {
+          const lines = content.split("\n");
+          const headers = lines[0]?.split(",") || [];
+          importedMeds = lines.slice(1).filter(line => line.trim()).map(line => {
+            const values = line.split(",");
+            const obj: any = {};
+            headers.forEach((h, i) => {
+              const key = h.trim().toLowerCase();
+              obj[key === "id" ? "id" : key] = values[i]?.trim();
+            });
+            return obj;
+          });
         }
 
         if (Array.isArray(importedMeds)) {
