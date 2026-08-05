@@ -13,8 +13,13 @@ import {
   Plus,
   FileText,
   Share2,
-  
+  Save,
+  Trash2,
+  Bug,
+  Loader2,
+  Printer,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +38,8 @@ import {
   type RxRead,
   type RxReadItem,
   type RxChange,
+  type RxDebug,
+
 } from "@/lib/rx-read.functions";
 import { getGuestToken } from "@/lib/rx-guest";
 import { printRxSummary, rxSummaryText, type RxSummary } from "@/lib/rx-summary";
@@ -122,6 +129,64 @@ function loadJson<T>(key: string, fallback: T): T {
 
 const packLabel = (p: Product) => (p.pack || p.form || "—").trim();
 
+/** নতুন ঔষধের খালি লাইন */
+const emptyItem = (): RxReadItem => ({
+  raw: "",
+  name: "",
+  generic: "",
+  strength: "",
+  form: "",
+  dose: "",
+  duration: "",
+  instruction: "",
+  confidence: 1,
+  fieldConf: { name: 1, strength: 1, form: 1, dose: 1, duration: 1, instruction: 1 },
+  reason: "হাতে যোগ করা লাইন",
+});
+
+const hasDigit = (s: string) => /\d|[০-৯]/.test(s);
+const ageNum = (s: string) => Number((s.match(/\d+/) ?? ["NaN"])[0]);
+
+export type RxErrors = { meta: Partial<Record<keyof RxMeta, string>>; items: Record<string, string> };
+
+/** ব্যবহারকারী-বান্ধব ভ্যালিডেশন — ডাক্তার, রোগী ও ডোজ/সময়কাল */
+function validateRx(meta: RxMeta, items: RxReadItem[], en: boolean): RxErrors {
+  const tr = (bn: string, eng: string) => (en ? eng : bn);
+  const m: RxErrors["meta"] = {};
+  const it: Record<string, string> = {};
+
+  if (!meta.doctorName.trim()) m.doctorName = tr("ডাক্তারের নাম লিখুন", "Doctor name is required");
+  else if (meta.doctorName.trim().length < 3)
+    m.doctorName = tr("নামটি খুব ছোট — অন্তত ৩ অক্ষর", "Name is too short — at least 3 characters");
+  else if (/^\d+$/.test(meta.doctorName.trim()))
+    m.doctorName = tr("শুধু সংখ্যা নয়, নাম লিখুন", "Enter a name, not only digits");
+
+  if (meta.patientAge.trim()) {
+    const n = ageNum(meta.patientAge);
+    if (Number.isNaN(n)) m.patientAge = tr("বয়সে সংখ্যা থাকতে হবে, যেমন ৩৫ বছর", "Age must contain a number, e.g. 35 years");
+    else if (n < 0 || n > 120) m.patientAge = tr("বয়স ০–১২০ এর মধ্যে হতে হবে", "Age must be between 0 and 120");
+  }
+
+  if (meta.patientAddress.trim() && meta.patientAddress.trim().length < 5)
+    m.patientAddress = tr("ঠিকানা অন্তত ৫ অক্ষরের হতে হবে", "Address must be at least 5 characters");
+
+  items.forEach((x, i) => {
+    if (!x.name.trim() && !x.raw.trim()) it[`${i}.name`] = tr("ঔষধের নাম দিন", "Medicine name is required");
+    if (x.strength.trim() && !hasDigit(x.strength))
+      it[`${i}.strength`] = tr("মাত্রায় সংখ্যা থাকতে হবে, যেমন 500 mg", "Strength must contain a number, e.g. 500 mg");
+    if (x.duration.trim() && !hasDigit(x.duration) && !/চলবে|continue/i.test(x.duration))
+      it[`${i}.duration`] = tr("সময়কালে সংখ্যা দিন, যেমন ৭ দিন", "Duration needs a number, e.g. 7 days");
+    const slots = (x.dose || "").split("+").map((s) => s.trim());
+    if (slots.length === 3 && slots.every((s) => !s || s === "0"))
+      it[`${i}.dose`] = tr("সকাল/দুপুর/রাতের অন্তত একটি ডোজ দিন", "Set at least one morning/noon/night dose");
+  });
+
+  return { meta: m, items: it };
+}
+
+const errCount = (e: RxErrors) => Object.keys(e.meta).length + Object.keys(e.items).length;
+
+
 function RxReading() {
   const { id } = Route.useParams();
   const t = useT();
@@ -141,6 +206,15 @@ function RxReading() {
   const [edited, setEdited] = useState<Result | null>(null);
   /** প্রেসক্রিপশনের হেডার তথ্য — হাসপাতাল, ডাক্তার, রোগী, বয়স, ঠিকানা, পরামর্শ */
   const [meta, setMeta] = useState<RxMeta>(EMPTY_META);
+  /** অটোসেভের অবস্থা */
+  const [dirty, setDirty] = useState(false);
+  const [savedAt, setSavedAt] = useState<string>("");
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
+  /** ভ্যালিডেশন ত্রুটি দেখানো হবে কিনা (প্রথম সেভ/ব্লার-এর পর) */
+  const [showErrors, setShowErrors] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+
 
   /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
   const guestToken = useMemo(() => getGuestToken(), []);
@@ -278,6 +352,103 @@ function RxReading() {
     return out;
   };
 
+  /** চলতি ভ্যালিডেশন ত্রুটি */
+  const errors = useMemo(() => validateRx(meta, draft ?? [], t.en), [meta, draft, t.en]);
+  const errTotal = errCount(errors);
+
+  /** এডিট চিহ্নিত করি — অটোসেভ চালু হবে */
+  const touch = () => {
+    setDirty(true);
+    setSaveErr("");
+  };
+
+  const patchMeta = (patch: Partial<RxMeta>) => {
+    setMeta((m) => ({ ...m, ...patch }));
+    touch();
+  };
+
+  const patchItem = (i: number, patch: Partial<RxReadItem>) => {
+    setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d);
+    touch();
+  };
+
+  /** নতুন ঔষধের লাইন যোগ */
+  const addRow = () => {
+    setDraft((d) => [...(d ?? []), emptyItem()]);
+    setSel((p) => ({ ...p, [(draft?.length ?? 0)]: { ...DEF_SEL } }));
+    touch();
+    setShowErrors(true);
+  };
+
+  /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয় */
+  const removeRow = (i: number) => {
+    setDraft((d) => d?.filter((_, j) => j !== i) ?? d);
+    setSel((p) => {
+      const next: Record<number, Sel> = {};
+      Object.keys(p)
+        .map(Number)
+        .sort((a, b) => a - b)
+        .forEach((k) => {
+          if (k === i) return;
+          next[k > i ? k - 1 : k] = p[k]!;
+        });
+      return next;
+    });
+    setEdited((e) => (e ? ({ ...e, items: e.items.filter((_, j) => j !== i) } as Result) : e));
+    touch();
+  };
+
+  /** সেভ / আপডেট — লগইন থাকলে সার্ভারে, গেস্ট হলে এই ডিভাইসে */
+  const persist = useCallback(
+    async (silent: boolean) => {
+      if (!data || !draft) return false;
+      const v = validateRx(meta, draft, t.en);
+      if (errCount(v) > 0) {
+        setShowErrors(true);
+        if (!silent)
+          toast.error(
+            t(`${errCount(v)}টি ঘর ঠিক করা দরকার — লাল লেখা দেখুন`, `${errCount(v)} field(s) need fixing — see the red messages`),
+          );
+        return false;
+      }
+      setAutoSaving(true);
+      try {
+        const payload: RxRead = { ...data.read, ...meta, items: draft };
+        const res = user
+          ? ((await save({ data: { id, read: payload, changes: diffChanges() } })) as Result)
+          : ({ ...data, read: payload } as Result);
+        setEdited(res);
+        setBase(draft.map((x) => ({ ...x })));
+        setDirty(false);
+        setSaveErr("");
+        setSavedAt(new Date().toISOString());
+        if (typeof window !== "undefined")
+          window.localStorage.setItem(`rx-draft-${id}`, JSON.stringify({ meta, items: draft }));
+        if (user) void auditQ.refetch();
+        if (!silent) toast.success(t("সংরক্ষিত হয়েছে", "Saved"));
+        return true;
+      } catch (e) {
+        const msg = (e as Error).message;
+        setSaveErr(msg);
+        if (!silent) toast.error(msg);
+        return false;
+      } finally {
+        setAutoSaving(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data, draft, meta, user, id, t.en, sel],
+  );
+
+  /** অটোসেভ — এডিট থামার ১.৫ সেকেন্ড পর নিজে থেকেই সেভ */
+  useEffect(() => {
+    if (!dirty || errTotal > 0) return;
+    const timer = setTimeout(() => {
+      void persist(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [dirty, errTotal, persist]);
+
   const confirm = async () => {
     if (!data || !draft) return;
     setSaving(true);
@@ -333,25 +504,27 @@ function RxReading() {
       note: data.read.note,
       verifiedAt: data.parsedAt,
       total: order.payable,
-      lines: data.items.map((row, i) => {
+      // সবসময় সর্বশেষ এডিট করা (draft) লাইনগুলো প্রিন্টে যায়
+      lines: (draft ?? data.read.items).map((item, i) => {
         const s = sel[i] ?? DEF_SEL;
-        const p = row.matches[s.match];
+        const p = data.items[i]?.matches[s.match];
         return {
           no: i + 1,
-          name: p ? (t.en ? p.en || p.name : p.name) : row.item.name || row.item.raw,
-          generic: p?.generic || row.item.generic,
-          strength: p?.strength || row.item.strength,
-          form: p?.form || row.item.form,
+          name: p ? (t.en ? p.en || p.name : p.name) : item.name || item.raw,
+          generic: p?.generic || item.generic,
+          strength: p?.strength || item.strength,
+          form: p?.form || item.form,
           pack: p?.pack ?? "",
-          dose: row.item.dose,
-          duration: row.item.duration,
-          instruction: row.item.instruction,
+          dose: item.dose,
+          duration: item.duration,
+          instruction: item.instruction,
           qty: s.qty,
           price: p?.price ?? 0,
-          confidence: row.item.confidence,
+          confidence: item.confidence,
           excluded: s.skip,
         };
       }),
+
     };
   };
 
@@ -455,6 +628,13 @@ function RxReading() {
         </div>
       )}
 
+      {/* ডিবাগ প্যানেল — রিকোয়েস্ট আইডি, গেটওয়ে স্ট্যাটাস ও ভ্যালিডেশন ত্রুটি */}
+      <RxDebugPanel
+        debug={(fetched?.debug ?? (error as (Error & { debug?: RxDebug }) | null)?.debug) ?? null}
+        open={debugOpen}
+        onToggle={() => setDebugOpen((v) => !v)}
+      />
+
 
       {data && (
         <>
@@ -480,26 +660,46 @@ function RxReading() {
             </span>
           </p>
 
-          {data.items.length === 0 ? (
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              {t("কোনো ঔষধ শনাক্ত করা যায়নি। স্পষ্ট ছবি আপলোড করে আবার চেষ্টা করুন।", "No medicine could be detected. Please upload a clearer photo.")}
-            </p>
+          {(draft?.length ?? 0) === 0 && data.items.length === 0 ? (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                {t("কোনো ঔষধ শনাক্ত করা যায়নি। স্পষ্ট ছবি আপলোড করে আবার চেষ্টা করুন।", "No medicine could be detected. Please upload a clearer photo.")}
+              </p>
+              <button onClick={addRow} className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-bold">
+                <Plus className="h-3.5 w-3.5" /> {t("হাতে ঔষধ যোগ করুন", "Add medicine manually")}
+              </button>
+            </div>
           ) : step === "verify" ? (
             <>
               <p className="mt-4 text-xs text-muted-foreground">
                 {t(
-                  "প্রতিটি ঔষধের নাম, জেনেরিক, মাত্রা, প্যাক ও সেবনবিধি যাচাই করুন — প্রয়োজনে সম্পাদনা করুন। পরিমাণ ও প্যাক এখানেই ঠিক করলে অর্ডার প্রিভিউতে সঙ্গে সঙ্গে দেখা যাবে।",
-                  "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Quantity and pack set here update the order preview instantly.",
+                  "প্রতিটি ঔষধের নাম, জেনেরিক, মাত্রা, প্যাক ও সেবনবিধি যাচাই করুন — প্রয়োজনে সম্পাদনা করুন। পরিবর্তন নিজে থেকেই সেভ হয়ে যায়।",
+                  "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Changes save automatically.",
                 )}
               </p>
-              <MetaEditor meta={meta} onChange={(patch) => setMeta((m) => ({ ...m, ...patch }))} />
+
+              <SaveBar
+                t={t}
+                dirty={dirty}
+                saving={autoSaving}
+                savedAt={savedAt}
+                errTotal={showErrors ? errTotal : 0}
+                error={saveErr}
+                onSave={() => void persist(false)}
+                onPrint={exportPdf}
+              />
+
+              <MetaEditor meta={meta} onChange={patchMeta} errors={showErrors ? errors.meta : {}} />
 
               <RxTable
                 items={draft ?? []}
                 rows={data.items}
                 sel={sel}
                 onSel={setSelAt}
-                onChange={(i, patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
+                onChange={patchItem}
+                errors={showErrors ? errors.items : {}}
+                onRemove={removeRow}
+                onAdd={addRow}
               />
 
               <div className="mt-4 rounded-xl border border-border bg-card p-3">
@@ -510,7 +710,14 @@ function RxReading() {
               </div>
 
               <button
-                onClick={confirm}
+                onClick={() => {
+                  setShowErrors(true);
+                  if (errTotal > 0) {
+                    toast.error(t("আগে লাল চিহ্নিত ঘরগুলো ঠিক করুন", "Please fix the highlighted fields first"));
+                    return;
+                  }
+                  void confirm();
+                }}
                 disabled={saving}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
               >
@@ -519,6 +726,7 @@ function RxReading() {
               </button>
             </>
           ) : (
+
             <>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button
@@ -1091,7 +1299,15 @@ function Field({ t, v }: { t: string; v: string }) {
 }
 
 /** হাসপাতাল / ডাক্তার / রোগীর তথ্য — প্রতিটি আলাদা সেলে, সরাসরি এডিটযোগ্য */
-function MetaEditor({ meta, onChange }: { meta: RxMeta; onChange: (patch: Partial<RxMeta>) => void }) {
+function MetaEditor({
+  meta,
+  onChange,
+  errors = {},
+}: {
+  meta: RxMeta;
+  onChange: (patch: Partial<RxMeta>) => void;
+  errors?: Partial<Record<keyof RxMeta, string>>;
+}) {
   const t = useT();
   const cells: Array<{ k: keyof RxMeta; label: string; ph: string }> = [
     { k: "hospital", label: t("হাসপাতাল / চেম্বার", "Hospital / chamber"), ph: t("যেমন: ঢাকা মেডিকেল", "e.g. Dhaka Medical") },
@@ -1117,10 +1333,15 @@ function MetaEditor({ meta, onChange }: { meta: RxMeta; onChange: (patch: Partia
               value={meta[c.k]}
               placeholder={c.ph}
               onChange={(e) => onChange({ [c.k]: e.target.value } as Partial<RxMeta>)}
-              className="mt-0.5 w-full bg-transparent text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
+              aria-invalid={!!errors[c.k]}
+              className={`mt-0.5 w-full bg-transparent text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60 ${
+                errors[c.k] ? "text-destructive" : ""
+              }`}
             />
+            {errors[c.k] && <span className="mt-0.5 block text-[10px] font-semibold text-destructive">{errors[c.k]}</span>}
           </label>
         ))}
+
         <label className="col-span-2 block bg-card px-3 py-2 sm:col-span-3">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t("ডাক্তারের পরামর্শ", "Doctor's advice")}
@@ -1141,14 +1362,32 @@ function MetaEditor({ meta, onChange }: { meta: RxMeta; onChange: (patch: Partia
 const TH = "whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground";
 const CELL = "border-l border-border px-1.5 py-1.5 align-top";
 
-function CellInput({ value, onChange, w = "w-28", ph }: { value: string; onChange: (v: string) => void; w?: string; ph?: string }) {
+function CellInput({
+  value,
+  onChange,
+  w = "w-28",
+  ph,
+  err,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  w?: string;
+  ph?: string;
+  err?: string;
+}) {
   return (
-    <input
-      value={value}
-      placeholder={ph ?? "—"}
-      onChange={(e) => onChange(e.target.value)}
-      className={`${w} rounded-md bg-transparent px-1.5 py-1 text-[11px] font-semibold outline-none focus:bg-secondary placeholder:font-normal placeholder:text-muted-foreground/50`}
-    />
+    <div className={w}>
+      <input
+        value={value}
+        placeholder={ph ?? "—"}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!err}
+        className={`w-full rounded-md bg-transparent px-1.5 py-1 text-[11px] font-semibold outline-none focus:bg-secondary placeholder:font-normal placeholder:text-muted-foreground/50 ${
+          err ? "text-destructive ring-1 ring-destructive/60" : ""
+        }`}
+      />
+      {err && <p className="px-1 pt-0.5 text-[9px] font-semibold leading-tight text-destructive">{err}</p>}
+    </div>
   );
 }
 
@@ -1159,13 +1398,20 @@ function RxTable({
   sel,
   onSel,
   onChange,
+  errors = {},
+  onAdd,
+  onRemove,
 }: {
   items: RxReadItem[];
   rows: Row[];
   sel: Record<number, Sel>;
   onSel: (i: number, s: Partial<Sel>) => void;
   onChange: (i: number, patch: Partial<RxReadItem>) => void;
+  errors?: Record<string, string>;
+  onAdd?: () => void;
+  onRemove?: (i: number) => void;
 }) {
+
   const t = useT();
   const [open, setOpen] = useState<number | null>(null);
 
@@ -1206,6 +1452,8 @@ function RxTable({
               <th className={TH}>{t("পরিমাণ", "Qty")}</th>
               <th className={TH}>{t("মূল্য", "Amount")}</th>
               <th className={TH}>{t("অর্ডার", "Order")}</th>
+              <th className={TH}>{t("মুছুন", "Del")}</th>
+
             </tr>
           </thead>
           <tbody>
@@ -1229,14 +1477,15 @@ function RxTable({
                       </button>
                     </td>
                     <td className={CELL}>
-                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" />
+                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" err={errors[`${i}.name`] ?? ""} />
                     </td>
                     <td className={CELL}>
                       <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
                     </td>
                     <td className={CELL}>
-                      <CellInput value={item.strength} onChange={(v) => onChange(i, { strength: v })} w="w-20" />
+                      <CellInput value={item.strength} onChange={(v) => onChange(i, { strength: v })} w="w-20" err={errors[`${i}.strength`] ?? ""} />
                     </td>
+
                     <td className={CELL}>
                       <CellInput value={item.form} onChange={(v) => onChange(i, { form: v })} w="w-20" />
                     </td>
@@ -1245,7 +1494,9 @@ function RxTable({
                         <select
                           value={d[k] || "0"}
                           onChange={(e) => setSlot(i, item.dose, k, e.target.value)}
-                          className="w-14 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary"
+                          className={`w-14 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary ${
+                            errors[`${i}.dose`] ? "ring-1 ring-destructive/60" : ""
+                          }`}
                         >
                           {DOSE_OPTS.map((o) => (
                             <option key={o} value={o}>
@@ -1253,14 +1504,24 @@ function RxTable({
                             </option>
                           ))}
                         </select>
+                        {k === 2 && errors[`${i}.dose`] && (
+                          <p className="pt-0.5 text-[9px] font-semibold leading-tight text-destructive">{errors[`${i}.dose`]}</p>
+                        )}
                       </td>
                     ))}
                     <td className={CELL}>
-                      <CellInput value={item.duration} onChange={(v) => onChange(i, { duration: v })} w="w-20" ph={t("৭ দিন", "7 days")} />
+                      <CellInput
+                        value={item.duration}
+                        onChange={(v) => onChange(i, { duration: v })}
+                        w="w-20"
+                        ph={t("৭ দিন", "7 days")}
+                        err={errors[`${i}.duration`] ?? ""}
+                      />
                     </td>
                     <td className={CELL}>
                       <CellInput value={item.instruction} onChange={(v) => onChange(i, { instruction: v })} w="w-28" ph={t("খাবারের পরে", "After food")} />
                     </td>
+
                     <td className={CELL}>
                       <select
                         value={String(s.match)}
@@ -1296,10 +1557,20 @@ function RxTable({
                         {s.skip ? t("বাদ", "Off") : t("আছে", "On")}
                       </label>
                     </td>
+                    <td className={CELL}>
+                      <button
+                        onClick={() => onRemove?.(i)}
+                        aria-label={t("লাইন মুছুন", "Remove line")}
+                        className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
                   </tr>
                   {open === i && (
                     <tr className="border-t border-border bg-secondary/20">
-                      <td colSpan={14} className="px-3 py-2">
+                      <td colSpan={15} className="px-3 py-2">
+
                         <p className="text-[11px] text-muted-foreground">
                           {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
                         </p>
@@ -1333,12 +1604,125 @@ function RxTable({
           </tbody>
         </table>
       </div>
-      <p className="border-t border-border bg-secondary/30 px-3 py-2 text-[10px] text-muted-foreground">
-        {t(
-          "মোবাইলে টেবিলটি ডানে-বামে স্ক্রল করুন। নম্বরে ট্যাপ করলে OCR কনফিডেন্স ও বিকল্প ঔষধ দেখা যাবে।",
-          "Scroll the table sideways on mobile. Tap the row number to see OCR confidence and alternative matches.",
-        )}
-      </p>
+      <div className="flex flex-wrap items-center gap-2 border-t border-border bg-secondary/30 px-3 py-2">
+        <button onClick={() => onAdd?.()} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11px] font-bold">
+          <Plus className="h-3.5 w-3.5" /> {t("ঔষধ যোগ করুন", "Add medicine")}
+        </button>
+        <p className="text-[10px] text-muted-foreground">
+          {t(
+            "মোবাইলে টেবিলটি ডানে-বামে স্ক্রল করুন। নম্বরে ট্যাপ করলে OCR কনফিডেন্স ও বিকল্প ঔষধ দেখা যাবে।",
+            "Scroll the table sideways on mobile. Tap the row number to see OCR confidence and alternative matches.",
+          )}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/** সেভ/আপডেট বার — অটোসেভের অবস্থা, ম্যানুয়াল সেভ ও প্রিন্ট */
+function SaveBar({
+  t,
+  dirty,
+  saving,
+  savedAt,
+  errTotal,
+  error,
+  onSave,
+  onPrint,
+}: {
+  t: ReturnType<typeof useT>;
+  dirty: boolean;
+  saving: boolean;
+  savedAt: string;
+  errTotal: number;
+  error: string;
+  onSave: () => void;
+  onPrint: () => void;
+}) {
+  const status = saving
+    ? t("সেভ হচ্ছে...", "Saving...")
+    : errTotal > 0
+      ? t(`${errTotal}টি ঘরে সমস্যা — অটোসেভ থেমে আছে`, `${errTotal} field(s) invalid — autosave paused`)
+      : dirty
+        ? t("অসংরক্ষিত পরিবর্তন", "Unsaved changes")
+        : savedAt
+          ? t(`সব সেভ হয়েছে · ${new Date(savedAt).toLocaleTimeString("bn-BD")}`, `All saved · ${new Date(savedAt).toLocaleTimeString()}`)
+          : t("অটোসেভ চালু", "Autosave on");
+
+  return (
+    <div className="sticky top-14 z-20 mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 px-3 py-2 backdrop-blur">
+      <span
+        className={`flex items-center gap-1.5 text-[11px] font-semibold ${
+          errTotal > 0 || error ? "text-destructive" : dirty || saving ? "text-sale" : "text-primary"
+        }`}
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        {error || status}
+      </span>
+      <div className="ml-auto flex items-center gap-2">
+        <button onClick={onPrint} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-bold">
+          <Printer className="h-3.5 w-3.5" /> {t("প্রিন্ট / PDF", "Print / PDF")}
+        </button>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground disabled:opacity-60"
+        >
+          <Save className="h-3.5 w-3.5" /> {t("সেভ / আপডেট", "Save / Update")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+/** ডিবাগ লগ প্যানেল — রিকোয়েস্ট আইডি, গেটওয়ে স্ট্যাটাস ও ভ্যালিডেশন ত্রুটি */
+function RxDebugPanel({ debug, open, onToggle }: { debug: RxDebug | null; open: boolean; onToggle: () => void }) {
+  const t = useT();
+  if (!debug) return null;
+  return (
+    <section className="mt-4 overflow-hidden rounded-xl border border-border">
+      <button onClick={onToggle} className="flex w-full items-center gap-2 bg-secondary/50 px-3 py-2 text-left">
+        <Bug className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-bold">{t("ডিবাগ লগ", "Debug log")}</span>
+        <span className="text-[10px] text-muted-foreground">ref: {debug.requestId.slice(0, 12)}</span>
+        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="space-y-2 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">
+            {t("ক্যাশ", "Cached")}: {debug.cached ? t("হ্যাঁ", "yes") : t("না", "no")} · {t("সময়", "At")}: {debug.at}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-[10px]">
+              <thead className="text-muted-foreground">
+                <tr>
+                  <th className="px-1 py-1 text-left">#</th>
+                  <th className="px-1 py-1 text-left">{t("মডেল", "Model")}</th>
+                  <th className="px-1 py-1 text-left">strict</th>
+                  <th className="px-1 py-1 text-left">status</th>
+                  <th className="px-1 py-1 text-left">ms</th>
+                  <th className="px-1 py-1 text-left">run id</th>
+                  <th className="px-1 py-1 text-left">{t("ত্রুটি", "Error")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {debug.attempts.map((a) => (
+                  <tr key={a.attempt} className={`border-t border-border ${a.ok ? "" : "text-destructive"}`}>
+                    <td className="px-1 py-1">{a.attempt}</td>
+                    <td className="px-1 py-1">{a.model}</td>
+                    <td className="px-1 py-1">{String(a.strict)}</td>
+                    <td className="px-1 py-1">{a.status || "—"}</td>
+                    <td className="px-1 py-1">{a.ms}</td>
+                    <td className="px-1 py-1">{a.runId ? a.runId.slice(0, 10) : "—"}</td>
+                    <td className="max-w-[240px] truncate px-1 py-1" title={a.error}>{a.error || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

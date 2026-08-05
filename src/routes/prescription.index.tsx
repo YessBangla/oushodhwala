@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+import { checkRxImage, rxQualityMessage, type RxImageQuality } from "@/lib/rx-image-quality";
 
 
 export const Route = createFileRoute("/prescription/")({
@@ -51,7 +52,7 @@ const OK_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "applic
 /** প্রেসক্রিপশনের সাধারণ বৈধতা — ৩০ দিন */
 const VALID_DAYS = 30;
 
-type Picked = { file: File; url: string; id: string };
+type Picked = { file: File; url: string; id: string; quality?: RxImageQuality };
 
 function Prescription() {
   const t = useT();
@@ -66,6 +67,8 @@ function Prescription() {
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
   const [picked, setPicked] = useState<Picked[]>([]);
+  /** ছবির মান যাচাই চলছে কিনা */
+  const [checking, setChecking] = useState(false);
   const [done, setDone] = useState(0);
   const [uploaded, setUploaded] = useState<Record<string, string>>({});
   const [failed, setFailed] = useState<string[]>([]);
@@ -145,10 +148,11 @@ function Prescription() {
 
   useEffect(() => () => picked.forEach((p) => URL.revokeObjectURL(p.url)), [picked]);
 
-  /** ফাইল যাচাই — ধরন, আকার ও সংখ্যা */
-  const addFiles = (list: FileList | null) => {
+  /** ফাইল যাচাই — ধরন, আকার, সংখ্যা ও ছবির মান (ঝাপসা/কম কনট্রাস্ট বাতিল) */
+  const addFiles = async (list: FileList | null) => {
     const incoming = Array.from(list ?? []);
     const next: Picked[] = [];
+    setChecking(incoming.length > 0);
     for (const f of incoming) {
       const isImg = f.type.startsWith("image/");
       if (!isImg && !OK_TYPES.includes(f.type)) {
@@ -160,13 +164,23 @@ function Prescription() {
         continue;
       }
       if (picked.some((p) => p.file.name === f.name && p.file.size === f.size)) continue;
-      next.push({ file: f, url: URL.createObjectURL(f), id: `${f.name}-${f.size}-${Math.random()}` });
+      let q: RxImageQuality | undefined;
+      if (isImg) {
+        q = await checkRxImage(f);
+        if (!q.ok) {
+          toast.error(`${f.name} — ${rxQualityMessage(q, t.en)}`, { duration: 7000 });
+          continue;
+        }
+      }
+      next.push({ file: f, url: URL.createObjectURL(f), id: `${f.name}-${f.size}-${Math.random()}`, ...(q ? { quality: q } : {}) });
     }
+    setChecking(false);
     if (picked.length + next.length > MAX_FILES) {
       toast.error(t(`সর্বোচ্চ ${MAX_FILES}টি ফাইল`, `Up to ${MAX_FILES} files`));
     }
     setPicked((prev) => [...prev, ...next].slice(0, MAX_FILES));
   };
+
 
   const totalMb = useMemo(
     () => picked.reduce((s, p) => s + p.file.size, 0) / (1024 * 1024),
@@ -416,6 +430,20 @@ function Prescription() {
         {t(`সর্বোচ্চ ${MAX_FILES}টি ফাইল, প্রতিটি ${MAX_MB}MB পর্যন্ত`, `Up to ${MAX_FILES} files, ${MAX_MB}MB each`)}
         {picked.length > 0 && ` · ${t.n(picked.length)}/${t.n(MAX_FILES)} · ${totalMb.toFixed(1)}MB`}
       </p>
+      <p className="mt-0.5 text-center text-[10px] text-muted-foreground">
+        {checking ? (
+          <span className="inline-flex items-center gap-1 font-semibold text-primary">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {t("ছবির মান যাচাই হচ্ছে...", "Checking image quality...")}
+          </span>
+        ) : (
+          t(
+            "ঝাপসা বা কম আলোর ছবি AI-তে পাঠানোর আগেই বাতিল হবে।",
+            "Blurry or low-contrast photos are rejected before AI reading starts.",
+          )
+        )}
+      </p>
+
 
       <input
         ref={inputRef}
@@ -424,7 +452,7 @@ function Prescription() {
         multiple
         className="hidden"
         onChange={(e) => {
-          addFiles(e.target.files);
+          void addFiles(e.target.files);
           e.target.value = "";
         }}
       />
@@ -435,7 +463,7 @@ function Prescription() {
         capture="environment"
         className="hidden"
         onChange={(e) => {
-          addFiles(e.target.files);
+          void addFiles(e.target.files);
           e.target.value = "";
         }}
       />

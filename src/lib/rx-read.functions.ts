@@ -249,6 +249,67 @@ function tidy(r: RxRead): RxRead {
 }
 
 
+/** রিডিং ডিবাগ প্যানেলের জন্য প্রতি চেষ্টার তথ্য */
+export type RxDebugAttempt = {
+  attempt: number;
+  model: string;
+  strict: boolean;
+  ok: boolean;
+  ms: number;
+  runId: string;
+  /** গেটওয়ের HTTP স্ট্যাটাস (০ = রেসপন্সই আসেনি) */
+  status: number;
+  error: string;
+};
+
+export type RxDebug = {
+  cached: boolean;
+  requestId: string;
+  attempts: RxDebugAttempt[];
+  at: string;
+};
+
+const STRICTER = `\n\nSTRICT RETRY: the previous response failed JSON schema validation.
+Return ONLY one minified JSON object. No markdown fences, no prose, no trailing text.
+Every field declared in the schema must be present; use "" for unknown strings and 0–1 numbers for confidences.
+Keep each string under 120 characters.`;
+
+async function callModel(
+  key: string,
+  parts: Array<Record<string, unknown>>,
+  note: string,
+  strict: boolean,
+  sink: { runId: string; status: number },
+): Promise<RxRead> {
+  const gateway = createLovableAiGatewayProvider(key);
+  const result = streamText({
+    model: gateway("openai/gpt-5.6-sol"),
+    system: strict ? SYSTEM + STRICTER : SYSTEM,
+    output: Output.object({
+      schema: AiReadSchema,
+      name: "prescription_read",
+      description: "Structured transcription of one Bangladeshi medical prescription",
+    }),
+    providerOptions: { lovable: { reasoningEffort: "none", strictJsonSchema: true } },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `এই প্রেসক্রিপশনের প্রতিটি ঔষধ পড়ুন। রোগীর নোট: ${note || "নেই"}` },
+          ...parts,
+        ] as never,
+      },
+    ],
+  });
+  try {
+    return tidy(ReadSchema.parse(await result.output));
+  } finally {
+    sink.runId = gateway.getRunId();
+    sink.status = gateway.getStatus();
+  }
+}
+
+
 async function performRead(supabase: any, id: string, force?: boolean) {
   const { data: row, error } = await supabase
     .from("prescriptions")
@@ -260,51 +321,66 @@ async function performRead(supabase: any, id: string, force?: boolean) {
 
   const cached = row.parsed as unknown as RxRead | null;
   let read: RxRead;
+  const debug: RxDebug = {
+    cached: false,
+    requestId: `rx_${id.slice(0, 8)}_${Date.now().toString(36)}`,
+    attempts: [],
+    at: new Date().toISOString(),
+  };
 
   if (!force && row.parsed_at && cached && Array.isArray(cached.items) && cached.items.length) {
     read = tidy(ReadSchema.parse(cached));
-
+    debug.cached = true;
   } else {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI সার্ভিস কনফিগার করা নেই");
     const parts = await toParts(supabase, row.file_urls ?? []);
     if (parts.length === 0) throw new Error("প্রেসক্রিপশনের ফাইল পড়া যায়নি");
 
-    const gateway = createLovableAiGatewayProvider(key);
-    // দীর্ঘ রিডিং যেন ২ মিনিটে কেটে না যায় — স্ট্রিমিং কলে হ্যান্ডলারের ভেতরেই শেষ করি
-    const result = streamText({
-      model: gateway("openai/gpt-5.6-sol"),
-      system: SYSTEM,
-      output: Output.object({
-        schema: AiReadSchema,
-        name: "prescription_read",
-        description: "Structured transcription of one Bangladeshi medical prescription",
-      }),
-      providerOptions: {
-        lovable: {
-          reasoningEffort: "none",
-          strictJsonSchema: true,
-        },
-      },
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `এই প্রেসক্রিপশনের প্রতিটি ঔষধ পড়ুন। রোগীর নোট: ${row.note || "নেই"}`,
-            },
-            ...parts,
-          ] as never,
-        },
-      ],
-    });
-    try {
-      read = tidy(ReadSchema.parse(await result.output));
-    } catch (e) {
-      console.error("rx-read failed", e);
-      throw new Error("AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন");
+    // স্ট্রিক্ট JSON যাচাই ব্যর্থ হলে আরও কড়া প্রম্পট দিয়ে স্বয়ংক্রিয় রিট্রাই
+    let got: RxRead | null = null;
+    for (let attempt = 1; attempt <= 3 && !got; attempt++) {
+      const started = Date.now();
+      const sink = { runId: "", status: 0 };
+      try {
+        got = await callModel(key, parts, row.note ?? "", attempt > 1, sink);
+        debug.attempts.push({
+          attempt,
+          model: "openai/gpt-5.6-sol",
+          strict: attempt > 1,
+          ok: true,
+          ms: Date.now() - started,
+          runId: sink.runId,
+          status: sink.status,
+          error: "",
+        });
+      } catch (e) {
+        const msg = (e as Error)?.message ?? String(e);
+        console.error(`rx-read attempt ${attempt} failed`, msg);
+        debug.attempts.push({
+          attempt,
+          model: "openai/gpt-5.6-sol",
+          strict: attempt > 1,
+          ok: false,
+          ms: Date.now() - started,
+          runId: sink.runId,
+          status: sink.status,
+          error: cut(msg, 400),
+        });
+      }
+
     }
+
+    if (!got) {
+      const last = debug.attempts[debug.attempts.length - 1]?.error ?? "";
+      const err = new Error(
+        `AI প্রেসক্রিপশনটি পড়তে পারেনি — ছবিটি আরও স্পষ্ট করে আবার চেষ্টা করুন (ref: ${debug.requestId})`,
+      );
+      (err as Error & { debug?: RxDebug }).debug = debug;
+      console.error("rx-read failed after retries", debug.requestId, last);
+      throw err;
+    }
+    read = got;
 
     await supabase
       .from("prescriptions")
@@ -325,6 +401,7 @@ async function performRead(supabase: any, id: string, force?: boolean) {
     parsedAt: (row.parsed_at ?? new Date().toISOString()) as string,
     read: { ...read, items: read.items },
     items,
+    debug,
   };
 }
 
@@ -332,6 +409,7 @@ export const readPrescription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string; force?: boolean }) => d)
   .handler(async ({ data, context }) => performRead(context.supabase, data.id, data.force));
+
 
 /** লগইন ছাড়া জমা দেওয়া প্রেসক্রিপশন — গেস্ট টোকেন মিললে তবেই পড়া হয় */
 export const readPrescriptionGuest = createServerFn({ method: "POST" })
