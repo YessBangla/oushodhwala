@@ -283,6 +283,7 @@ function Admin() {
       {tab === "erproles" && <ErpRoles />}
       {tab === "staff" && <StaffRoles />}
       {tab === "permissions" && <PermissionMatrix />}
+      {tab === "tests" && <TestReportView />}
       {tab === "settings" && <Settings />}
     </AdminShell>
   );
