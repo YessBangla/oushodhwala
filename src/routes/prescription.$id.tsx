@@ -1462,7 +1462,9 @@ function RxTable({
             <tr>
               <th className={TH}>#</th>
               <th className={TH}>{t("ব্র্যান্ড", "Brand")}</th>
+              <th className={TH}>{t("কোম্পানি", "Company")}</th>
               <th className={TH}>{t("জেনেরিক", "Generic")}</th>
+
               <th className={TH}>{t("মাত্রা", "Strength")}</th>
               <th className={TH}>{t("ফর্ম", "Form")}</th>
               <th className={TH}>{t("সকাল", "Morn")}</th>
