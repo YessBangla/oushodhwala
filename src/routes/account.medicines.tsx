@@ -49,6 +49,13 @@ export type MedWithReminder = MedSuggestion & {
     timezone?: string;
     notes?: string;
   };
+  reminder_config?: {
+    time: string;
+    type: string;
+    frequency: number;
+    timezone?: string;
+    notes?: string;
+  };
 };
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
