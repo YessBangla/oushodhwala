@@ -98,6 +98,25 @@ function Prescription() {
     if (!user) setGuestToken(getGuestToken());
   }, [user]);
 
+  /** লগইন করলেই এই ডিভাইসের গেস্ট প্রেসক্রিপশনগুলো নিজের অ্যাকাউন্টে যুক্ত হয়ে যায় */
+  const claimGuest = useServerFn(claimGuestRx);
+  const claimedRef = useRef(false);
+  useEffect(() => {
+    if (!user || claimedRef.current) return;
+    const tok = getGuestToken();
+    if (!tok) return;
+    claimedRef.current = true;
+    claimGuest({ data: { token: tok } })
+      .then((r) => {
+        if ((r as { claimed: number }).claimed > 0) {
+          qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+          toast.success(t("আগের প্রেসক্রিপশনগুলো আপনার অ্যাকাউন্টে যুক্ত হয়েছে", "Earlier prescriptions moved to your account"));
+        }
+      })
+      .catch(() => {});
+  }, [user, claimGuest, qc, t]);
+
+
   /** এই ডিভাইসে গেস্ট হিসেবে জমা দেওয়া প্রেসক্রিপশনের হিস্ট্রি */
   const guestList = useQuery({
     queryKey: ["guest-prescriptions", guestToken],
