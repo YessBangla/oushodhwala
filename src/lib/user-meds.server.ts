@@ -4,13 +4,13 @@ import { MedSuggestion } from "./rx-suggest.server";
 const SELECT = "id, name, en, brand, generic, strength, form, pack, price, mrp, stock, rx, emoji, image_url, medicine_image_url, manufacturer, indications, indications_en, dosage, dosage_en, side_effects, side_effects_en, therapeutic_class, therapeutic_class_en";
 
 async function logAudit(userId: string, action: string, metadata: any) {
-  // Gracefully handle audit logging
   try {
+    // We use @ts-ignore because the types might not be updated yet
+    // @ts-ignore
     await supabaseAdmin.from("user_audit_logs").insert({
       user_id: userId,
       action,
       metadata,
-      created_at: new Date().toISOString(),
     });
   } catch (e) {
     console.error("Audit log failed", e);
@@ -20,6 +20,7 @@ async function logAudit(userId: string, action: string, metadata: any) {
 export async function getFavorites(userId: string): Promise<MedSuggestion[]> {
   const { data, error } = await supabaseAdmin
     .from("user_favorites")
+    // @ts-ignore - sort_order might not be in types yet
     .select(`product:products(${SELECT}), reminder_config, sort_order`)
     .eq("user_id", userId)
     .order("sort_order", { ascending: true });
@@ -117,9 +118,11 @@ export async function updateSortOrder(userId: string, productIds: string[]) {
       .eq("user_id", userId)
       .eq("product_id", productIds[i]);
   }
+  await logAudit(userId, "update_sort_order", { count: productIds.length });
 }
 
 export async function getAuditLogs(userId: string) {
+  // @ts-ignore
   const { data, error } = await supabaseAdmin
     .from("user_audit_logs")
     .select("*")
