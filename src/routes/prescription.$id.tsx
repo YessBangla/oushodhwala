@@ -73,6 +73,40 @@ type Sel = { match: number; qty: number; skip: boolean };
 
 const DEF_SEL: Sel = { match: 0, qty: 1, skip: false };
 
+/** প্রেসক্রিপশনের হেডার তথ্য — ব্যবহারকারী সরাসরি সম্পাদনা করতে পারে */
+type RxMeta = {
+  hospital: string;
+  doctorName: string;
+  doctorQualification: string;
+  patientName: string;
+  patientAge: string;
+  patientAddress: string;
+  date: string;
+  advice: string;
+};
+
+const EMPTY_META: RxMeta = {
+  hospital: "",
+  doctorName: "",
+  doctorQualification: "",
+  patientName: "",
+  patientAge: "",
+  patientAddress: "",
+  date: "",
+  advice: "",
+};
+
+const metaOf = (r: RxRead): RxMeta => ({
+  hospital: r.hospital ?? "",
+  doctorName: r.doctorName ?? "",
+  doctorQualification: r.doctorQualification ?? "",
+  patientName: r.patientName ?? "",
+  patientAge: r.patientAge ?? "",
+  patientAddress: r.patientAddress ?? "",
+  date: r.date ?? "",
+  advice: r.advice ?? "",
+});
+
 const selKey = (id: string) => `rx-sel-${id}`;
 const stepKey = (id: string) => `rx-verified-${id}`;
 
@@ -887,105 +921,6 @@ function QtyBox({ qty, onQty }: { qty: number; onQty: (n: number) => void }) {
     </div>
   );
 }
-
-function VerifyRow({
-  index,
-  item,
-  matches,
-  sel,
-  onSel,
-  onChange,
-}: {
-  index: number;
-  item: RxReadItem;
-  matches: Product[];
-  sel: Sel;
-  onSel: (s: Partial<Sel>) => void;
-  onChange: (patch: Partial<RxReadItem>) => void;
-}) {
-  const t = useT();
-  const picked = matches[sel.match];
-  const lineTotal = picked ? picked.price * sel.qty : 0;
-
-  return (
-    <li className={`rounded-xl border p-3 ${sel.skip ? "border-dashed border-border opacity-60" : "border-border bg-card"}`}>
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-          {t.n(index + 1)}
-        </span>
-        <p className="min-w-0 text-[11px] text-muted-foreground">
-          {t("লেখা ছিল", "Written")}: “{item.raw}”
-        </p>
-        <ConfBadge c={item.confidence} />
-      </div>
-
-      <ConfBreakdown item={item} />
-
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Inp label={t("ব্র্যান্ড নাম", "Brand")} value={item.name} onChange={(v) => onChange({ name: v })} />
-        <Inp label={t("জেনেরিক", "Generic")} value={item.generic} onChange={(v) => onChange({ generic: v })} />
-        <Inp label={t("মাত্রা", "Strength")} value={item.strength} onChange={(v) => onChange({ strength: v })} />
-        <Inp label={t("ফর্ম", "Form")} value={item.form} onChange={(v) => onChange({ form: v })} />
-      </div>
-
-      <DosageEditor item={item} onChange={onChange} />
-
-      <div className="mt-2 grid grid-cols-2 items-end gap-2">
-        <label className="block">
-          <span className="text-[10px] font-semibold text-muted-foreground">{t("ইউনিট / প্যাক", "Unit / pack")}</span>
-          <select
-            value={String(sel.match)}
-            onChange={(e) => onSel({ match: Number(e.target.value), skip: false })}
-            disabled={matches.length === 0}
-            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs disabled:opacity-50"
-          >
-            {matches.length === 0 ? (
-              <option value="0">{t("ক্যাটালগে পাওয়া যায়নি", "Not in catalogue")}</option>
-            ) : (
-              matches.map((m, i) => (
-                <option key={m.id} value={i}>
-                  {(t.en ? m.en || m.name : m.name)} · {packLabel(m)} · ৳{Math.round(m.price)}
-                </option>
-              ))
-            )}
-          </select>
-        </label>
-        <div>
-          <span className="text-[10px] font-semibold text-muted-foreground">{t("পরিমাণ", "Quantity")}</span>
-          <div className="mt-0.5 flex items-center gap-2">
-            <QtyBox qty={sel.qty} onQty={(n) => onSel({ qty: n })} />
-            <span className="text-[11px] font-bold text-primary">{picked ? `৳${t.n(lineTotal)}` : "—"}</span>
-          </div>
-        </div>
-      </div>
-
-      {matches.length > 0 && (
-        <div className="mt-2">
-          <p className="text-[10px] font-semibold text-muted-foreground">{t("সম্ভাব্য মিল — সঠিকটি বেছে নিন", "Possible matches — pick the correct one")}</p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {matches.map((m, i) => (
-              <button
-                key={m.id}
-                onClick={() => onSel({ match: i, skip: false })}
-                className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
-                  i === sel.match && !sel.skip ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
-                }`}
-              >
-                {(t.en ? m.en || m.name : m.name)} · {m.strength} · ৳{t.n(m.price)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-        <input type="checkbox" checked={sel.skip} onChange={(e) => onSel({ skip: e.target.checked })} className="h-3.5 w-3.5" />
-        {t("এই ঔষধটি অর্ডারে রাখব না", "Exclude this medicine from the order")}
-      </label>
-    </li>
-  );
-}
-
 
 function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; onSel: (s: Partial<Sel>) => void }) {
   const t = useT();
