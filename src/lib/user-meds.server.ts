@@ -5,9 +5,8 @@ const SELECT = "id, name, en, brand, generic, strength, form, pack, price, mrp, 
 
 async function logAudit(userId: string, action: string, metadata: any) {
   try {
-    // We use @ts-ignore because the types might not be updated yet
-    // @ts-ignore
-    await supabaseAdmin.from("user_audit_logs").insert({
+    const table = "user_audit_logs" as any;
+    await supabaseAdmin.from(table).insert({
       user_id: userId,
       action,
       metadata,
@@ -20,8 +19,7 @@ async function logAudit(userId: string, action: string, metadata: any) {
 export async function getFavorites(userId: string): Promise<MedSuggestion[]> {
   const { data, error } = await supabaseAdmin
     .from("user_favorites")
-    // @ts-ignore - sort_order might not be in types yet
-    .select(`product:products(${SELECT}), reminder_config, sort_order`)
+    .select(`product:products(${SELECT}), reminder_config, sort_order` as any)
     .eq("user_id", userId)
     .order("sort_order", { ascending: true });
 
@@ -112,19 +110,21 @@ export async function updateReminder(userId: string, productId: string, config: 
 
 export async function updateSortOrder(userId: string, productIds: string[]) {
   for (let i = 0; i < productIds.length; i++) {
+    const productId = productIds[i];
+    if (!productId) continue;
     await supabaseAdmin
       .from("user_favorites")
-      .update({ sort_order: i })
+      .update({ sort_order: i } as any)
       .eq("user_id", userId)
-      .eq("product_id", productIds[i]);
+      .eq("product_id", productId);
   }
   await logAudit(userId, "update_sort_order", { count: productIds.length });
 }
 
 export async function getAuditLogs(userId: string) {
-  // @ts-ignore
+  const table = "user_audit_logs" as any;
   const { data, error } = await supabaseAdmin
-    .from("user_audit_logs")
+    .from(table)
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
