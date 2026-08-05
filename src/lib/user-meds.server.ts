@@ -168,3 +168,12 @@ export async function bulkRemoveRecent(userId: string, productIds: string[]) {
     .eq("user_id", userId)
     .in("product_id", productIds);
 }
+
+export async function bulkUpdateStatus(userId: string, productIds: string[], active: boolean) {
+  await supabaseAdmin
+    .from("user_favorites")
+    .update({ is_active: active } as any)
+    .eq("user_id", userId)
+    .in("product_id", productIds);
+  await logAudit(userId, "bulk_update_status", { productIds, active });
+}
