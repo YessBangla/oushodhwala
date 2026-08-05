@@ -110,6 +110,7 @@ const TABS = [
   { id: "branches", t: "শাখা (মাল্টি ব্রাঞ্চ)" },
   { id: "transfers", t: "স্টক ট্রান্সফার" },
   { id: "zones", t: "ডেলিভারি জোন" },
+  { id: "tests", t: "Playwright টেস্ট রিপোর্ট" },
   { id: "settings", t: "সেটিংস" },
 ] as const;
 
