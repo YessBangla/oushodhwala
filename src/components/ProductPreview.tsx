@@ -55,7 +55,7 @@ export function ProductPreview({
   };
 
   const shareUrl = useMemo(() => {
-    if (typeof window === 'undefined' || !product) return '';
+    if (typeof window === 'undefined' || !product || revoked) return '';
     const base = `${window.location.origin}/store/product/${product.id}`;
     if (access === "private") {
       const token = shareToken || Math.random().toString(36).substring(2, 15);
