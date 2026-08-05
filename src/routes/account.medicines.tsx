@@ -417,12 +417,31 @@ function MedicineManagement() {
                   {t("সব সিলেক্ট করুন", "Select All")} ({items.length})
                 </span>
               </div>
-              <div className="grid gap-2">
-                {items.map((item: any) => (
-                  <div 
-                    key={item.id} 
-                    className={`group relative flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/50 ${selected.has(item.id) ? "border-primary bg-primary/5" : "border-border bg-card"}`}
-                  >
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="medicine-list">
+                  {(provided) => (
+                    <div 
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="grid gap-2"
+                    >
+                      {items.map((item: any, index: number) => (
+                        <Draggable 
+                          key={item.id} 
+                          draggableId={item.id} 
+                          index={index}
+                          isDragDisabled={tab !== "favorites"}
+                        >
+                          {(provided, snapshot) => (
+                            <div 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`group relative flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/50 ${snapshot.isDragging ? "z-50 shadow-lg ring-2 ring-primary bg-background" : selected.has(item.id) ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+                            >
+                              <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors px-1">
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+
                     <Checkbox 
                       checked={selected.has(item.id)}
                       onCheckedChange={() => toggleSelect(item.id)}
