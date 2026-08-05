@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, MapPin, FileText, Heart, Bell, HelpCircle, FlaskConical, ShieldCheck, CalendarDays } from "lucide-react";
+import { LogOut, MapPin, FileText, Heart, Bell, HelpCircle, FlaskConical, ShieldCheck, CalendarDays, Activity } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
