@@ -51,6 +51,44 @@ const ReadSchema = z.object({
   note: z.string().default("").describe("অস্পষ্ট বা সন্দেহজনক অংশ সম্পর্কে সতর্কতা"),
 });
 
+// OpenAI strict structured output requires every declared property to be required.
+// Keep ReadSchema tolerant for older cached reads, but use this schema for the model response.
+const AiFieldConfSchema = z.object({
+  name: z.number().min(0).max(1),
+  strength: z.number().min(0).max(1),
+  form: z.number().min(0).max(1),
+  dose: z.number().min(0).max(1),
+  duration: z.number().min(0).max(1),
+  instruction: z.number().min(0).max(1),
+});
+
+const AiItemSchema = z.object({
+  raw: z.string(),
+  name: z.string(),
+  generic: z.string(),
+  strength: z.string(),
+  form: z.string(),
+  dose: z.string(),
+  duration: z.string(),
+  instruction: z.string(),
+  confidence: z.number().min(0).max(1),
+  fieldConf: AiFieldConfSchema,
+  reason: z.string(),
+});
+
+const AiReadSchema = z.object({
+  patientName: z.string(),
+  patientAge: z.string(),
+  patientAddress: z.string(),
+  hospital: z.string(),
+  doctorName: z.string(),
+  doctorQualification: z.string(),
+  date: z.string(),
+  advice: z.string(),
+  items: z.array(AiItemSchema),
+  note: z.string(),
+});
+
 export type RxReadItem = z.infer<typeof ItemSchema>;
 export type RxRead = z.infer<typeof ReadSchema>;
 export type RxFieldConf = z.infer<typeof FieldConfSchema>;
@@ -238,7 +276,7 @@ async function performRead(supabase: any, id: string, force?: boolean) {
       model: gateway("openai/gpt-5.6-sol"),
       system: SYSTEM,
       output: Output.object({
-        schema: ReadSchema,
+        schema: AiReadSchema,
         name: "prescription_read",
         description: "Structured transcription of one Bangladeshi medical prescription",
       }),
