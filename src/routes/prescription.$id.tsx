@@ -804,6 +804,10 @@ function RxReading() {
                           <span className="mt-0.5 text-[10px] font-bold text-muted-foreground">{t.n(i + 1)}.</span>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-bold">{name}</p>
+                            {(p?.manufacturer || p?.brand) && (
+                              <p className="truncate text-[10px] font-semibold text-primary">{p.manufacturer || p.brand}</p>
+                            )}
+
                             <p className="truncate text-[10px] text-muted-foreground">
                               {[p?.generic || row.item.generic, p?.strength || row.item.strength, p?.form || row.item.form]
                                 .filter(Boolean)
