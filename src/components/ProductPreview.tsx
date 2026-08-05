@@ -5,12 +5,17 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { ProductImage } from "./ProductImage";
 import { useT } from "@/lib/i18n";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
+import { Button } from "./ui/button";
+import { Share2, Copy, Check } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export function ProductPreview({ 
   product, 
@@ -22,12 +27,40 @@ export function ProductPreview({
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useT();
+  const [copied, setCopied] = useState(false);
 
   if (!product) return null;
 
   const indications = t.en ? product.indications_en : product.indications;
   const sideEffects = t.en ? product.side_effects_en : product.side_effects;
   const dosage = t.en ? product.dosage_en : product.dosage;
+
+  const shareUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/store/product/${product.id}` 
+    : '';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    toast.success(t("লিংক কপি করা হয়েছে", "Link copied to clipboard"));
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `${product.name} - ${product.generic}`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        handleCopy();
+      }
+    } else {
+      handleCopy();
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,9 +71,14 @@ export function ProductPreview({
               <ProductImage src={product.medicine_image_url || product.image_url} alt={product.name} />
             </div>
             <div className="min-w-0 flex-1 pt-1">
-              <DialogTitle className="text-lg font-bold leading-tight">
-                {product.name} <span className="text-sm font-normal text-muted-foreground">{product.strength}</span>
-              </DialogTitle>
+              <div className="flex items-start justify-between gap-2">
+                <DialogTitle className="text-lg font-bold leading-tight">
+                  {product.name} <span className="text-sm font-normal text-muted-foreground">{product.strength}</span>
+                </DialogTitle>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={handleShare}>
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </div>
               <DialogDescription className="mt-1 line-clamp-1 text-xs font-semibold text-primary">
                 {product.generic}
               </DialogDescription>
@@ -63,7 +101,7 @@ export function ProductPreview({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] p-4">
+        <ScrollArea className="max-h-[50vh] p-4">
           <div className="space-y-4">
             <div>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
@@ -90,7 +128,7 @@ export function ProductPreview({
               </div>
             )}
 
-            {side_effects && (
+            {sideEffects && (
               <div>
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                   {t("পার্শ্বপ্রতিক্রিয়া", "Side Effects")}
@@ -98,24 +136,32 @@ export function ProductPreview({
                 <p className="text-xs leading-relaxed text-muted-foreground">{sideEffects}</p>
               </div>
             )}
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-muted-foreground">{t("মূল্য", "Price")}</p>
-                <p className="text-lg font-bold text-primary">৳{product.price}</p>
-              </div>
-              <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="h-6">
-                {product.stock > 0 ? t("স্টকে আছে", "In Stock") : t("স্টকে নেই", "Out of Stock")}
-              </Badge>
-            </div>
           </div>
         </ScrollArea>
+
+        <div className="border-t bg-secondary/30 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[10px] text-muted-foreground">{t("মূল্য", "Price")}</p>
+              <p className="text-lg font-bold text-primary">৳{product.price}</p>
+            </div>
+            <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="h-6">
+              {product.stock > 0 ? t("স্টকে আছে", "In Stock") : t("স্টকে নেই", "Out of Stock")}
+            </Badge>
+          </div>
+          <div className="flex gap-2">
+            <Button className="flex-1" size="sm" onClick={handleShare}>
+              {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copied ? t("কপি করা হয়েছে", "Copied") : t("লিংক কপি করুন", "Copy Link")}
+            </Button>
+            <Button variant="outline" className="flex-1" size="sm" asChild>
+              <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+                {t("স্টোরে দেখুন", "View in Store")}
+              </a>
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-// Helper to safely access dynamic keys
-const side_effects = true; 

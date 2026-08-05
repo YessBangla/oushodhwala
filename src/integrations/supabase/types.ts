@@ -3280,18 +3280,27 @@ export type Database = {
           created_at: string | null
           id: string
           product_id: string
+          reminder_config: Json | null
+          sync_meta: Json | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           product_id: string
+          reminder_config?: Json | null
+          sync_meta?: Json | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           product_id?: string
+          reminder_config?: Json | null
+          sync_meta?: Json | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [

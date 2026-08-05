@@ -6,12 +6,13 @@ const SELECT = "id, name, en, brand, generic, strength, form, pack, price, mrp, 
 export async function getFavorites(userId: string): Promise<MedSuggestion[]> {
   const { data, error } = await supabaseAdmin
     .from("user_favorites")
-    .select(`product:products(${SELECT})`)
+    .select(`product:products(${SELECT}), reminder_config`)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data?.map((d: any) => d.product) || []) as MedSuggestion[];
+  // @ts-ignore - dynamic product structure
+  return (data?.map((d: any) => ({ ...d.product, reminder_config: d.reminder_config })) || []) as MedSuggestion[];
 }
 
 export async function getRecent(userId: string): Promise<MedSuggestion[]> {
@@ -23,25 +24,27 @@ export async function getRecent(userId: string): Promise<MedSuggestion[]> {
     .limit(20);
 
   if (error) throw error;
+  // @ts-ignore - dynamic product structure
   return (data?.map((d: any) => d.product) || []) as MedSuggestion[];
 }
 
 export async function syncMedicines(userId: string, localFavIds: string[], localRecentIds: string[]) {
-  // Sync favorites
-  if (localFavIds.length > 0) {
-    const { data: existing } = await supabaseAdmin
+  const { data: existingFavs } = await supabaseAdmin
+    .from("user_favorites")
+    .select("product_id")
+    .eq("user_id", userId);
+  
+  const existingIds = new Set(existingFavs?.map(e => e.product_id) || []);
+  const toAddFavs = localFavIds.filter(id => !existingIds.has(id));
+  
+  if (toAddFavs.length > 0) {
+    await supabaseAdmin
       .from("user_favorites")
-      .select("product_id")
-      .eq("user_id", userId);
-    
-    const existingIds = new Set(existing?.map(e => e.product_id) || []);
-    const toAdd = localFavIds.filter(id => !existingIds.has(id));
-    
-    if (toAdd.length > 0) {
-      await supabaseAdmin
-        .from("user_favorites")
-        .insert(toAdd.map(id => ({ user_id: userId, product_id: id })));
-    }
+      .insert(toAddFavs.map(id => ({ 
+        user_id: userId, 
+        product_id: id,
+        sync_meta: { source: 'local_sync', timestamp: new Date().toISOString() }
+      })));
   }
 
   // Sync recent
@@ -84,6 +87,14 @@ export async function toggleFavorite(userId: string, productId: string) {
       .insert({ user_id: userId, product_id: productId });
     return { favorite: true };
   }
+}
+
+export async function updateReminder(userId: string, productId: string, config: any) {
+  await supabaseAdmin
+    .from("user_favorites")
+    .update({ reminder_config: config })
+    .eq("user_id", userId)
+    .eq("product_id", productId);
 }
 
 export async function addRecent(userId: string, productId: string) {
