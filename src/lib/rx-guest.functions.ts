@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type GuestRxRow = {
   id: string;
@@ -61,4 +62,21 @@ export const deleteGuestRx = createServerFn({ method: "POST" })
     const { error: delErr } = await supabaseAdmin.from("prescriptions").delete().eq("id", data.id);
     if (delErr) throw new Error(delErr.message);
     return { ok: true };
+  });
+
+/** লগইনের পর এই ডিভাইসের গেস্ট প্রেসক্রিপশনগুলো ব্যবহারকারীর অ্যাকাউন্টে নিয়ে আসে */
+export const claimGuestRx = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { token: string }) => d)
+  .handler(async ({ data, context }) => {
+    if (!data.token || data.token.length < 24) return { claimed: 0 };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("prescriptions")
+      .update({ user_id: context.userId, guest_token: null })
+      .eq("guest_token", data.token)
+      .is("user_id", null)
+      .select("id");
+    if (error) throw new Error(error.message);
+    return { claimed: (rows ?? []).length };
   });

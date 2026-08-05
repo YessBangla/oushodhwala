@@ -10,7 +10,7 @@ import { useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { quickReorderRx, readPrescription, readPrescriptionGuest } from "@/lib/rx-read.functions";
 import { deleteRx, getRxSettings, saveRxSettings, rxHousekeeping } from "@/lib/rx-manage.functions";
-import { listGuestRx, deleteGuestRx } from "@/lib/rx-guest.functions";
+import { listGuestRx, deleteGuestRx, claimGuestRx } from "@/lib/rx-guest.functions";
 import { getGuestToken, rememberGuestRx, forgetGuestRx } from "@/lib/rx-guest";
 import {
   Dialog,
@@ -97,6 +97,25 @@ function Prescription() {
   useEffect(() => {
     if (!user) setGuestToken(getGuestToken());
   }, [user]);
+
+  /** লগইন করলেই এই ডিভাইসের গেস্ট প্রেসক্রিপশনগুলো নিজের অ্যাকাউন্টে যুক্ত হয়ে যায় */
+  const claimGuest = useServerFn(claimGuestRx);
+  const claimedRef = useRef(false);
+  useEffect(() => {
+    if (!user || claimedRef.current) return;
+    const tok = getGuestToken();
+    if (!tok) return;
+    claimedRef.current = true;
+    claimGuest({ data: { token: tok } })
+      .then((r: { claimed: number }) => {
+        if ((r as { claimed: number }).claimed > 0) {
+          qc.invalidateQueries({ queryKey: ["my-prescriptions"] });
+          toast.success(t("আগের প্রেসক্রিপশনগুলো আপনার অ্যাকাউন্টে যুক্ত হয়েছে", "Earlier prescriptions moved to your account"));
+        }
+      })
+      .catch(() => {});
+  }, [user, claimGuest, qc, t]);
+
 
   /** এই ডিভাইসে গেস্ট হিসেবে জমা দেওয়া প্রেসক্রিপশনের হিস্ট্রি */
   const guestList = useQuery({
