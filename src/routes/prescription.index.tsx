@@ -145,10 +145,11 @@ function Prescription() {
 
   useEffect(() => () => picked.forEach((p) => URL.revokeObjectURL(p.url)), [picked]);
 
-  /** ফাইল যাচাই — ধরন, আকার ও সংখ্যা */
-  const addFiles = (list: FileList | null) => {
+  /** ফাইল যাচাই — ধরন, আকার, সংখ্যা ও ছবির মান (ঝাপসা/কম কনট্রাস্ট বাতিল) */
+  const addFiles = async (list: FileList | null) => {
     const incoming = Array.from(list ?? []);
     const next: Picked[] = [];
+    setChecking(incoming.length > 0);
     for (const f of incoming) {
       const isImg = f.type.startsWith("image/");
       if (!isImg && !OK_TYPES.includes(f.type)) {
@@ -160,13 +161,23 @@ function Prescription() {
         continue;
       }
       if (picked.some((p) => p.file.name === f.name && p.file.size === f.size)) continue;
-      next.push({ file: f, url: URL.createObjectURL(f), id: `${f.name}-${f.size}-${Math.random()}` });
+      let q: RxImageQuality | undefined;
+      if (isImg) {
+        q = await checkRxImage(f);
+        if (!q.ok) {
+          toast.error(`${f.name} — ${rxQualityMessage(q, t.en)}`, { duration: 7000 });
+          continue;
+        }
+      }
+      next.push({ file: f, url: URL.createObjectURL(f), id: `${f.name}-${f.size}-${Math.random()}`, quality: q });
     }
+    setChecking(false);
     if (picked.length + next.length > MAX_FILES) {
       toast.error(t(`সর্বোচ্চ ${MAX_FILES}টি ফাইল`, `Up to ${MAX_FILES} files`));
     }
     setPicked((prev) => [...prev, ...next].slice(0, MAX_FILES));
   };
+
 
   const totalMb = useMemo(
     () => picked.reduce((s, p) => s + p.file.size, 0) / (1024 * 1024),
