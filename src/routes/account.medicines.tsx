@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/account/medicines")({
   component: MedicineManagement,
