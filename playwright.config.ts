@@ -14,7 +14,11 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env["CI"] ? 1 : 0,
   workers: 2,
-  reporter: [["list"]],
+  reporter: [
+    ["list"],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
+    ["json", { outputFile: "playwright-report/test-results.json" }]
+  ],
   use: {
     baseURL: process.env["E2E_BASE_URL"] ?? "http://localhost:8080",
     trace: "retain-on-failure",
