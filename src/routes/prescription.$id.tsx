@@ -398,8 +398,10 @@ function RxReading() {
     setShowErrors(true);
   };
 
-  /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয় */
+  /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয়, ভুল হলে ফিরিয়ে আনা যায় */
   const removeRow = (i: number) => {
+    const gone = draft?.[i];
+    const goneSel = sel[i] ?? DEF_SEL;
     setDraft((d) => d?.filter((_, j) => j !== i) ?? d);
     setSel((p) => {
       const next: Record<number, Sel> = {};
@@ -414,7 +416,62 @@ function RxReading() {
     });
     setEdited((e) => (e ? ({ ...e, items: e.items.filter((_, j) => j !== i) } as Result) : e));
     touch();
+    if (gone) {
+      toast(t("লাইন মুছে ফেলা হয়েছে", "Line removed"), {
+        action: {
+          label: t("ফিরিয়ে আনুন", "Undo"),
+          onClick: () => {
+            setDraft((d) => {
+              const arr = [...(d ?? [])];
+              arr.splice(i, 0, gone);
+              return arr;
+            });
+            setSel((p) => {
+              const next: Record<number, Sel> = { [i]: goneSel };
+              Object.keys(p)
+                .map(Number)
+                .forEach((k) => (next[k >= i ? k + 1 : k] = p[k]!));
+              return next;
+            });
+            touch();
+          },
+        },
+      });
+    }
   };
+
+  /** সব ঔষধ অর্ডারে ফেরত */
+  const includeAll = () => {
+    setSel((p) => {
+      const next: Record<number, Sel> = {};
+      (draft ?? []).forEach((_, i) => (next[i] = { ...(p[i] ?? DEF_SEL), skip: false }));
+      return next;
+    });
+    toast.success(t("সব ঔষধ অর্ডারে যুক্ত", "All medicines included"));
+  };
+
+  /** স্টকে নেই বা মিল পাওয়া যায়নি — এমন লাইন বাদ দিন */
+  const excludeUnavailable = () => {
+    if (!data) return;
+    let n = 0;
+    setSel((p) => {
+      const next: Record<number, Sel> = { ...p };
+      data.items.forEach((row, i) => {
+        const cur = next[i] ?? DEF_SEL;
+        const match = row.matches[cur.match];
+        if (!match || match.stock <= 0) {
+          if (!cur.skip) n++;
+          next[i] = { ...cur, skip: true };
+        }
+      });
+      return next;
+    });
+    toast.success(
+      n ? t(`${t.n(n)}টি অপ্রাপ্য ঔষধ বাদ দেওয়া হয়েছে`, `${n} unavailable item(s) excluded`) : t("সব ঔষধই পাওয়া যাচ্ছে", "Everything is available"),
+    );
+  };
+
+
 
   /** সেভ / আপডেট — লগইন থাকলে সার্ভারে, গেস্ট হলে এই ডিভাইসে */
   const persist = useCallback(
