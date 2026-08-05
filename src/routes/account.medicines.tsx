@@ -40,6 +40,16 @@ import {
   updateUserMedicineOrder
 } from "@/lib/user-meds.functions";
 import type { MedSuggestion } from "@/lib/rx-suggest.server";
+
+export type MedWithReminder = MedSuggestion & {
+  reminder?: {
+    time: string;
+    type: string;
+    frequency: number;
+    timezone?: string;
+    notes?: string;
+  };
+};
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
