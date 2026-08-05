@@ -453,7 +453,7 @@ function RxReading() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, draft, meta, user, id, t.en, sel],
+    [data, draft, meta, user, viaGuest, id, t.en, sel],
   );
 
   /** অটোসেভ — এডিট থামার ১.৫ সেকেন্ড পর নিজে থেকেই সেভ */
