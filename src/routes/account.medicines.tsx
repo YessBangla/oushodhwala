@@ -90,7 +90,7 @@ function MedicineManagement() {
   const updateRemind = useServerFn(updateMedicineReminder);
   const updateOrder = useServerFn(updateUserMedicineOrder);
 
-  const [tab, setTab] = useState<"favorites" | "recent">("favorites");
+  const [tab, setTab] = useState<"favorites" | "recent" | "calendar">("favorites");
   const [search, setSearch] = useState("");
   const [filterForm, setFilterForm] = useState<string>("all");
   const [sort, setSort] = useState<"name" | "date">("date");
@@ -120,6 +120,11 @@ function MedicineManagement() {
   });
   const [importStep, setImportStep] = useState<"preview" | "mapping" | "results">("preview");
   const [importHistory, setImportHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_import_history") || "[]"));
+
+  // Bulk Edit State
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkEditConfig, setBulkEditConfig] = useState({ active: true });
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-medicines"],
