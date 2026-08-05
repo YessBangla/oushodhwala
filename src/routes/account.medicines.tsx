@@ -890,7 +890,12 @@ function MedicineManagement() {
                     className="flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
                     onClick={() => {
                       setConfigProduct(item);
-                      setReminderConfig(item.reminder_config || { type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+                      setReminderConfig({ 
+                        type: item.reminder_config?.type || 'daily', 
+                        time: item.reminder_config?.time || '08:00', 
+                        frequency: item.reminder_config?.frequency || 1, 
+                        timezone: item.reminder_config?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone 
+                      });
                       setReminderConfigOpen(true);
                     }}
                   >
