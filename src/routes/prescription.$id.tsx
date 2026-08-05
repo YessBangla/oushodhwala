@@ -472,9 +472,11 @@ function RxReading() {
       const changes = diffChanges();
       const payload: RxRead = { ...data.read, ...meta, items: draft };
       // গেস্ট হলে সার্ভারে সেভ না করে স্থানীয়ভাবেই যাচাই সম্পন্ন হয়
-      const res = user
-        ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
-        : ({ ...data, read: payload } as Result);
+      const res =
+        user && !viaGuest
+          ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
+          : ({ ...data, read: payload } as Result);
+
 
       setEdited(res);
       setMeta(metaOf(res.read));
