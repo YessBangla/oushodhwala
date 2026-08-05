@@ -33,6 +33,26 @@ export function ProductPreview({
   const [access, setAccess] = useState<"public" | "private">("public");
   const [expiry, setExpiry] = useState<"never" | "1h" | "1d" | "7d">("never");
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [revoked, setRevoked] = useState(false);
+  const [viewCount, setViewCount] = useState(0);
+
+  // Load tracking data from local storage for demo purposes
+  useEffect(() => {
+    if (open && product) {
+      const tracking = JSON.parse(localStorage.getItem(`share_track_${product.id}`) || '{"views": 0, "revoked": false}');
+      setViewCount(tracking.views);
+      setRevoked(tracking.revoked);
+    }
+  }, [open, product]);
+
+  const toggleRevoke = () => {
+    if (!product) return;
+    const next = !revoked;
+    setRevoked(next);
+    const tracking = { views: viewCount, revoked: next };
+    localStorage.setItem(`share_track_${product.id}`, JSON.stringify(tracking));
+    toast.success(next ? t("লিংক রিভোক করা হয়েছে", "Link revoked") : t("লিংক সচল করা হয়েছে", "Link reactivated"));
+  };
 
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined' || !product) return '';
