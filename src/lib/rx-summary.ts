@@ -20,7 +20,11 @@ export type RxSummaryLine = {
 export type RxSummary = {
   id: string;
   patientName: string;
+  patientAge?: string;
+  patientAddress?: string;
+  hospital?: string;
   doctorName: string;
+  doctorQualification?: string;
   date: string;
   advice: string;
   note: string;
@@ -90,8 +94,11 @@ export function rxSummaryHtml(s: RxSummary, f: RxSummaryFormat): string {
   <div class="muted r">#${esc(s.id.slice(0, 8))}<br>${esc(when)}</div>
 </header>
 <div class="grid">
+  <div><b>${L("হাসপাতাল / চেম্বার", "Hospital / chamber")}:</b> ${esc(s.hospital || "—")}</div>
+  <div><b>${L("ডাক্তার", "Doctor")}:</b> ${esc(s.doctorName || "—")}${s.doctorQualification ? `, ${esc(s.doctorQualification)}` : ""}</div>
   <div><b>${L("রোগী", "Patient")}:</b> ${esc(s.patientName || "—")}</div>
-  <div><b>${L("ডাক্তার", "Doctor")}:</b> ${esc(s.doctorName || "—")}</div>
+  <div><b>${L("বয়স", "Age")}:</b> ${esc(s.patientAge || "—")}</div>
+  <div><b>${L("ঠিকানা", "Address")}:</b> ${esc(s.patientAddress || "—")}</div>
   <div><b>${L("তারিখ", "Date")}:</b> ${esc(s.date || "—")}</div>
 </div>
 <table>
