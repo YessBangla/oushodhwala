@@ -70,3 +70,11 @@ export const getUserAuditLogs = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     return server.getAuditLogs(context.userId);
   });
+
+export const bulkUpdateMedicineStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { productIds: string[]; active: boolean }) => d)
+  .handler(async ({ data, context }) => {
+    await server.bulkUpdateStatus(context.userId, data.productIds, data.active);
+    return { success: true };
+  });

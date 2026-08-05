@@ -37,7 +37,8 @@ import {
   syncUserMedicines,
   updateMedicineReminder,
   toggleUserFavorite,
-  updateUserMedicineOrder
+  updateUserMedicineOrder,
+  bulkUpdateMedicineStatus
 } from "@/lib/user-meds.functions";
 import type { MedSuggestion } from "@/lib/rx-suggest.server";
 
@@ -96,8 +97,9 @@ function MedicineManagement() {
   const sync = useServerFn(syncUserMedicines);
   const updateRemind = useServerFn(updateMedicineReminder);
   const updateOrder = useServerFn(updateUserMedicineOrder);
+  const bulkUpdateStatus = useServerFn(bulkUpdateMedicineStatus);
 
-  const [tab, setTab] = useState<"favorites" | "recent" | "calendar">("favorites");
+  const [tab, setTab] = useState<"favorites" | "recent" | "calendar" | "health">("favorites");
   const [search, setSearch] = useState("");
   const [filterForm, setFilterForm] = useState<string>("all");
   const [sort, setSort] = useState<"name" | "date">("date");
@@ -112,7 +114,7 @@ function MedicineManagement() {
   // Reminder State
   const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
   const [configProduct, setConfigProduct] = useState<MedWithReminder | null>(null);
-  const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  const [reminderConfig, setReminderConfig] = useState<{ type: string; time: string; frequency: number; timezone: string }>({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   const [notificationHistory, setNotificationHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_delivery_logs") || "[]"));
   const [showLogs, setShowLogs] = useState(false);
   const [logFilter, setLogFilter] = useState<string>("all");
@@ -131,6 +133,7 @@ function MedicineManagement() {
   // Bulk Edit State
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkEditConfig, setBulkEditConfig] = useState({ active: true });
+
 
 
   const { data, isLoading } = useQuery({
@@ -436,8 +439,16 @@ function MedicineManagement() {
 
 
   const checkReminderConflicts = (time: string) => {
-    const existing = (items as MedWithReminder[]).filter(i => i.reminder?.time === time && i.id !== configProduct?.id);
+    const existing = (favorites as MedWithReminder[]).filter(i => i.reminder_config?.time === time && i.id !== configProduct?.id);
     return existing;
+  };
+
+  const getReminderErrors = () => {
+    const errors = [];
+    if (!reminderConfig.time) errors.push(t("সময় প্রদান করা হয়নি", "Time is not provided"));
+    if (reminderConfig.frequency < 1 || reminderConfig.frequency > 24) errors.push(t("ইন্টারভাল ১-২৪ ঘন্টার মধ্যে হতে হবে", "Interval must be between 1-24 hours"));
+    if (!reminderConfig.timezone) errors.push(t("টাইমজোন সিলেক্ট করা হয়নি", "Timezone is not selected"));
+    return errors;
   };
 
   const exportToICS = (reminder: any, product: any) => {
@@ -748,20 +759,25 @@ function MedicineManagement() {
       </div>
 
       <Tabs value={tab} onValueChange={v => { setTab(v as any); setSelected(new Set()); }} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="favorites" className="gap-2">
             <Heart className={`h-4 w-4 ${tab === "favorites" ? "fill-primary" : ""}`} />
-            {t("প্রিয়", "Favorites")}
+            <span className="hidden sm:inline">{t("প্রিয়", "Favorites")}</span>
           </TabsTrigger>
           <TabsTrigger value="recent" className="gap-2">
             <History className="h-4 w-4" />
-            {t("সম্প্রতি", "Recent")}
+            <span className="hidden sm:inline">{t("সম্প্রতি", "Recent")}</span>
           </TabsTrigger>
           <TabsTrigger value="calendar" className="gap-2">
             <Calendar className="h-4 w-4" />
-            {t("ক্যালেন্ডার", "Calendar")}
+            <span className="hidden sm:inline">{t("ক্যালেন্ডার", "Calendar")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="health" className="gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("হেলথ", "Health")}</span>
           </TabsTrigger>
         </TabsList>
+
 
 
         <TabsContent value={tab} className="mt-4 space-y-2">
@@ -869,7 +885,20 @@ function MedicineManagement() {
             <ScrollArea className="h-[500px] pr-4">
               <div className="space-y-2">
                 {favorites.filter(f => f.reminder_config?.time).sort((a, b) => (a.reminder_config?.time || "").localeCompare(b.reminder_config?.time || "")).map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border bg-card">
+                  <div 
+                    key={item.id} 
+                    className="flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setConfigProduct(item);
+                      setReminderConfig({ 
+                        type: item.reminder_config?.type || 'daily', 
+                        time: item.reminder_config?.time || '08:00', 
+                        frequency: item.reminder_config?.frequency || 1, 
+                        timezone: item.reminder_config?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone 
+                      });
+                      setReminderConfigOpen(true);
+                    }}
+                  >
                     <div className="flex items-center gap-3">
                       <Clock className="h-4 w-4 text-primary" />
                       <div>
@@ -887,7 +916,63 @@ function MedicineManagement() {
             </ScrollArea>
           </div>
         </TabsContent>
+        <TabsContent value="health" className="mt-4">
+          <div className="space-y-6">
+            <h3 className="text-sm font-bold">{t("নোটিফিকেশন হেলথ ড্যাশবোর্ড", "Notification Health Dashboard")}</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border p-4 bg-card text-center">
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">{t("সফলতা হার", "Success Rate")}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {notificationHistory.length > 0 
+                    ? Math.round((notificationHistory.filter(h => h.status === 'success').length / notificationHistory.length) * 100) 
+                    : 0}%
+                </p>
+              </div>
+              <div className="rounded-xl border p-4 bg-card text-center">
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">{t("মোট ব্যর্থতা", "Total Failures")}</p>
+                <p className="text-2xl font-bold text-destructive">
+                  {notificationHistory.filter(h => h.status === 'failed').length}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase text-muted-foreground">{t("ব্যর্থতার কারণ বিশ্লেষণ", "Failure Reason Analysis")}</h4>
+              <div className="rounded-xl border p-4 bg-card space-y-2">
+                {Object.entries(notificationHistory.filter(h => h.status === 'failed').reduce((acc: any, curr) => {
+                  acc[curr.error || 'Unknown'] = (acc[curr.error || 'Unknown'] || 0) + 1;
+                  return acc;
+                }, {})).map(([error, count]: [string, any]) => (
+                  <div key={error} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{error}</span>
+                    <span className="font-bold">{count}</span>
+                  </div>
+                ))}
+                {notificationHistory.filter(h => h.status === 'failed').length === 0 && (
+                  <p className="text-[10px] text-center text-muted-foreground py-2">{t("কোনো ব্যর্থতা নেই।", "No failures found.")}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase text-muted-foreground">{t("টাইমজোন ভিত্তিক পরিসংখ্যান", "Timezone Statistics")}</h4>
+              <ScrollArea className="h-32 rounded-xl border p-4 bg-card">
+                {Object.entries(notificationHistory.reduce((acc: any, curr) => {
+                  acc[curr.timezone || 'UTC'] = (acc[curr.timezone || 'UTC'] || 0) + 1;
+                  return acc;
+                }, {})).map(([tz, count]: [string, any]) => (
+                  <div key={tz} className="flex justify-between text-xs py-1 border-b last:border-0">
+                    <span className="text-muted-foreground">{tz}</span>
+                    <span className="font-bold">{count}</span>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
 
 
       {/* Confirmation Dialog */}
@@ -971,6 +1056,24 @@ function MedicineManagement() {
                 </SelectContent>
               </Select>
             </div>
+
+            {getReminderErrors().length > 0 && (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 space-y-1.5">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-[10px] font-bold uppercase">{t("ভ্যালিডেশন ত্রুটি", "Validation Errors")}</span>
+                </div>
+                <ul className="space-y-1">
+                  {getReminderErrors().map((err, idx) => (
+                    <li key={idx} className="text-[9px] text-destructive flex items-center gap-1.5">
+                      <div className="h-1 w-1 rounded-full bg-destructive" />
+                      {err}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
 
             {checkReminderConflicts(reminderConfig.time).length > 0 && (
               <div className="rounded bg-amber-50 p-2 text-[9px] text-amber-700 flex items-start gap-1.5 border border-amber-200">
@@ -1104,12 +1207,19 @@ function MedicineManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkEditOpen(false)}>{t("বাতিল", "Cancel")}</Button>
-            <Button onClick={() => {
-              toast.success(t("আপডেট করা হয়েছে", "Updated successfully"));
-              setBulkEditOpen(false);
-              setSelected(new Set());
+            <Button onClick={async () => {
+              try {
+                await bulkUpdateStatus({ data: { productIds: Array.from(selected), active: bulkEditConfig.active } });
+                toast.success(t("আপডেট করা হয়েছে", "Updated successfully"));
+                qc.invalidateQueries({ queryKey: ["user-medicines"] });
+                setBulkEditOpen(false);
+                setSelected(new Set());
+              } catch (e) {
+                toast.error(t("আপডেট করতে সমস্যা হয়েছে", "Error updating"));
+              }
             }}>{t("অ্যাপ্লাই", "Apply")}</Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>
