@@ -173,8 +173,33 @@ export function ProductPreview({
                       <SelectItem value="7d">{t("৭ দিন", "7 Days")}</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
               </div>
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-muted-foreground uppercase">{t("ভিউ সংখ্যা", "Views")}</span>
+                    <span className="text-xs font-bold flex items-center gap-1"><Eye className="h-3 w-3" /> {viewCount}</span>
+                  </div>
+                  <div className="h-6 w-px bg-border" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-muted-foreground uppercase">{t("স্ট্যাটাস", "Status")}</span>
+                    <Badge variant={revoked ? "destructive" : "secondary"} className="h-4 text-[8px] px-1">
+                      {revoked ? t("রিভোকড", "Revoked") : t("সক্রিয়", "Active")}
+                    </Badge>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className={`h-7 text-[9px] gap-1.5 ${revoked ? 'border-primary' : 'text-destructive border-destructive hover:bg-destructive/10'}`}
+                  onClick={toggleRevoke}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  {revoked ? t("সচল করুন", "Reactivate") : t("লিংক রিভোক করুন", "Revoke Link")}
+                </Button>
+              </div>
+            </div>
             </div>
 
             <Separator />
