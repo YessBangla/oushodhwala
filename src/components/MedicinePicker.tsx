@@ -38,6 +38,8 @@ export function MedicinePicker({
   const [term, setTerm] = useState("");
   const [failed, setFailed] = useState(false);
   const [position, setPosition] = useState({ left: 0, top: 0, width: 288 });
+  const cache = useRef<Record<string, MedSuggestion[]>>({}); // একই সার্চ টেক্সটের জন্য ফলাফল ক্যাশ
+
 
   const positionPopup = () => {
     const box = boxRef.current;
@@ -59,13 +61,25 @@ export function MedicinePicker({
       return;
     }
     const my = ++seq.current;
+    
+    // ক্যাশ চেক করা হচ্ছে
+    if (cache.current[q]) {
+      setRows(cache.current[q]);
+      setLoading(false);
+      setFailed(false);
+      setActive(0);
+      return;
+    }
+
     setLoading(true);
     setFailed(false);
     const id = window.setTimeout(async () => {
       try {
         const r = await suggest({ data: { q, limit: 8 } });
         if (my === seq.current) {
-          setRows(r.rows as MedSuggestion[]);
+          const suggestions = r.rows as MedSuggestion[];
+          cache.current[q] = suggestions; // ক্যাশে সেভ করা হচ্ছে
+          setRows(suggestions);
           setActive(0);
         }
       } catch {
@@ -79,6 +93,7 @@ export function MedicinePicker({
     }, 300); // ব্র্যান্ড ইনপুটের জন্য debounce 300ms সেট করা হলো যাতে অপ্রয়োজনীয় সার্ভার কল কমে
     return () => window.clearTimeout(id);
   }, [term, open, suggest]);
+
 
   // টেবিলের overflow পপ-আপ কেটে ফেলতে পারে, তাই portal-এর অবস্থান ইনপুটের সাথে রাখি।
   useEffect(() => {
@@ -106,6 +121,24 @@ export function MedicinePicker({
 
   const list = useMemo(() => rows.slice(0, 8), [rows]);
 
+  const highlight = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return (
+      <>
+        {parts.map((part, i) =>
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark key={i} className="bg-primary/20 text-primary rounded-sm px-0.5">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   const choose = (p: MedSuggestion) => {
     onChange(t.en ? p.en || p.name : p.name);
     onPick?.(p);
@@ -113,13 +146,18 @@ export function MedicinePicker({
     setRows([]);
   };
 
+
   return (
     <div className={`relative ${w}`} ref={boxRef}>
       <input
         value={value}
         placeholder={ph ?? "—"}
         role="combobox"
+        aria-label={t("ঔষধ খুঁজুন", "Search medicine")}
+        aria-autocomplete="list"
         aria-expanded={open && list.length > 0}
+        aria-controls="med-picker-listbox"
+        aria-activedescendant={open ? `med-option-${active}` : undefined}
         aria-invalid={!!err}
         autoComplete="off"
         onChange={(e) => {
@@ -133,6 +171,7 @@ export function MedicinePicker({
           setOpen(true);
           positionPopup();
         }}
+
         onKeyDown={(e) => {
           if (!open || !list.length) return;
           if (e.key === "ArrowDown") {
@@ -158,10 +197,13 @@ export function MedicinePicker({
       {open && term.trim().length > 0 && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
+          id="med-picker-listbox"
           role="listbox"
+          aria-label={t("সাজেশন তালিকা", "Suggestion list")}
           style={{ left: position.left, top: position.top, width: position.width }}
           className="fixed z-[100] max-h-72 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-xl"
         >
+
           {loading && list.length === 0 && (
             <p className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> {t("খুঁজছি…", "Searching…")}
@@ -170,8 +212,10 @@ export function MedicinePicker({
           {list.map((p, i) => (
             <button
               key={p.id}
+              id={`med-option-${i}`}
               role="option"
               aria-selected={i === active}
+
               type="button"
               onMouseEnter={() => setActive(i)}
               onMouseDown={(e) => e.preventDefault()}
@@ -181,11 +225,12 @@ export function MedicinePicker({
               <Search className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[11px] font-bold">
-                  {t.en ? p.en || p.name : p.name} {p.strength}
+                  {highlight(t.en ? p.en || p.name : p.name, term)} {p.strength}
                 </span>
                 <span className="block truncate text-[10px] text-muted-foreground">
-                  {[p.generic, p.manufacturer || p.brand, p.pack || p.form].filter(Boolean).join(" · ")}
+                  {[highlight(p.generic || "", term), highlight(p.manufacturer || p.brand || "", term), p.pack || p.form].filter(Boolean).reduce((prev, curr, i) => [prev, i > 0 ? " · " : "", curr], [] as any)}
                 </span>
+
               </span>
               <span className="shrink-0 text-[10px] font-bold text-primary">৳{Math.round(p.price)}</span>
             </button>
