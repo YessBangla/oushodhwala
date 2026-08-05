@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertCircle, Loader2, Search, Star, Trash2, Info, X } from "lucide-react";
+import { AlertCircle, Loader2, Search, Star, Trash2, Info, X, Filter, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { useT } from "@/lib/i18n";
@@ -14,6 +14,14 @@ import {
   addUserRecent 
 } from "@/lib/user-meds.functions";
 import { ProductPreview } from "./ProductPreview";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "./ui/select";
+import { Button } from "./ui/button";
 
 /**
  * ঔষধের নাম লেখার ইনপুট — একটি অক্ষর লিখলেই ডাটাবেজ থেকে মিল করা
@@ -58,6 +66,10 @@ export function MedicinePicker({
   
   const [previewProduct, setPreviewProduct] = useState<MedSuggestion | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Advanced Filters
+  const [filterForm, setFilterForm] = useState<string>("all");
+  const [sortPrice, setSortPrice] = useState<"none" | "low" | "high">("none");
 
   const positionPopup = () => {
     const box = boxRef.current;
