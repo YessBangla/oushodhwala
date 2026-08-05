@@ -21,7 +21,8 @@ import {
   Calendar,
   Filter,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Plus
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,13 +72,24 @@ function MedicineManagement() {
   const removeFavs = useServerFn(bulkRemoveUserFavorites);
   const removeRecent = useServerFn(bulkRemoveUserRecent);
   const sync = useServerFn(syncUserMedicines);
+  const updateRemind = useServerFn(updateMedicineReminder);
 
   const [tab, setTab] = useState<"favorites" | "recent">("favorites");
   const [search, setSearch] = useState("");
+  const [filterForm, setFilterForm] = useState<string>("all");
   const [sort, setSort] = useState<"name" | "date">("date");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewProduct, setPreviewProduct] = useState<MedSuggestion | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  
+  // Undo/Restore State
+  const [lastDeleted, setLastDeleted] = useState<{ list: MedSuggestion[], tab: string } | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  // Reminder State
+  const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
+  const [configProduct, setConfigProduct] = useState<MedSuggestion | null>(null);
+  const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1 });
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-medicines"],
@@ -88,25 +100,31 @@ function MedicineManagement() {
   const favorites = data?.favorites || [];
   const recent = data?.recent || [];
 
+  const forms = useMemo(() => {
+    const list = tab === "favorites" ? favorites : recent;
+    return Array.from(new Set(list.map(i => i.form).filter(Boolean)));
+  }, [tab, favorites, recent]);
+
   const items = useMemo(() => {
     const list = tab === "favorites" ? favorites : recent;
     let filtered = list.filter(item => {
       const q = search.toLowerCase();
-      return (
+      const matchesSearch = (
         item.name.toLowerCase().includes(q) ||
         (item.en && item.en.toLowerCase().includes(q)) ||
         (item.generic && item.generic.toLowerCase().includes(q)) ||
         (item.brand && item.brand.toLowerCase().includes(q))
       );
+      const matchesForm = filterForm === "all" || item.form === filterForm;
+      return matchesSearch && matchesForm;
     });
 
     if (sort === "name") {
       filtered.sort((a, b) => a.name.localeCompare(b.name));
     }
-    // Date sorting is default from server (descending)
     
     return filtered;
-  }, [tab, favorites, recent, search, sort]);
+  }, [tab, favorites, recent, search, sort, filterForm]);
 
   const toggleSelect = (id: string) => {
     const next = new Set(selected);
@@ -120,12 +138,15 @@ function MedicineManagement() {
     else setSelected(new Set(items.map(i => i.id)));
   };
 
-  const handleBulkRemove = async () => {
+  const performBulkRemove = async () => {
     if (selected.size === 0) return;
     try {
+      const currentList = tab === "favorites" ? favorites : recent;
+      const deletedItems = currentList.filter(i => selected.has(i.id));
+      setLastDeleted({ list: deletedItems, tab });
+
       if (tab === "favorites") {
         await removeFavs({ data: { ids: Array.from(selected) } });
-        // Also update local storage to keep in sync
         const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
         const next = local.filter(l => !selected.has(l.id));
         localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
@@ -135,11 +156,49 @@ function MedicineManagement() {
         const next = local.filter(l => !selected.has(l.id));
         localStorage.setItem("rx_recent_meds", JSON.stringify(next));
       }
-      toast.success(t("সফলভাবে মুছে ফেলা হয়েছে", "Successfully removed"));
+      
+      toast.success(t("মুছে ফেলা হয়েছে", "Successfully removed"), {
+        action: {
+          label: t("ফিরে আনুন", "Undo"),
+          onClick: handleRestore
+        }
+      });
       setSelected(new Set());
+      setConfirmDeleteOpen(false);
       qc.invalidateQueries({ queryKey: ["user-medicines"] });
     } catch (e) {
       toast.error(t("মুছতে সমস্যা হয়েছে", "Error removing items"));
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!lastDeleted) return;
+    try {
+      const ids = lastDeleted.list.map(i => i.id);
+      if (lastDeleted.tab === "favorites") {
+        await sync({ data: { favIds: ids, recentIds: [] } });
+      } else {
+        await sync({ data: { favIds: [], recentIds: ids } });
+      }
+      qc.invalidateQueries({ queryKey: ["user-medicines"] });
+      setLastDeleted(null);
+      toast.success(t("পুনরুদ্ধার করা হয়েছে", "Restored successfully"));
+    } catch (e) {
+      toast.error(t("পুনরুদ্ধার করতে সমস্যা হয়েছে", "Error restoring"));
+    }
+  };
+
+  const handleSaveReminder = async () => {
+    if (!configProduct) return;
+    try {
+      await updateRemind({ 
+        data: { productId: configProduct.id, config: reminderConfig } 
+      });
+      toast.success(t("রিমাইন্ডার সেট করা হয়েছে", "Reminder set successfully"));
+      setReminderConfigOpen(false);
+      qc.invalidateQueries({ queryKey: ["user-medicines"] });
+    } catch (e) {
+      toast.error(t("রিমাইন্ডার সেট করতে সমস্যা হয়েছে", "Error setting reminder"));
     }
   };
 
@@ -187,13 +246,6 @@ function MedicineManagement() {
         
         if (file.name.endsWith(".json")) {
           importedMeds = JSON.parse(content);
-        } else if (file.name.endsWith(".csv")) {
-          // Basic CSV parsing
-          const lines = content.split("\n").slice(1);
-          // This is tricky because we need the full MedSuggestion objects.
-          // For now, let's just support JSON import or tell the user it needs to be the right format.
-          toast.error(t("CSV ইম্পোর্ট এখনো পুরোপুরি সাপোর্ট করে না, JSON ব্যবহার করুন", "CSV import not fully supported yet, use JSON"));
-          return;
         }
 
         if (Array.isArray(importedMeds)) {
@@ -241,38 +293,68 @@ function MedicineManagement() {
         </div>
       </header>
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input 
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={t("নাম বা জেনেরিক দিয়ে খুঁজুন...", "Search by name or generic...")}
-            className="pl-9"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1.5"
-            onClick={() => setSort(s => s === "name" ? "date" : "name")}
-          >
-            <ArrowUpDown className="h-3.5 w-3.5" />
-            {sort === "name" ? t("নাম", "Name") : t("তারিখ", "Date")}
-          </Button>
-          {selected.size > 0 && (
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t("নাম বা জেনেরিক দিয়ে খুঁজুন...", "Search by name or generic...")}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={filterForm} onValueChange={setFilterForm}>
+              <SelectTrigger className="w-[120px] h-9 text-[11px]">
+                <Filter className="mr-2 h-3 w-3" />
+                <SelectValue placeholder={t("সব ফর্ম", "All Forms")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("সব ফর্ম", "All Forms")}</SelectItem>
+                {forms.map(f => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button 
-              variant="destructive" 
+              variant="outline" 
               size="sm" 
-              className="gap-1.5"
-              onClick={handleBulkRemove}
+              className="h-9 gap-1.5"
+              onClick={() => setSort(s => s === "name" ? "date" : "name")}
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              {t("মুছুন", "Delete")} ({selected.size})
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              {sort === "name" ? t("নাম", "Name") : t("তারিখ", "Date")}
             </Button>
-          )}
+          </div>
         </div>
+        
+        {selected.size > 0 && (
+          <div className="flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2">
+            <span className="text-xs font-medium text-destructive">
+              {selected.size} {t("টি আইটেম সিলেক্ট করা হয়েছে", "items selected")}
+            </span>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => setSelected(new Set())}
+              >
+                {t("বাতিল", "Cancel")}
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setConfirmDeleteOpen(true)}
+              >
+                <Trash2 className="h-3 w-3" />
+                {t("মুছুন", "Delete")}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Tabs value={tab} onValueChange={v => { setTab(v as any); setSelected(new Set()); }} className="w-full">
@@ -309,7 +391,7 @@ function MedicineManagement() {
                 </span>
               </div>
               <div className="grid gap-2">
-                {items.map(item => (
+                {items.map((item: any) => (
                   <div 
                     key={item.id} 
                     className={`group relative flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/50 ${selected.has(item.id) ? "border-primary bg-primary/5" : "border-border bg-card"}`}
@@ -328,9 +410,26 @@ function MedicineManagement() {
                         <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">{item.strength}</span>
                       </div>
                       <p className="truncate text-[10px] text-muted-foreground">{item.generic}</p>
-                      <p className="mt-0.5 text-[10px] font-bold text-primary">৳{item.price}</p>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <p className="text-[10px] font-bold text-primary">৳{item.price}</p>
+                        {item.reminder_config?.type && (
+                          <Badge variant="secondary" className="h-4 px-1 text-[8px] gap-0.5">
+                            <Bell className="h-2 w-2" />
+                            {item.reminder_config.time}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      {tab === "favorites" && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => {
+                          setConfigProduct(item);
+                          setReminderConfig(item.reminder_config || { type: 'daily', time: '08:00', frequency: 1 });
+                          setReminderConfigOpen(true);
+                        }}>
+                          <Bell className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => {
                         setPreviewProduct(item);
                         setPreviewOpen(true);
@@ -345,6 +444,68 @@ function MedicineManagement() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("আপনি কি নিশ্চিত?", "Are you sure?")}</DialogTitle>
+            <DialogDescription>
+              {t("নির্বাচিত আইটেমগুলো মুছে ফেলা হবে। আপনি পরবর্তীতে চাইলে ফিরে আনতে পারবেন।", "Selected items will be removed. You can undo this action later.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setConfirmDeleteOpen(false)}>
+              {t("না", "No")}
+            </Button>
+            <Button variant="destructive" onClick={performBulkRemove}>
+              {t("হ্যাঁ, মুছুন", "Yes, Delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Config Dialog */}
+      <Dialog open={reminderConfigOpen} onOpenChange={setReminderConfigOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              {t("রিমাইন্ডার সেট করুন", "Set Reminder")}
+            </DialogTitle>
+            <DialogDescription>
+              {configProduct?.name} {configProduct?.strength}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">{t("ধরন", "Type")}</label>
+              <Select value={reminderConfig.type} onValueChange={(v) => setReminderConfig(c => ({...c, type: v}))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">{t("প্রতিদিন", "Daily")}</SelectItem>
+                  <SelectItem value="weekly">{t("সাপ্তাহিক", "Weekly")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">{t("সময়", "Time")}</label>
+              <Input 
+                type="time" 
+                value={reminderConfig.time} 
+                onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full" onClick={handleSaveReminder}>
+              {t("সেভ করুন", "Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ProductPreview 
         product={previewProduct}
