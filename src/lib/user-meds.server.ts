@@ -3,16 +3,30 @@ import { MedSuggestion } from "./rx-suggest.server";
 
 const SELECT = "id, name, en, brand, generic, strength, form, pack, price, mrp, stock, rx, emoji, image_url, medicine_image_url, manufacturer, indications, indications_en, dosage, dosage_en, side_effects, side_effects_en, therapeutic_class, therapeutic_class_en";
 
+async function logAudit(userId: string, action: string, metadata: any) {
+  // Gracefully handle audit logging
+  try {
+    await supabaseAdmin.from("user_audit_logs").insert({
+      user_id: userId,
+      action,
+      metadata,
+      created_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Audit log failed", e);
+  }
+}
+
 export async function getFavorites(userId: string): Promise<MedSuggestion[]> {
   const { data, error } = await supabaseAdmin
     .from("user_favorites")
-    .select(`product:products(${SELECT}), reminder_config`)
+    .select(`product:products(${SELECT}), reminder_config, sort_order`)
     .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .order("sort_order", { ascending: true });
 
   if (error) throw error;
   // @ts-ignore - dynamic product structure
-  return (data?.map((d: any) => ({ ...d.product, reminder_config: d.reminder_config })) || []) as MedSuggestion[];
+  return (data?.map((d: any) => ({ ...d.product, reminder_config: d.reminder_config, sort_order: d.sort_order })) || []) as MedSuggestion[];
 }
 
 export async function getRecent(userId: string): Promise<MedSuggestion[]> {
@@ -45,9 +59,9 @@ export async function syncMedicines(userId: string, localFavIds: string[], local
         product_id: id,
         sync_meta: { source: 'local_sync', timestamp: new Date().toISOString() }
       })));
+    await logAudit(userId, "sync_favorites", { count: toAddFavs.length });
   }
 
-  // Sync recent
   if (localRecentIds.length > 0) {
     const { data: existing } = await supabaseAdmin
       .from("user_recent_medicines")
@@ -76,15 +90,12 @@ export async function toggleFavorite(userId: string, productId: string) {
     .maybeSingle();
 
   if (existing) {
-    await supabaseAdmin
-      .from("user_favorites")
-      .delete()
-      .eq("id", existing.id);
+    await supabaseAdmin.from("user_favorites").delete().eq("id", existing.id);
+    await logAudit(userId, "remove_favorite", { productId });
     return { favorite: false };
   } else {
-    await supabaseAdmin
-      .from("user_favorites")
-      .insert({ user_id: userId, product_id: productId });
+    await supabaseAdmin.from("user_favorites").insert({ user_id: userId, product_id: productId });
+    await logAudit(userId, "add_favorite", { productId });
     return { favorite: true };
   }
 }
@@ -95,6 +106,27 @@ export async function updateReminder(userId: string, productId: string, config: 
     .update({ reminder_config: config })
     .eq("user_id", userId)
     .eq("product_id", productId);
+  await logAudit(userId, "update_reminder", { productId, config });
+}
+
+export async function updateSortOrder(userId: string, productIds: string[]) {
+  for (let i = 0; i < productIds.length; i++) {
+    await supabaseAdmin
+      .from("user_favorites")
+      .update({ sort_order: i })
+      .eq("user_id", userId)
+      .eq("product_id", productIds[i]);
+  }
+}
+
+export async function getAuditLogs(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("user_audit_logs")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
 }
 
 export async function addRecent(userId: string, productId: string) {
@@ -123,6 +155,7 @@ export async function bulkRemoveFavorites(userId: string, productIds: string[]) 
     .delete()
     .eq("user_id", userId)
     .in("product_id", productIds);
+  await logAudit(userId, "bulk_remove_favorites", { productIds });
 }
 
 export async function bulkRemoveRecent(userId: string, productIds: string[]) {
