@@ -353,8 +353,33 @@ export function MedicinePicker({
             role="listbox"
             aria-label={t("সাজেশন তালিকা", "Suggestion list")}
             style={{ left: position.left, top: position.top, width: position.width }}
-            className="fixed z-[100] max-h-72 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-xl"
+            className="fixed z-[100] max-h-96 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-xl"
           >
+            {/* Advanced Filters UI */}
+            <div className="flex items-center gap-1 border-b p-1.5 bg-secondary/20">
+              <Select value={filterForm} onValueChange={setFilterForm}>
+                <SelectTrigger className="h-7 text-[9px] w-[90px]">
+                  <Filter className="h-2.5 w-2.5 mr-1" />
+                  <SelectValue placeholder={t("সব ফর্ম", "All Forms")} />
+                </SelectTrigger>
+                <SelectContent className="z-[101]">
+                  <SelectItem value="all">{t("সব ফর্ম", "All Forms")}</SelectItem>
+                  {forms.map(f => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[9px] gap-1 px-2"
+                onClick={() => setSortPrice(s => s === "low" ? "high" : s === "high" ? "none" : "low")}
+              >
+                <ArrowUpDown className="h-2.5 w-2.5" />
+                {sortPrice === "low" ? t("কম দাম", "Low Price") : sortPrice === "high" ? t("বেশি দাম", "High Price") : t("মূল্য", "Price")}
+              </Button>
+            </div>
+
             {loading && list.length === 0 && (
               <p className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" /> {t("খুঁজছি…", "Searching…")}
