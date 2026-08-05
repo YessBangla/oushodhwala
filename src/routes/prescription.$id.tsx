@@ -1443,6 +1443,8 @@ function RxTable({
               <th className={TH}>{t("পরিমাণ", "Qty")}</th>
               <th className={TH}>{t("মূল্য", "Amount")}</th>
               <th className={TH}>{t("অর্ডার", "Order")}</th>
+              <th className={TH}>{t("মুছুন", "Del")}</th>
+
             </tr>
           </thead>
           <tbody>
