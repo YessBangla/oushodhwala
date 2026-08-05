@@ -378,6 +378,14 @@ function MedicineManagement() {
 
   if (!user) return null;
 
+  const mappedData = importData.raw.map(row => {
+    const obj: any = {};
+    Object.entries(importData.mapping).forEach(([csvHeader, appField]) => {
+      obj[appField] = row[csvHeader];
+    });
+    return obj;
+  });
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <header className="mb-6 flex items-center justify-between">
