@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-stack";
 import { useServerFn } from "@tanstack/react-start";
 import { 
   Heart, 
@@ -15,7 +15,13 @@ import {
   MoreVertical,
   ExternalLink,
   ChevronRight,
-  Info
+  Info,
+  Bell,
+  Clock,
+  Calendar,
+  Filter,
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,9 +31,33 @@ import {
   getUserMedicines, 
   bulkRemoveUserFavorites, 
   bulkRemoveUserRecent,
-  syncUserMedicines
+  syncUserMedicines,
+  updateMedicineReminder,
+  toggleUserFavorite
 } from "@/lib/user-meds.functions";
 import type { MedSuggestion } from "@/lib/rx-suggest.server";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ProductImage } from "@/components/ProductImage";
+import { ProductPreview } from "@/components/ProductPreview";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
