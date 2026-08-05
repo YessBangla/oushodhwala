@@ -1290,7 +1290,15 @@ function Field({ t, v }: { t: string; v: string }) {
 }
 
 /** হাসপাতাল / ডাক্তার / রোগীর তথ্য — প্রতিটি আলাদা সেলে, সরাসরি এডিটযোগ্য */
-function MetaEditor({ meta, onChange }: { meta: RxMeta; onChange: (patch: Partial<RxMeta>) => void }) {
+function MetaEditor({
+  meta,
+  onChange,
+  errors = {},
+}: {
+  meta: RxMeta;
+  onChange: (patch: Partial<RxMeta>) => void;
+  errors?: Partial<Record<keyof RxMeta, string>>;
+}) {
   const t = useT();
   const cells: Array<{ k: keyof RxMeta; label: string; ph: string }> = [
     { k: "hospital", label: t("হাসপাতাল / চেম্বার", "Hospital / chamber"), ph: t("যেমন: ঢাকা মেডিকেল", "e.g. Dhaka Medical") },
