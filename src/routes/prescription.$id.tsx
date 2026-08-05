@@ -801,6 +801,32 @@ function RxReading() {
 
               <MetaEditor meta={meta} onChange={patchMeta} errors={showErrors ? errors.meta : {}} />
 
+              {/* দ্রুত অ্যাকশন — এক ক্লিকে সব যুক্ত/অপ্রাপ্য বাদ/নতুন লাইন */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={includeAll}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" /> {t("সব যুক্ত করুন", "Include all")}
+                </button>
+                <button
+                  onClick={excludeUnavailable}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <PackageX className="h-3.5 w-3.5" /> {t("অপ্রাপ্য বাদ দিন", "Exclude unavailable")}
+                </button>
+                <button
+                  onClick={addRow}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <Plus className="h-3.5 w-3.5" /> {t("নতুন ঔষধ", "Add medicine")}
+                </button>
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  {t.n(order.lines.length)} {t("অর্ডারে", "in order")}
+                  {orderIssues.excluded > 0 && ` · ${t.n(orderIssues.excluded)} ${t("বাদ", "excluded")}`}
+                </span>
+              </div>
+
               <RxTable
                 items={draft ?? []}
                 rows={data.items}
@@ -812,28 +838,34 @@ function RxReading() {
                 onAdd={addRow}
               />
 
-              <div className="mt-4 rounded-xl border border-border bg-card p-3">
-                <p className="text-[11px] text-muted-foreground">
-                  {t("চলতি অর্ডার প্রিভিউ", "Live order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")}
-                </p>
-                <p className="text-base font-extrabold text-primary">৳{t.n(order.total)}</p>
-              </div>
+              {/* যাচাই ধাপে স্টিকি বার — চলতি দাম ও নিশ্চিতকরণ সবসময় হাতের নাগালে */}
+              <section className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 py-3 backdrop-blur">
+                <div className="mx-auto flex max-w-3xl items-center gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("চলতি অর্ডার", "Live order")} · {t.n(order.lines.length)} {t("আইটেম", "items")}
+                      {autoSaving && ` · ${t("সেভ হচ্ছে…", "Saving…")}`}
+                    </p>
+                    <p className="text-base font-extrabold text-primary">৳{t.n(order.total)}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowErrors(true);
+                      if (errTotal > 0) {
+                        toast.error(t("আগে লাল চিহ্নিত ঘরগুলো ঠিক করুন", "Please fix the highlighted fields first"));
+                        return;
+                      }
+                      void confirm();
+                    }}
+                    disabled={saving}
+                    className="ml-auto flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                  >
+                    <Check className="h-4 w-4" />
+                    {saving ? t("সেভ হচ্ছে...", "Saving...") : t("নিশ্চিত করে দাম দেখুন", "Confirm & see prices")}
+                  </button>
+                </div>
+              </section>
 
-              <button
-                onClick={() => {
-                  setShowErrors(true);
-                  if (errTotal > 0) {
-                    toast.error(t("আগে লাল চিহ্নিত ঘরগুলো ঠিক করুন", "Please fix the highlighted fields first"));
-                    return;
-                  }
-                  void confirm();
-                }}
-                disabled={saving}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-              >
-                <Check className="h-4 w-4" />
-                {saving ? t("সেভ হচ্ছে...", "Saving...") : t("নিশ্চিত করে দাম দেখুন", "Confirm & see prices")}
-              </button>
             </>
           ) : (
 
