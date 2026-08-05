@@ -920,12 +920,13 @@ function MedicineManagement() {
           </div>
           <DialogFooter>
             <div className="flex gap-2 w-full">
-                  <Button variant="outline" className="flex-1" onClick={() => exportToICS(reminderConfig, configProduct)}>
-                    <Calendar className="mr-2 h-4 w-4" /> ICS Export
-                  </Button>
-                  <Button className="flex-1" onClick={handleSaveReminder}>
-              {t("সেভ করুন", "Save")}
-            </Button>
+              <Button variant="outline" className="flex-1" onClick={() => exportToICS(reminderConfig, configProduct)}>
+                <Calendar className="mr-2 h-4 w-4" /> ICS Export
+              </Button>
+              <Button className="flex-1" onClick={handleSaveReminder}>
+                {t("সেভ করুন", "Save")}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
