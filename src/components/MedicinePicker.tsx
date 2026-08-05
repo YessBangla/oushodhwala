@@ -177,7 +177,22 @@ export function MedicinePicker({
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  const list = useMemo(() => rows.slice(0, 8), [rows]);
+  const forms = useMemo(() => {
+    return Array.from(new Set(rows.map(r => r.form).filter(Boolean)));
+  }, [rows]);
+
+  const list = useMemo(() => {
+    let filtered = [...rows];
+    if (filterForm !== "all") {
+      filtered = filtered.filter(r => r.form === filterForm);
+    }
+    if (sortPrice === "low") {
+      filtered.sort((a, b) => a.price - b.price);
+    } else if (sortPrice === "high") {
+      filtered.sort((a, b) => b.price - a.price);
+    }
+    return filtered.slice(0, 8);
+  }, [rows, filterForm, sortPrice]);
 
   const highlight = (text: string, query: string) => {
     if (!query.trim()) return text;
