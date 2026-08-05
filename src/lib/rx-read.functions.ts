@@ -257,6 +257,8 @@ export type RxDebugAttempt = {
   ok: boolean;
   ms: number;
   runId: string;
+  /** গেটওয়ের HTTP স্ট্যাটাস (০ = রেসপন্সই আসেনি) */
+  status: number;
   error: string;
 };
 
@@ -277,7 +279,8 @@ async function callModel(
   parts: Array<Record<string, unknown>>,
   note: string,
   strict: boolean,
-): Promise<{ read: RxRead; runId: string }> {
+  sink: { runId: string; status: number },
+): Promise<RxRead> {
   const gateway = createLovableAiGatewayProvider(key);
   const result = streamText({
     model: gateway("openai/gpt-5.6-sol"),
@@ -298,9 +301,14 @@ async function callModel(
       },
     ],
   });
-  const out = await result.output;
-  return { read: tidy(ReadSchema.parse(out)), runId: gateway.getRunId() ?? "" };
+  try {
+    return tidy(ReadSchema.parse(await result.output));
+  } finally {
+    sink.runId = gateway.getRunId();
+    sink.status = gateway.getStatus();
+  }
 }
+
 
 async function performRead(supabase: any, id: string, force?: boolean) {
   const { data: row, error } = await supabase
