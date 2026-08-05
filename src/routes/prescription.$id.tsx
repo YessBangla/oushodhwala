@@ -651,26 +651,46 @@ function RxReading() {
             </span>
           </p>
 
-          {data.items.length === 0 ? (
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              {t("কোনো ঔষধ শনাক্ত করা যায়নি। স্পষ্ট ছবি আপলোড করে আবার চেষ্টা করুন।", "No medicine could be detected. Please upload a clearer photo.")}
-            </p>
+          {(draft?.length ?? 0) === 0 && data.items.length === 0 ? (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                {t("কোনো ঔষধ শনাক্ত করা যায়নি। স্পষ্ট ছবি আপলোড করে আবার চেষ্টা করুন।", "No medicine could be detected. Please upload a clearer photo.")}
+              </p>
+              <button onClick={addRow} className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-bold">
+                <Plus className="h-3.5 w-3.5" /> {t("হাতে ঔষধ যোগ করুন", "Add medicine manually")}
+              </button>
+            </div>
           ) : step === "verify" ? (
             <>
               <p className="mt-4 text-xs text-muted-foreground">
                 {t(
-                  "প্রতিটি ঔষধের নাম, জেনেরিক, মাত্রা, প্যাক ও সেবনবিধি যাচাই করুন — প্রয়োজনে সম্পাদনা করুন। পরিমাণ ও প্যাক এখানেই ঠিক করলে অর্ডার প্রিভিউতে সঙ্গে সঙ্গে দেখা যাবে।",
-                  "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Quantity and pack set here update the order preview instantly.",
+                  "প্রতিটি ঔষধের নাম, জেনেরিক, মাত্রা, প্যাক ও সেবনবিধি যাচাই করুন — প্রয়োজনে সম্পাদনা করুন। পরিবর্তন নিজে থেকেই সেভ হয়ে যায়।",
+                  "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Changes save automatically.",
                 )}
               </p>
-              <MetaEditor meta={meta} onChange={(patch) => setMeta((m) => ({ ...m, ...patch }))} />
+
+              <SaveBar
+                t={t}
+                dirty={dirty}
+                saving={autoSaving}
+                savedAt={savedAt}
+                errTotal={showErrors ? errTotal : 0}
+                error={saveErr}
+                onSave={() => void persist(false)}
+                onPrint={exportPdf}
+              />
+
+              <MetaEditor meta={meta} onChange={patchMeta} errors={showErrors ? errors.meta : {}} />
 
               <RxTable
                 items={draft ?? []}
                 rows={data.items}
                 sel={sel}
                 onSel={setSelAt}
-                onChange={(i, patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
+                onChange={patchItem}
+                errors={showErrors ? errors.items : {}}
+                onRemove={removeRow}
+                onAdd={addRow}
               />
 
               <div className="mt-4 rounded-xl border border-border bg-card p-3">
@@ -681,7 +701,14 @@ function RxReading() {
               </div>
 
               <button
-                onClick={confirm}
+                onClick={() => {
+                  setShowErrors(true);
+                  if (errTotal > 0) {
+                    toast.error(t("আগে লাল চিহ্নিত ঘরগুলো ঠিক করুন", "Please fix the highlighted fields first"));
+                    return;
+                  }
+                  void confirm();
+                }}
                 disabled={saving}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
               >
@@ -690,6 +717,7 @@ function RxReading() {
               </button>
             </>
           ) : (
+
             <>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button
