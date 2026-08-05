@@ -265,9 +265,10 @@ function RxReading() {
 
   const data = edited ?? fetched ?? null;
 
-  // প্রথমবার লোড হলে সেভ করা সিলেকশন ও ধাপ ফিরিয়ে আনি
+  // প্রথমবার লোড হলে সেভ করা সিলেকশন ও ধাপ ফিরিয়ে আনি (রিফেচে এডিট মুছবে না)
   useEffect(() => {
-    if (!fetched) return;
+    if (!fetched || initRef.current) return;
+    initRef.current = true;
     setDraft(fetched.read.items.map((it) => ({ ...it })));
     setBase(fetched.read.items.map((it) => ({ ...it })));
     setMeta(metaOf(fetched.read));
@@ -279,6 +280,7 @@ function RxReading() {
     setSel(next);
     setStep(loadJson<boolean>(stepKey(id), false) ? "details" : "verify");
   }, [fetched, id]);
+
 
   useEffect(() => {
     if (typeof window === "undefined" || !data) return;
