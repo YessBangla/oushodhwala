@@ -68,7 +68,7 @@ export function TestReportView() {
       };
       return mock;
     }
-  };
+  });
 
   const allTests = useMemo(() => {
     if (!reportData) return [];
