@@ -40,7 +40,11 @@ const ItemSchema = z.object({
 
 const ReadSchema = z.object({
   patientName: z.string().default(""),
+  patientAge: z.string().default("").describe("রোগীর বয়স, যেমন '৩৫ বছর'"),
+  patientAddress: z.string().default("").describe("রোগীর ঠিকানা যদি লেখা থাকে"),
+  hospital: z.string().default("").describe("হাসপাতাল / চেম্বার / ক্লিনিকের নাম"),
   doctorName: z.string().default(""),
+  doctorQualification: z.string().default("").describe("ডাক্তারের ডিগ্রি/পদবি, যেমন MBBS, FCPS"),
   date: z.string().default(""),
   advice: z.string().default(""),
   items: z.array(ItemSchema).default([]),
@@ -62,6 +66,7 @@ Rules (critical — a wrong medicine can harm a patient):
 - For EVERY line give "fieldConf": a separate 0–1 confidence for name, strength, form, dose, duration and instruction. Use 0 when that part is simply not written, and a low value (<0.6) when the handwriting is ambiguous.
 - For EVERY line give "reason": a short plain explanation of exactly which parts are uncertain and why (empty string when everything is clear).
 - Also return patient name, doctor name, date and any general advice if present.
+- Also return the hospital/chamber name, doctor qualification, patient age and patient address when they are printed or written on the page (empty string when absent).
 - Output must be valid JSON matching the schema.`;
 
 
@@ -180,7 +185,11 @@ function tidy(r: RxRead): RxRead {
   return {
     ...r,
     patientName: cut(r.patientName, 60),
+    patientAge: cut(r.patientAge, 30),
+    patientAddress: cut(r.patientAddress, 140),
+    hospital: cut(r.hospital, 90),
     doctorName: cut(r.doctorName, 80),
+    doctorQualification: cut(r.doctorQualification, 90),
     date: cut(r.date, 30),
     advice: cut(r.advice, 400),
     note: cut(r.note, 400),

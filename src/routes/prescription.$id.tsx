@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
   RefreshCw,
   ShoppingCart,
@@ -73,6 +73,40 @@ type Sel = { match: number; qty: number; skip: boolean };
 
 const DEF_SEL: Sel = { match: 0, qty: 1, skip: false };
 
+/** প্রেসক্রিপশনের হেডার তথ্য — ব্যবহারকারী সরাসরি সম্পাদনা করতে পারে */
+type RxMeta = {
+  hospital: string;
+  doctorName: string;
+  doctorQualification: string;
+  patientName: string;
+  patientAge: string;
+  patientAddress: string;
+  date: string;
+  advice: string;
+};
+
+const EMPTY_META: RxMeta = {
+  hospital: "",
+  doctorName: "",
+  doctorQualification: "",
+  patientName: "",
+  patientAge: "",
+  patientAddress: "",
+  date: "",
+  advice: "",
+};
+
+const metaOf = (r: RxRead): RxMeta => ({
+  hospital: r.hospital ?? "",
+  doctorName: r.doctorName ?? "",
+  doctorQualification: r.doctorQualification ?? "",
+  patientName: r.patientName ?? "",
+  patientAge: r.patientAge ?? "",
+  patientAddress: r.patientAddress ?? "",
+  date: r.date ?? "",
+  advice: r.advice ?? "",
+});
+
 const selKey = (id: string) => `rx-sel-${id}`;
 const stepKey = (id: string) => `rx-verified-${id}`;
 
@@ -105,6 +139,8 @@ function RxReading() {
   const [base, setBase] = useState<RxReadItem[] | null>(null);
   const [sel, setSel] = useState<Record<number, Sel>>({});
   const [edited, setEdited] = useState<Result | null>(null);
+  /** প্রেসক্রিপশনের হেডার তথ্য — হাসপাতাল, ডাক্তার, রোগী, বয়স, ঠিকানা, পরামর্শ */
+  const [meta, setMeta] = useState<RxMeta>(EMPTY_META);
 
   /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
   const guestToken = useMemo(() => getGuestToken(), []);
@@ -149,6 +185,7 @@ function RxReading() {
     if (!fetched) return;
     setDraft(fetched.read.items.map((it) => ({ ...it })));
     setBase(fetched.read.items.map((it) => ({ ...it })));
+    setMeta(metaOf(fetched.read));
     const savedSel = loadJson<Record<number, Sel>>(selKey(id), {});
     const next: Record<number, Sel> = {};
     fetched.items.forEach((_, i) => {
@@ -246,13 +283,14 @@ function RxReading() {
     setSaving(true);
     try {
       const changes = diffChanges();
-      const payload: RxRead = { ...data.read, items: draft };
+      const payload: RxRead = { ...data.read, ...meta, items: draft };
       // গেস্ট হলে সার্ভারে সেভ না করে স্থানীয়ভাবেই যাচাই সম্পন্ন হয়
       const res = user
         ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
         : ({ ...data, read: payload } as Result);
 
       setEdited(res);
+      setMeta(metaOf(res.read));
       setDraft(res.read.items.map((it) => ({ ...it })));
       setBase(res.read.items.map((it) => ({ ...it })));
       setSel((prev) => {
@@ -284,10 +322,14 @@ function RxReading() {
     if (!data) return null;
     return {
       id: data.id,
-      patientName: data.read.patientName,
-      doctorName: data.read.doctorName,
-      date: data.read.date,
-      advice: data.read.advice,
+      patientName: meta.patientName,
+      patientAge: meta.patientAge,
+      patientAddress: meta.patientAddress,
+      hospital: meta.hospital,
+      doctorQualification: meta.doctorQualification,
+      doctorName: meta.doctorName,
+      date: meta.date,
+      advice: meta.advice,
       note: data.read.note,
       verifiedAt: data.parsedAt,
       total: order.payable,
@@ -416,11 +458,15 @@ function RxReading() {
 
       {data && (
         <>
-          <section className="mt-4 grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-3 text-xs">
-            <Field t={t("রোগী", "Patient")} v={data.read.patientName || "—"} />
-            <Field t={t("ডাক্তার", "Doctor")} v={data.read.doctorName || "—"} />
-            <Field t={t("তারিখ", "Date")} v={data.read.date || "—"} />
+          <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
+            <Field t={t("হাসপাতাল / চেম্বার", "Hospital")} v={meta.hospital || "—"} />
+            <Field t={t("ডাক্তার", "Doctor")} v={meta.doctorName || "—"} />
+            <Field t={t("রোগী", "Patient")} v={meta.patientName || "—"} />
+            <Field t={t("বয়স", "Age")} v={meta.patientAge || "—"} />
+            <Field t={t("ঠিকানা", "Address")} v={meta.patientAddress || "—"} />
+            <Field t={t("তারিখ", "Date")} v={meta.date || "—"} />
             <Field t={t("শনাক্ত ঔষধ", "Medicines found")} v={t.n(data.items.length)} />
+            <Field t={t("রিডিং আইডি", "Reading ID")} v={id.slice(0, 8)} />
           </section>
 
           <p className="mt-3 flex items-start gap-2 rounded-lg bg-secondary p-3 text-[11px] text-muted-foreground">
@@ -446,19 +492,15 @@ function RxReading() {
                   "Check each medicine's brand, generic, strength, pack and dosage — edit if needed. Quantity and pack set here update the order preview instantly.",
                 )}
               </p>
-              <ul className="mt-3 space-y-3">
-                {draft?.map((item, i) => (
-                  <VerifyRow
-                    key={i}
-                    index={i}
-                    item={item}
-                    matches={data.items[i]?.matches ?? []}
-                    sel={sel[i] ?? DEF_SEL}
-                    onSel={(s) => setSelAt(i, s)}
-                    onChange={(patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
-                  />
-                ))}
-              </ul>
+              <MetaEditor meta={meta} onChange={(patch) => setMeta((m) => ({ ...m, ...patch }))} />
+
+              <RxTable
+                items={draft ?? []}
+                rows={data.items}
+                sel={sel}
+                onSel={setSelAt}
+                onChange={(i, patch) => setDraft((d) => d?.map((x, j) => (j === i ? { ...x, ...patch } : x)) ?? d)}
+              />
 
               <div className="mt-4 rounded-xl border border-border bg-card p-3">
                 <p className="text-[11px] text-muted-foreground">
@@ -511,11 +553,13 @@ function RxReading() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 border-b border-border px-3 py-2.5 text-[11px]">
-                  <Field t={t("রোগী", "Patient")} v={data.read.patientName || "—"} />
-                  <Field t={t("ডাক্তার", "Doctor")} v={data.read.doctorName || "—"} />
-                  <Field t={t("প্রেসক্রিপশনের তারিখ", "Rx date")} v={data.read.date || "—"} />
-                  <Field t={t("রিডিং আইডি", "Reading ID")} v={id.slice(0, 8)} />
+                <div className="grid grid-cols-2 gap-px border-b border-border bg-border sm:grid-cols-3">
+                  <Field t={t("হাসপাতাল / চেম্বার", "Hospital / chamber")} v={meta.hospital || "—"} />
+                  <Field t={t("ডাক্তার", "Doctor")} v={[meta.doctorName, meta.doctorQualification].filter(Boolean).join(", ") || "—"} />
+                  <Field t={t("প্রেসক্রিপশনের তারিখ", "Rx date")} v={meta.date || "—"} />
+                  <Field t={t("রোগী", "Patient")} v={meta.patientName || "—"} />
+                  <Field t={t("বয়স", "Age")} v={meta.patientAge || "—"} />
+                  <Field t={t("ঠিকানা", "Address")} v={meta.patientAddress || "—"} />
                 </div>
 
                 <ul className="divide-y divide-border">
@@ -590,10 +634,10 @@ function RxReading() {
                 ))}
               </ul>
 
-              {data.read.advice && (
+              {meta.advice && (
                 <section className="mt-5 rounded-xl border border-border bg-card p-3">
                   <h2 className="text-xs font-bold">{t("ডাক্তারের পরামর্শ", "Doctor's advice")}</h2>
-                  <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{data.read.advice}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">{meta.advice}</p>
                 </section>
               )}
 
@@ -878,105 +922,6 @@ function QtyBox({ qty, onQty }: { qty: number; onQty: (n: number) => void }) {
   );
 }
 
-function VerifyRow({
-  index,
-  item,
-  matches,
-  sel,
-  onSel,
-  onChange,
-}: {
-  index: number;
-  item: RxReadItem;
-  matches: Product[];
-  sel: Sel;
-  onSel: (s: Partial<Sel>) => void;
-  onChange: (patch: Partial<RxReadItem>) => void;
-}) {
-  const t = useT();
-  const picked = matches[sel.match];
-  const lineTotal = picked ? picked.price * sel.qty : 0;
-
-  return (
-    <li className={`rounded-xl border p-3 ${sel.skip ? "border-dashed border-border opacity-60" : "border-border bg-card"}`}>
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-          {t.n(index + 1)}
-        </span>
-        <p className="min-w-0 text-[11px] text-muted-foreground">
-          {t("লেখা ছিল", "Written")}: “{item.raw}”
-        </p>
-        <ConfBadge c={item.confidence} />
-      </div>
-
-      <ConfBreakdown item={item} />
-
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Inp label={t("ব্র্যান্ড নাম", "Brand")} value={item.name} onChange={(v) => onChange({ name: v })} />
-        <Inp label={t("জেনেরিক", "Generic")} value={item.generic} onChange={(v) => onChange({ generic: v })} />
-        <Inp label={t("মাত্রা", "Strength")} value={item.strength} onChange={(v) => onChange({ strength: v })} />
-        <Inp label={t("ফর্ম", "Form")} value={item.form} onChange={(v) => onChange({ form: v })} />
-      </div>
-
-      <DosageEditor item={item} onChange={onChange} />
-
-      <div className="mt-2 grid grid-cols-2 items-end gap-2">
-        <label className="block">
-          <span className="text-[10px] font-semibold text-muted-foreground">{t("ইউনিট / প্যাক", "Unit / pack")}</span>
-          <select
-            value={String(sel.match)}
-            onChange={(e) => onSel({ match: Number(e.target.value), skip: false })}
-            disabled={matches.length === 0}
-            className="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs disabled:opacity-50"
-          >
-            {matches.length === 0 ? (
-              <option value="0">{t("ক্যাটালগে পাওয়া যায়নি", "Not in catalogue")}</option>
-            ) : (
-              matches.map((m, i) => (
-                <option key={m.id} value={i}>
-                  {(t.en ? m.en || m.name : m.name)} · {packLabel(m)} · ৳{Math.round(m.price)}
-                </option>
-              ))
-            )}
-          </select>
-        </label>
-        <div>
-          <span className="text-[10px] font-semibold text-muted-foreground">{t("পরিমাণ", "Quantity")}</span>
-          <div className="mt-0.5 flex items-center gap-2">
-            <QtyBox qty={sel.qty} onQty={(n) => onSel({ qty: n })} />
-            <span className="text-[11px] font-bold text-primary">{picked ? `৳${t.n(lineTotal)}` : "—"}</span>
-          </div>
-        </div>
-      </div>
-
-      {matches.length > 0 && (
-        <div className="mt-2">
-          <p className="text-[10px] font-semibold text-muted-foreground">{t("সম্ভাব্য মিল — সঠিকটি বেছে নিন", "Possible matches — pick the correct one")}</p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {matches.map((m, i) => (
-              <button
-                key={m.id}
-                onClick={() => onSel({ match: i, skip: false })}
-                className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
-                  i === sel.match && !sel.skip ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
-                }`}
-              >
-                {(t.en ? m.en || m.name : m.name)} · {m.strength} · ৳{t.n(m.price)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <label className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-        <input type="checkbox" checked={sel.skip} onChange={(e) => onSel({ skip: e.target.checked })} className="h-3.5 w-3.5" />
-        {t("এই ঔষধটি অর্ডারে রাখব না", "Exclude this medicine from the order")}
-      </label>
-    </li>
-  );
-}
-
-
 function RxRow({ row, index, sel, onSel }: { row: Row; index: number; sel: Sel; onSel: (s: Partial<Sel>) => void }) {
   const t = useT();
   const { add } = useStore();
@@ -1133,11 +1078,267 @@ function sectionsOf(p: Product, en: boolean, t: ReturnType<typeof useT>): MedSec
   return dedupeSections(list);
 }
 
+/** আলাদা সেল — কর্পোরেট শিটের প্রতিটি তথ্য নিজের ঘরে */
 function Field({ t, v }: { t: string; v: string }) {
   return (
-    <p className="text-xs">
-      <span className="text-muted-foreground">{t}: </span>
-      <span className="font-semibold">{v}</span>
-    </p>
+    <div className="min-w-0 bg-card px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t}</p>
+      <p className="truncate text-xs font-bold" title={v}>
+        {v}
+      </p>
+    </div>
+  );
+}
+
+/** হাসপাতাল / ডাক্তার / রোগীর তথ্য — প্রতিটি আলাদা সেলে, সরাসরি এডিটযোগ্য */
+function MetaEditor({ meta, onChange }: { meta: RxMeta; onChange: (patch: Partial<RxMeta>) => void }) {
+  const t = useT();
+  const cells: Array<{ k: keyof RxMeta; label: string; ph: string }> = [
+    { k: "hospital", label: t("হাসপাতাল / চেম্বার", "Hospital / chamber"), ph: t("যেমন: ঢাকা মেডিকেল", "e.g. Dhaka Medical") },
+    { k: "doctorName", label: t("ডাক্তারের নাম", "Doctor name"), ph: t("ডাঃ ...", "Dr. ...") },
+    { k: "doctorQualification", label: t("ডিগ্রি / পদবি", "Qualification"), ph: "MBBS, FCPS" },
+    { k: "patientName", label: t("রোগীর নাম", "Patient name"), ph: t("রোগীর নাম", "Patient name") },
+    { k: "patientAge", label: t("বয়স", "Age"), ph: t("যেমন: ৩৫ বছর", "e.g. 35 years") },
+    { k: "date", label: t("প্রেসক্রিপশনের তারিখ", "Rx date"), ph: t("দিন-মাস-বছর", "dd-mm-yyyy") },
+    { k: "patientAddress", label: t("ঠিকানা", "Address"), ph: t("রোগীর ঠিকানা", "Patient address") },
+  ];
+
+  return (
+    <section className="mt-3 overflow-hidden rounded-xl border border-border">
+      <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-2">
+        <Pencil className="h-3.5 w-3.5 text-primary" />
+        <p className="text-[11px] font-bold">{t("প্রেসক্রিপশনের তথ্য — প্রয়োজনে ঠিক করুন", "Prescription details — correct if needed")}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-3">
+        {cells.map((c) => (
+          <label key={c.k} className={`block bg-card px-3 py-2 ${c.k === "patientAddress" ? "col-span-2 sm:col-span-3" : ""}`}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{c.label}</span>
+            <input
+              value={meta[c.k]}
+              placeholder={c.ph}
+              onChange={(e) => onChange({ [c.k]: e.target.value } as Partial<RxMeta>)}
+              className="mt-0.5 w-full bg-transparent text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
+            />
+          </label>
+        ))}
+        <label className="col-span-2 block bg-card px-3 py-2 sm:col-span-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("ডাক্তারের পরামর্শ", "Doctor's advice")}
+          </span>
+          <textarea
+            value={meta.advice}
+            rows={2}
+            placeholder={t("বিশ্রাম, পরীক্ষা, ফলো-আপ ইত্যাদি", "Rest, tests, follow-up etc.")}
+            onChange={(e) => onChange({ advice: e.target.value })}
+            className="mt-0.5 w-full resize-y bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+          />
+        </label>
+      </div>
+    </section>
+  );
+}
+
+const TH = "whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground";
+const CELL = "border-l border-border px-1.5 py-1.5 align-top";
+
+function CellInput({ value, onChange, w = "w-28", ph }: { value: string; onChange: (v: string) => void; w?: string; ph?: string }) {
+  return (
+    <input
+      value={value}
+      placeholder={ph ?? "—"}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${w} rounded-md bg-transparent px-1.5 py-1 text-[11px] font-semibold outline-none focus:bg-secondary placeholder:font-normal placeholder:text-muted-foreground/50`}
+    />
+  );
+}
+
+/** ঔষধের সম্পূর্ণ তালিকা — এক টেবিলে, প্রতিটি অপশন আলাদা সেলে ও এডিটযোগ্য */
+function RxTable({
+  items,
+  rows,
+  sel,
+  onSel,
+  onChange,
+}: {
+  items: RxReadItem[];
+  rows: Row[];
+  sel: Record<number, Sel>;
+  onSel: (i: number, s: Partial<Sel>) => void;
+  onChange: (i: number, patch: Partial<RxReadItem>) => void;
+}) {
+  const t = useT();
+  const [open, setOpen] = useState<number | null>(null);
+
+  const slots = (dose: string) => {
+    const p = (dose || "").split("+").map((x) => x.trim());
+    return p.length === 3 ? p : ["", "", ""];
+  };
+  const setSlot = (i: number, dose: string, k: number, v: string) => {
+    const cur = slots(dose);
+    const next = cur.map((x) => x || "0");
+    next[k] = v;
+    onChange(i, { dose: next.join("+") });
+  };
+
+  return (
+    <section className="mt-3 overflow-hidden rounded-xl border border-border">
+      <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-2">
+        <FileText className="h-3.5 w-3.5 text-primary" />
+        <p className="text-[11px] font-bold">{t("ঔষধের তালিকা — সব ঘর এডিট করা যায়", "Medicine table — every cell is editable")}</p>
+        <span className="ml-auto text-[10px] text-muted-foreground">{t.n(items.length)} {t("আইটেম", "items")}</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px] border-collapse text-[11px]">
+          <thead className="bg-secondary/40">
+            <tr>
+              <th className={TH}>#</th>
+              <th className={TH}>{t("ব্র্যান্ড", "Brand")}</th>
+              <th className={TH}>{t("জেনেরিক", "Generic")}</th>
+              <th className={TH}>{t("মাত্রা", "Strength")}</th>
+              <th className={TH}>{t("ফর্ম", "Form")}</th>
+              <th className={TH}>{t("সকাল", "Morn")}</th>
+              <th className={TH}>{t("দুপুর", "Noon")}</th>
+              <th className={TH}>{t("রাত", "Night")}</th>
+              <th className={TH}>{t("সময়কাল", "Duration")}</th>
+              <th className={TH}>{t("নির্দেশনা", "Timing")}</th>
+              <th className={TH}>{t("প্যাক / ইউনিট", "Pack / unit")}</th>
+              <th className={TH}>{t("পরিমাণ", "Qty")}</th>
+              <th className={TH}>{t("মূল্য", "Amount")}</th>
+              <th className={TH}>{t("অর্ডার", "Order")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, i) => {
+              const row = rows[i];
+              const matches = row?.matches ?? [];
+              const s = sel[i] ?? DEF_SEL;
+              const p = matches[s.match];
+              const d = slots(item.dose);
+              return (
+                <Fragment key={i}>
+                  <tr className={`border-t border-border ${s.skip ? "opacity-50" : ""}`}>
+                    <td className="px-2 py-1.5 align-top">
+                      <button
+                        onClick={() => setOpen(open === i ? null : i)}
+                        className="flex items-center gap-1 text-[10px] font-bold text-primary"
+                        aria-expanded={open === i}
+                      >
+                        {t.n(i + 1)}
+                        <ChevronDown className={`h-3 w-3 transition-transform ${open === i ? "rotate-180" : ""}`} />
+                      </button>
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.strength} onChange={(v) => onChange(i, { strength: v })} w="w-20" />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.form} onChange={(v) => onChange(i, { form: v })} w="w-20" />
+                    </td>
+                    {[0, 1, 2].map((k) => (
+                      <td key={k} className={CELL}>
+                        <select
+                          value={d[k] || "0"}
+                          onChange={(e) => setSlot(i, item.dose, k, e.target.value)}
+                          className="w-14 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary"
+                        >
+                          {DOSE_OPTS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    ))}
+                    <td className={CELL}>
+                      <CellInput value={item.duration} onChange={(v) => onChange(i, { duration: v })} w="w-20" ph={t("৭ দিন", "7 days")} />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.instruction} onChange={(v) => onChange(i, { instruction: v })} w="w-28" ph={t("খাবারের পরে", "After food")} />
+                    </td>
+                    <td className={CELL}>
+                      <select
+                        value={String(s.match)}
+                        onChange={(e) => onSel(i, { match: Number(e.target.value), skip: false })}
+                        disabled={matches.length === 0}
+                        className="w-40 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary disabled:opacity-50"
+                      >
+                        {matches.length === 0 ? (
+                          <option value="0">{t("ক্যাটালগে নেই", "Not in catalogue")}</option>
+                        ) : (
+                          matches.map((m, mi) => (
+                            <option key={m.id} value={mi}>
+                              {(t.en ? m.en || m.name : m.name)} · {packLabel(m)} · ৳{Math.round(m.price)}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </td>
+                    <td className={CELL}>
+                      <QtyBox qty={s.qty} onQty={(n) => onSel(i, { qty: n })} />
+                    </td>
+                    <td className={`${CELL} whitespace-nowrap font-extrabold text-primary`}>
+                      {p ? `৳${t.n(Math.round(p.price * s.qty))}` : "—"}
+                    </td>
+                    <td className={CELL}>
+                      <label className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={!s.skip}
+                          onChange={(e) => onSel(i, { skip: !e.target.checked })}
+                          className="h-3.5 w-3.5"
+                        />
+                        {s.skip ? t("বাদ", "Off") : t("আছে", "On")}
+                      </label>
+                    </td>
+                  </tr>
+                  {open === i && (
+                    <tr className="border-t border-border bg-secondary/20">
+                      <td colSpan={14} className="px-3 py-2">
+                        <p className="text-[11px] text-muted-foreground">
+                          {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
+                        </p>
+                        <ConfBreakdown item={item} />
+                        {matches.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-[10px] font-semibold text-muted-foreground">
+                              {t("সম্ভাব্য মিল — সঠিকটি বেছে নিন", "Possible matches — pick the correct one")}
+                            </p>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {matches.map((m, mi) => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => onSel(i, { match: mi, skip: false })}
+                                  className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
+                                    mi === s.match && !s.skip ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                                  }`}
+                                >
+                                  {(t.en ? m.en || m.name : m.name)} · {m.strength} · ৳{t.n(m.price)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-border bg-secondary/30 px-3 py-2 text-[10px] text-muted-foreground">
+        {t(
+          "মোবাইলে টেবিলটি ডানে-বামে স্ক্রল করুন। নম্বরে ট্যাপ করলে OCR কনফিডেন্স ও বিকল্প ঔষধ দেখা যাবে।",
+          "Scroll the table sideways on mobile. Tap the row number to see OCR confidence and alternative matches.",
+        )}
+      </p>
+    </section>
   );
 }
