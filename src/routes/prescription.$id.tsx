@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   RefreshCw,
   ShoppingCart,
@@ -218,20 +218,28 @@ function RxReading() {
 
   /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
   const guestToken = useMemo(() => getGuestToken(), []);
+  /** প্রেসক্রিপশনটি গেস্ট-কোড দিয়ে পড়া হয়েছে কিনা — তাহলে সার্ভারে সেভ করা যাবে না */
+  const [viaGuest, setViaGuest] = useState(false);
+  /** ড্রাফট একবারই ইনিশিয়ালাইজ হবে — রিফেচ হলে ব্যবহারকারীর এডিট মুছে যাবে না */
+  const initRef = useRef(false);
 
   /** আগে লগইন-পাথে পড়ি; না পেলে (গেস্ট হিসেবে আপলোড করা) গেস্ট কোড দিয়ে পড়ি */
   const runRead = useCallback(
     async (force?: boolean): Promise<Result> => {
       if (user) {
         try {
-          return (await read({ data: force ? { id, force: true } : { id } })) as Result;
+          const r = (await read({ data: force ? { id, force: true } : { id } })) as Result;
+          setViaGuest(false);
+          return r;
         } catch (e) {
           if (!guestToken) throw e;
         }
       }
-      return (await readGuest({
+      const g = (await readGuest({
         data: force ? { id, token: guestToken, force: true } : { id, token: guestToken },
       })) as Result;
+      setViaGuest(true);
+      return g;
     },
     [user, read, readGuest, id, guestToken],
   );
@@ -240,8 +248,11 @@ function RxReading() {
     queryKey: ["rx-read", id, user ? "user" : "guest"],
     enabled: !!user || !!guestToken,
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     queryFn: () => runRead(),
   });
+
 
 
   const auditQ = useQuery({
@@ -254,9 +265,10 @@ function RxReading() {
 
   const data = edited ?? fetched ?? null;
 
-  // প্রথমবার লোড হলে সেভ করা সিলেকশন ও ধাপ ফিরিয়ে আনি
+  // প্রথমবার লোড হলে সেভ করা সিলেকশন ও ধাপ ফিরিয়ে আনি (রিফেচে এডিট মুছবে না)
   useEffect(() => {
-    if (!fetched) return;
+    if (!fetched || initRef.current) return;
+    initRef.current = true;
     setDraft(fetched.read.items.map((it) => ({ ...it })));
     setBase(fetched.read.items.map((it) => ({ ...it })));
     setMeta(metaOf(fetched.read));
@@ -268,6 +280,7 @@ function RxReading() {
     setSel(next);
     setStep(loadJson<boolean>(stepKey(id), false) ? "details" : "verify");
   }, [fetched, id]);
+
 
   useEffect(() => {
     if (typeof window === "undefined" || !data) return;
@@ -414,9 +427,12 @@ function RxReading() {
       setAutoSaving(true);
       try {
         const payload: RxRead = { ...data.read, ...meta, items: draft };
-        const res = user
-          ? ((await save({ data: { id, read: payload, changes: diffChanges() } })) as Result)
-          : ({ ...data, read: payload } as Result);
+        // গেস্ট-কোডে পড়া প্রেসক্রিপশন সার্ভারে সেভ করা যায় না — এই ডিভাইসেই রাখি
+        const res =
+          user && !viaGuest
+            ? ((await save({ data: { id, read: payload, changes: diffChanges() } })) as Result)
+            : ({ ...data, read: payload } as Result);
+
         setEdited(res);
         setBase(draft.map((x) => ({ ...x })));
         setDirty(false);
@@ -424,7 +440,7 @@ function RxReading() {
         setSavedAt(new Date().toISOString());
         if (typeof window !== "undefined")
           window.localStorage.setItem(`rx-draft-${id}`, JSON.stringify({ meta, items: draft }));
-        if (user) void auditQ.refetch();
+        if (user && !viaGuest) void auditQ.refetch();
         if (!silent) toast.success(t("সংরক্ষিত হয়েছে", "Saved"));
         return true;
       } catch (e) {
@@ -437,7 +453,7 @@ function RxReading() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, draft, meta, user, id, t.en, sel],
+    [data, draft, meta, user, viaGuest, id, t.en, sel],
   );
 
   /** অটোসেভ — এডিট থামার ১.৫ সেকেন্ড পর নিজে থেকেই সেভ */
@@ -456,9 +472,11 @@ function RxReading() {
       const changes = diffChanges();
       const payload: RxRead = { ...data.read, ...meta, items: draft };
       // গেস্ট হলে সার্ভারে সেভ না করে স্থানীয়ভাবেই যাচাই সম্পন্ন হয়
-      const res = user
-        ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
-        : ({ ...data, read: payload } as Result);
+      const res =
+        user && !viaGuest
+          ? ((await save({ data: { id, read: payload, confirmed: true, changes } })) as Result)
+          : ({ ...data, read: payload } as Result);
+
 
       setEdited(res);
       setMeta(metaOf(res.read));
@@ -564,7 +582,9 @@ function RxReading() {
             try {
               await runRead(true);
               setEdited(null);
+              initRef.current = false;
               await refetch();
+
               toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
             } catch (e) {
               toast.error((e as Error).message);
@@ -611,7 +631,9 @@ function RxReading() {
               try {
                 await runRead(true);
                 setEdited(null);
+                initRef.current = false;
                 await refetch();
+
                 toast.success(t("আবার পড়া হয়েছে", "Re-read complete"));
               } catch (e) {
                 toast.error((e as Error).message);
@@ -782,6 +804,10 @@ function RxReading() {
                           <span className="mt-0.5 text-[10px] font-bold text-muted-foreground">{t.n(i + 1)}.</span>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-bold">{name}</p>
+                            {(p?.manufacturer || p?.brand) && (
+                              <p className="truncate text-[10px] font-semibold text-primary">{p.manufacturer || p.brand}</p>
+                            )}
+
                             <p className="truncate text-[10px] text-muted-foreground">
                               {[p?.generic || row.item.generic, p?.strength || row.item.strength, p?.form || row.item.form]
                                 .filter(Boolean)
@@ -1440,7 +1466,9 @@ function RxTable({
             <tr>
               <th className={TH}>#</th>
               <th className={TH}>{t("ব্র্যান্ড", "Brand")}</th>
+              <th className={TH}>{t("কোম্পানি", "Company")}</th>
               <th className={TH}>{t("জেনেরিক", "Generic")}</th>
+
               <th className={TH}>{t("মাত্রা", "Strength")}</th>
               <th className={TH}>{t("ফর্ম", "Form")}</th>
               <th className={TH}>{t("সকাল", "Morn")}</th>
@@ -1479,6 +1507,13 @@ function RxTable({
                     <td className={CELL}>
                       <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" err={errors[`${i}.name`] ?? ""} />
                     </td>
+                    <td className={`${CELL} w-32`}>
+                      <p className="w-32 truncate px-1.5 py-1 text-[11px] font-semibold text-muted-foreground" title={p?.manufacturer || p?.brand || ""}>
+                        {p?.manufacturer || p?.brand || "—"}
+                      </p>
+                    </td>
+
+
                     <td className={CELL}>
                       <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
                     </td>
@@ -1569,7 +1604,7 @@ function RxTable({
                   </tr>
                   {open === i && (
                     <tr className="border-t border-border bg-secondary/20">
-                      <td colSpan={15} className="px-3 py-2">
+                      <td colSpan={16} className="px-3 py-2">
 
                         <p className="text-[11px] text-muted-foreground">
                           {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
