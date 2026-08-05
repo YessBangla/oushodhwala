@@ -427,9 +427,12 @@ function RxReading() {
       setAutoSaving(true);
       try {
         const payload: RxRead = { ...data.read, ...meta, items: draft };
-        const res = user
-          ? ((await save({ data: { id, read: payload, changes: diffChanges() } })) as Result)
-          : ({ ...data, read: payload } as Result);
+        // গেস্ট-কোডে পড়া প্রেসক্রিপশন সার্ভারে সেভ করা যায় না — এই ডিভাইসেই রাখি
+        const res =
+          user && !viaGuest
+            ? ((await save({ data: { id, read: payload, changes: diffChanges() } })) as Result)
+            : ({ ...data, read: payload } as Result);
+
         setEdited(res);
         setBase(draft.map((x) => ({ ...x })));
         setDirty(false);
