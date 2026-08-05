@@ -395,7 +395,7 @@ function MedicineManagement() {
         </div>
         <div className="flex gap-2">
           <label className="cursor-pointer">
-            <Input type="file" accept=".json" className="hidden" onChange={handleImport} />
+            <Input type="file" accept=".json,.csv" className="hidden" onChange={handleImport} />
             <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[10px]">
               <Upload className="h-3.5 w-3.5" /> {t("ইম্পোর্ট", "Import")}
             </Button>
