@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProductImage } from "@/components/ProductImage";
+import { ProductPreview } from "@/components/ProductPreview";
 
 export const Route = createFileRoute("/account/medicines")({
   component: MedicineManagement,
