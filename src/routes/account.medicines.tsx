@@ -22,8 +22,10 @@ import {
   Filter,
   AlertTriangle,
   RotateCcw,
-  Plus
+  Plus,
+  GripVertical
 } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { toast } from "sonner";
 
 import { useT } from "@/lib/i18n";
