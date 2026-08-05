@@ -22,8 +22,10 @@ import {
   Filter,
   AlertTriangle,
   RotateCcw,
-  Plus
+  Plus,
+  GripVertical
 } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { toast } from "sonner";
 
 import { useT } from "@/lib/i18n";
@@ -34,7 +36,8 @@ import {
   bulkRemoveUserRecent,
   syncUserMedicines,
   updateMedicineReminder,
-  toggleUserFavorite
+  toggleUserFavorite,
+  updateUserMedicineOrder
 } from "@/lib/user-meds.functions";
 import type { MedSuggestion } from "@/lib/rx-suggest.server";
 import { Button } from "@/components/ui/button";
@@ -73,6 +76,7 @@ function MedicineManagement() {
   const removeRecent = useServerFn(bulkRemoveUserRecent);
   const sync = useServerFn(syncUserMedicines);
   const updateRemind = useServerFn(updateMedicineReminder);
+  const updateOrder = useServerFn(updateUserMedicineOrder);
 
   const [tab, setTab] = useState<"favorites" | "recent">("favorites");
   const [search, setSearch] = useState("");
@@ -125,6 +129,29 @@ function MedicineManagement() {
     
     return filtered;
   }, [tab, favorites, recent, search, sort, filterForm]);
+
+  const onDragEnd = async (result: any) => {
+    if (!result.destination || tab !== "favorites") return;
+    
+    const reordered = Array.from(items);
+    const [removed] = reordered.splice(result.source.index, 1);
+    if (!removed) return;
+    reordered.splice(result.destination.index, 0, removed);
+
+    // Optimistic update
+    qc.setQueryData(["user-medicines"], (old: any) => ({
+      ...old,
+      favorites: tab === "favorites" ? reordered : old.favorites,
+    }));
+
+    try {
+      await updateOrder({ data: { productIds: reordered.map(i => i.id) } });
+      toast.success(t("ক্রম পরিবর্তন করা হয়েছে", "Order updated"));
+    } catch (e) {
+      toast.error(t("ক্রম পরিবর্তন করতে সমস্যা হয়েছে", "Error updating order"));
+      qc.invalidateQueries({ queryKey: ["user-medicines"] });
+    }
+  };
 
   const toggleSelect = (id: string) => {
     const next = new Set(selected);
@@ -390,12 +417,31 @@ function MedicineManagement() {
                   {t("সব সিলেক্ট করুন", "Select All")} ({items.length})
                 </span>
               </div>
-              <div className="grid gap-2">
-                {items.map((item: any) => (
-                  <div 
-                    key={item.id} 
-                    className={`group relative flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/50 ${selected.has(item.id) ? "border-primary bg-primary/5" : "border-border bg-card"}`}
-                  >
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="medicine-list">
+                  {(provided) => (
+                    <div 
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="grid gap-2"
+                    >
+                      {items.map((item: any, index: number) => (
+                        <Draggable 
+                          key={item.id} 
+                          draggableId={item.id} 
+                          index={index}
+                          isDragDisabled={tab !== "favorites"}
+                        >
+                          {(provided, snapshot) => (
+                            <div 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`group relative flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/50 ${snapshot.isDragging ? "z-50 shadow-lg ring-2 ring-primary bg-background" : selected.has(item.id) ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+                            >
+                              <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors px-1">
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+
                     <Checkbox 
                       checked={selected.has(item.id)}
                       onCheckedChange={() => toggleSelect(item.id)}
@@ -437,9 +483,15 @@ function MedicineManagement() {
                         <Info className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </>
           )}
         </TabsContent>
