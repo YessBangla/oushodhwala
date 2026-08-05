@@ -60,11 +60,34 @@ export async function suggestMedicineRows(term: string, limit: number): Promise<
 
   const rows = (data ?? []) as unknown as MedSuggestion[];
   const low = clean.toLowerCase();
-  // যে নামগুলো লেখা অক্ষর দিয়ে শুরু হয় সেগুলো আগে দেখাই
-  return rows.sort((a, b) => {
-    const sa = String(a.en ?? a.name ?? "").toLowerCase().startsWith(low) ? 0 : 1;
-    const sb = String(b.en ?? b.name ?? "").toLowerCase().startsWith(low) ? 0 : 1;
 
-    return sa - sb;
+  // র\u200d্যাঙ্কিং উন্নত করা হচ্ছে:
+  // ১. নাম বা ইংরেজী নাম হুবহু মিলে গেলে সর্বোচ্চ অগ্রাধিকার
+  // ২. নাম বা ইংরেজী নাম দিয়ে শুরু হলে অগ্রাধিকার
+  // ৩. ব্র্যান্ড বা জেনেরিক দিয়ে শুরু হলে তার পরের অগ্রাধিকার
+  return rows.sort((a, b) => {
+    const na = String(a.name ?? "").toLowerCase();
+    const ea = String(a.en ?? "").toLowerCase();
+    const ga = String(a.generic ?? "").toLowerCase();
+    const ba = String(a.brand ?? "").toLowerCase();
+
+    const nb = String(b.name ?? "").toLowerCase();
+    const eb = String(b.en ?? "").toLowerCase();
+    const gb = String(b.generic ?? "").toLowerCase();
+    const bb = String(b.brand ?? "").toLowerCase();
+
+    const score = (name: string, en: string, generic: string, brand: string) => {
+      if (name === low || en === low) return 0; // হুবহু মিল
+      if (name.startsWith(low) || en.startsWith(low)) return 1; // নাম দিয়ে শুরু
+      if (brand.startsWith(low) || generic.startsWith(low)) return 2; // ব্র্যান্ড/জেনেরিক দিয়ে শুরু
+      return 3; // আংশিক মিল
+    };
+
+    const sa = score(na, ea, ga, ba);
+    const sb = score(nb, eb, gb, bb);
+
+    if (sa !== sb) return sa - sb;
+    // স্কোর সমান হলে স্টকের পরিমাণ বা প্রাইস দিয়েও সর্ট করা যেতে পারে
+    return (b.stock || 0) - (a.stock || 0);
   });
 }
