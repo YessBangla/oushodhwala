@@ -1207,12 +1207,19 @@ function MedicineManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkEditOpen(false)}>{t("বাতিল", "Cancel")}</Button>
-            <Button onClick={() => {
-              toast.success(t("আপডেট করা হয়েছে", "Updated successfully"));
-              setBulkEditOpen(false);
-              setSelected(new Set());
+            <Button onClick={async () => {
+              try {
+                await bulkUpdateStatus({ data: { productIds: Array.from(selected), active: bulkEditConfig.active } });
+                toast.success(t("আপডেট করা হয়েছে", "Updated successfully"));
+                qc.invalidateQueries({ queryKey: ["user-medicines"] });
+                setBulkEditOpen(false);
+                setSelected(new Set());
+              } catch (e) {
+                toast.error(t("আপডেট করতে সমস্যা হয়েছে", "Error updating"));
+              }
             }}>{t("অ্যাপ্লাই", "Apply")}</Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </div>
