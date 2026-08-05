@@ -1675,3 +1675,54 @@ function SaveBar({
   );
 }
 
+
+/** ডিবাগ লগ প্যানেল — রিকোয়েস্ট আইডি, গেটওয়ে স্ট্যাটাস ও ভ্যালিডেশন ত্রুটি */
+function RxDebugPanel({ debug, open, onToggle }: { debug: RxDebug | null; open: boolean; onToggle: () => void }) {
+  const t = useT();
+  if (!debug) return null;
+  return (
+    <section className="mt-4 overflow-hidden rounded-xl border border-border">
+      <button onClick={onToggle} className="flex w-full items-center gap-2 bg-secondary/50 px-3 py-2 text-left">
+        <Bug className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-bold">{t("ডিবাগ লগ", "Debug log")}</span>
+        <span className="text-[10px] text-muted-foreground">ref: {debug.requestId.slice(0, 12)}</span>
+        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="space-y-2 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">
+            {t("ক্যাশ", "Cached")}: {debug.cached ? t("হ্যাঁ", "yes") : t("না", "no")} · {t("সময়", "At")}: {debug.at}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-[10px]">
+              <thead className="text-muted-foreground">
+                <tr>
+                  <th className="px-1 py-1 text-left">#</th>
+                  <th className="px-1 py-1 text-left">{t("মডেল", "Model")}</th>
+                  <th className="px-1 py-1 text-left">strict</th>
+                  <th className="px-1 py-1 text-left">status</th>
+                  <th className="px-1 py-1 text-left">ms</th>
+                  <th className="px-1 py-1 text-left">run id</th>
+                  <th className="px-1 py-1 text-left">{t("ত্রুটি", "Error")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {debug.attempts.map((a) => (
+                  <tr key={a.attempt} className={`border-t border-border ${a.ok ? "" : "text-destructive"}`}>
+                    <td className="px-1 py-1">{a.attempt}</td>
+                    <td className="px-1 py-1">{a.model}</td>
+                    <td className="px-1 py-1">{String(a.strict)}</td>
+                    <td className="px-1 py-1">{a.status || "—"}</td>
+                    <td className="px-1 py-1">{a.ms}</td>
+                    <td className="px-1 py-1">{a.runId ? a.runId.slice(0, 10) : "—"}</td>
+                    <td className="max-w-[240px] truncate px-1 py-1" title={a.error}>{a.error || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
