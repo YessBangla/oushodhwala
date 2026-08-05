@@ -1503,6 +1503,11 @@ function RxTable({
                     <td className={CELL}>
                       <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" err={errors[`${i}.name`] ?? ""} />
                     </td>
+                    <td className={`${CELL} w-32`}>
+                      <p className="w-32 truncate px-1.5 py-1 text-[11px] font-semibold text-muted-foreground" title={p?.manufacturer || p?.brand || ""}>
+                        {p?.manufacturer || p?.brand || "—"}
+                      </p>
+
                     <td className={CELL}>
                       <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
                     </td>
