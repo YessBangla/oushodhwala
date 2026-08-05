@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
   RefreshCw,
   ShoppingCart,
@@ -1216,8 +1216,8 @@ function RxTable({
               const p = matches[s.match];
               const d = slots(item.dose);
               return (
-                <>
-                  <tr key={i} className={`border-t border-border ${s.skip ? "opacity-50" : ""}`}>
+                <Fragment key={i}>
+                  <tr className={`border-t border-border ${s.skip ? "opacity-50" : ""}`}>
                     <td className="px-2 py-1.5 align-top">
                       <button
                         onClick={() => setOpen(open === i ? null : i)}
@@ -1298,7 +1298,7 @@ function RxTable({
                     </td>
                   </tr>
                   {open === i && (
-                    <tr key={`d-${i}`} className="border-t border-border bg-secondary/20">
+                    <tr className="border-t border-border bg-secondary/20">
                       <td colSpan={14} className="px-3 py-2">
                         <p className="text-[11px] text-muted-foreground">
                           {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
@@ -1327,7 +1327,7 @@ function RxTable({
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
