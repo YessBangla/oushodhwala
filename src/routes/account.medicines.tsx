@@ -717,12 +717,13 @@ function MedicineManagement() {
             </span>
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
-                className="h-7 text-xs"
-                onClick={() => setSelected(new Set())}
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setBulkEditOpen(true)}
               >
-                {t("বাতিল", "Cancel")}
+                <Clock className="h-3 w-3" />
+                {t("বাল্ক এডিট", "Bulk Edit")}
               </Button>
               <Button 
                 variant="destructive" 
@@ -733,6 +734,7 @@ function MedicineManagement() {
                 <Trash2 className="h-3 w-3" />
                 {t("মুছুন", "Delete")}
               </Button>
+
             </div>
           </div>
         )}
