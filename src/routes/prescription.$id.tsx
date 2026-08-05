@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +8,9 @@ import {
   AlertTriangle,
   ChevronDown,
   Check,
+  CheckCheck,
+  PackageX,
+  Zap,
   Pencil,
   Minus,
   Plus,
