@@ -430,6 +430,20 @@ function Prescription() {
         {t(`সর্বোচ্চ ${MAX_FILES}টি ফাইল, প্রতিটি ${MAX_MB}MB পর্যন্ত`, `Up to ${MAX_FILES} files, ${MAX_MB}MB each`)}
         {picked.length > 0 && ` · ${t.n(picked.length)}/${t.n(MAX_FILES)} · ${totalMb.toFixed(1)}MB`}
       </p>
+      <p className="mt-0.5 text-center text-[10px] text-muted-foreground">
+        {checking ? (
+          <span className="inline-flex items-center gap-1 font-semibold text-primary">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {t("ছবির মান যাচাই হচ্ছে...", "Checking image quality...")}
+          </span>
+        ) : (
+          t(
+            "ঝাপসা বা কম আলোর ছবি AI-তে পাঠানোর আগেই বাতিল হবে।",
+            "Blurry or low-contrast photos are rejected before AI reading starts.",
+          )
+        )}
+      </p>
+
 
       <input
         ref={inputRef}
