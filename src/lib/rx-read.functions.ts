@@ -185,7 +185,11 @@ function tidy(r: RxRead): RxRead {
   return {
     ...r,
     patientName: cut(r.patientName, 60),
+    patientAge: cut(r.patientAge, 30),
+    patientAddress: cut(r.patientAddress, 140),
+    hospital: cut(r.hospital, 90),
     doctorName: cut(r.doctorName, 80),
+    doctorQualification: cut(r.doctorQualification, 90),
     date: cut(r.date, 30),
     advice: cut(r.advice, 400),
     note: cut(r.note, 400),
