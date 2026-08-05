@@ -106,7 +106,7 @@ export function ProductPreview({
                 <p className="text-[10px] text-muted-foreground">{t("মূল্য", "Price")}</p>
                 <p className="text-lg font-bold text-primary">৳{product.price}</p>
               </div>
-              <Badge variant={product.stock > 0 ? "success" : "destructive"} className="h-6">
+              <Badge variant={product.stock > 0 ? "secondary" : "destructive"} className="h-6">
                 {product.stock > 0 ? t("স্টকে আছে", "In Stock") : t("স্টকে নেই", "Out of Stock")}
               </Badge>
             </div>
