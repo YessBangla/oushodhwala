@@ -13,8 +13,13 @@ import {
   Plus,
   FileText,
   Share2,
-  
+  Save,
+  Trash2,
+  Bug,
+  Loader2,
+  Printer,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
