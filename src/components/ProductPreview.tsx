@@ -51,6 +51,15 @@ export function ProductPreview({
     setRevoked(next);
     const tracking = { views: viewCount, revoked: next };
     localStorage.setItem(`share_track_${product.id}`, JSON.stringify(tracking));
+    
+    // Auto-sync mechanism: Trigger a broadcast to other tabs/sessions
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new StorageEvent('storage', {
+            key: `share_track_${product.id}`,
+            newValue: JSON.stringify(tracking)
+        }));
+    }
+    
     toast.success(next ? t("লিংক রিভোক করা হয়েছে", "Link revoked") : t("লিংক সচল করা হয়েছে", "Link reactivated"));
   };
 
@@ -67,6 +76,17 @@ export function ProductPreview({
     }
     return base;
   }, [product, access, expiry, shareToken]);
+
+  useEffect(() => {
+    const handleSync = (e: StorageEvent) => {
+      if (e.key === `share_track_${product?.id}` && e.newValue) {
+        const tracking = JSON.parse(e.newValue);
+        setRevoked(tracking.revoked);
+      }
+    };
+    window.addEventListener('storage', handleSync);
+    return () => window.removeEventListener('storage', handleSync);
+  }, [product?.id]);
 
   if (!product) return null;
 
