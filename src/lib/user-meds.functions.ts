@@ -56,3 +56,17 @@ export const updateMedicineReminder = createServerFn({ method: "POST" })
     await server.updateReminder(context.userId, data.productId, data.config);
     return { success: true };
   });
+
+export const updateUserMedicineOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { productIds: string[] }) => d)
+  .handler(async ({ data, context }) => {
+    await server.updateSortOrder(context.userId, data.productIds);
+    return { success: true };
+  });
+
+export const getUserAuditLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    return server.getAuditLogs(context.userId);
+  });
