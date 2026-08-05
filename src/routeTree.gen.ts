@@ -34,7 +34,9 @@ import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WishlistRouteImport } from './routes/wishlist'
+import { Route as AccountAuditLogsRouteImport } from './routes/account/audit-logs'
 import { Route as AccountMedicinesRouteImport } from './routes/account.medicines'
+import { Route as AccountNotificationsRouteImport } from './routes/account/notifications'
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
@@ -175,9 +177,19 @@ const WishlistRoute = WishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountAuditLogsRoute = AccountAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AccountRoute,
+} as any)
 const AccountMedicinesRoute = AccountMedicinesRouteImport.update({
   id: '/medicines',
   path: '/medicines',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountNotificationsRoute = AccountNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AccountRoute,
 } as any)
 const BookDoctorIdRoute = BookDoctorIdRouteImport.update({
@@ -277,7 +289,9 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
+  '/account/audit-logs': typeof AccountAuditLogsRoute
   '/account/medicines': typeof AccountMedicinesRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
@@ -319,7 +333,9 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
+  '/account/audit-logs': typeof AccountAuditLogsRoute
   '/account/medicines': typeof AccountMedicinesRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
@@ -362,7 +378,9 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/wishlist': typeof WishlistRoute
+  '/account/audit-logs': typeof AccountAuditLogsRoute
   '/account/medicines': typeof AccountMedicinesRoute
+  '/account/notifications': typeof AccountNotificationsRoute
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
@@ -406,7 +424,9 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/wishlist'
+    | '/account/audit-logs'
     | '/account/medicines'
+    | '/account/notifications'
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
@@ -448,7 +468,9 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/wishlist'
+    | '/account/audit-logs'
     | '/account/medicines'
+    | '/account/notifications'
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
@@ -490,7 +512,9 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/terms'
     | '/wishlist'
+    | '/account/audit-logs'
     | '/account/medicines'
+    | '/account/notifications'
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
@@ -726,11 +750,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/audit-logs': {
+      id: '/account/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/account/audit-logs'
+      preLoaderRoute: typeof AccountAuditLogsRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/account/medicines': {
       id: '/account/medicines'
       path: '/medicines'
       fullPath: '/account/medicines'
       preLoaderRoute: typeof AccountMedicinesRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/notifications': {
+      id: '/account/notifications'
+      path: '/notifications'
+      fullPath: '/account/notifications'
+      preLoaderRoute: typeof AccountNotificationsRouteImport
       parentRoute: typeof AccountRoute
     }
     '/book-doctor/$id': {
@@ -835,11 +873,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface AccountRouteChildren {
+  AccountAuditLogsRoute: typeof AccountAuditLogsRoute
   AccountMedicinesRoute: typeof AccountMedicinesRoute
+  AccountNotificationsRoute: typeof AccountNotificationsRoute
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
+  AccountAuditLogsRoute: AccountAuditLogsRoute,
   AccountMedicinesRoute: AccountMedicinesRoute,
+  AccountNotificationsRoute: AccountNotificationsRoute,
 }
 
 const AccountRouteWithChildren =
@@ -889,3 +931,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
