@@ -626,6 +626,13 @@ function RxReading() {
         </div>
       )}
 
+      {/* ডিবাগ প্যানেল — রিকোয়েস্ট আইডি, গেটওয়ে স্ট্যাটাস ও ভ্যালিডেশন ত্রুটি */}
+      <RxDebugPanel
+        debug={(fetched?.debug ?? (error as (Error & { debug?: RxDebug }) | null)?.debug) ?? null}
+        open={debugOpen}
+        onToggle={() => setDebugOpen((v) => !v)}
+      />
+
 
       {data && (
         <>
