@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { opsStart, opsSuccess, opsFailure } from "@/lib/ops";
+import { checkRxImage, rxQualityMessage, type RxImageQuality } from "@/lib/rx-image-quality";
 
 
 export const Route = createFileRoute("/prescription/")({
@@ -51,7 +52,7 @@ const OK_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "applic
 /** প্রেসক্রিপশনের সাধারণ বৈধতা — ৩০ দিন */
 const VALID_DAYS = 30;
 
-type Picked = { file: File; url: string; id: string };
+type Picked = { file: File; url: string; id: string; quality?: RxImageQuality };
 
 function Prescription() {
   const t = useT();
@@ -66,6 +67,8 @@ function Prescription() {
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
   const [picked, setPicked] = useState<Picked[]>([]);
+  /** ছবির মান যাচাই চলছে কিনা */
+  const [checking, setChecking] = useState(false);
   const [done, setDone] = useState(0);
   const [uploaded, setUploaded] = useState<Record<string, string>>({});
   const [failed, setFailed] = useState<string[]>([]);
@@ -435,7 +438,7 @@ function Prescription() {
         multiple
         className="hidden"
         onChange={(e) => {
-          addFiles(e.target.files);
+          void addFiles(e.target.files);
           e.target.value = "";
         }}
       />
@@ -446,7 +449,7 @@ function Prescription() {
         capture="environment"
         className="hidden"
         onChange={(e) => {
-          addFiles(e.target.files);
+          void addFiles(e.target.files);
           e.target.value = "";
         }}
       />
