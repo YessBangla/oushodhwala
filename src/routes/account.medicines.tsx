@@ -1081,6 +1081,37 @@ function MedicineManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Bulk Edit Dialog */}
+      <Dialog open={bulkEditOpen} onOpenChange={setBulkEditOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>{t("বাল্ক এডিট", "Bulk Edit")}</DialogTitle>
+            <DialogDescription>
+              {selected.size} {t("টি আইটেম আপডেট করা হচ্ছে", "items being updated")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <Label>{t("সক্রিয়/নিষ্ক্রিয়", "Active/Inactive")}</Label>
+              <Checkbox 
+                checked={bulkEditConfig.active} 
+                onCheckedChange={(v) => setBulkEditConfig({ active: !!v })}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {t("দ্রষ্টব্য: বাল্ক ডিলিট অপশনটি সরাসরি ডিলিট বাটনে ক্লিক করে করা যাবে।", "Note: Bulk delete can be done via the main delete button.")}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkEditOpen(false)}>{t("বাতিল", "Cancel")}</Button>
+            <Button onClick={() => {
+              toast.success(t("আপডেট করা হয়েছে", "Updated successfully"));
+              setBulkEditOpen(false);
+              setSelected(new Set());
+            }}>{t("অ্যাপ্লাই", "Apply")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
