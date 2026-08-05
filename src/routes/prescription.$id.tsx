@@ -1089,3 +1089,256 @@ function Field({ t, v }: { t: string; v: string }) {
     </div>
   );
 }
+
+/** হাসপাতাল / ডাক্তার / রোগীর তথ্য — প্রতিটি আলাদা সেলে, সরাসরি এডিটযোগ্য */
+function MetaEditor({ meta, onChange }: { meta: RxMeta; onChange: (patch: Partial<RxMeta>) => void }) {
+  const t = useT();
+  const cells: Array<{ k: keyof RxMeta; label: string; ph: string }> = [
+    { k: "hospital", label: t("হাসপাতাল / চেম্বার", "Hospital / chamber"), ph: t("যেমন: ঢাকা মেডিকেল", "e.g. Dhaka Medical") },
+    { k: "doctorName", label: t("ডাক্তারের নাম", "Doctor name"), ph: t("ডাঃ ...", "Dr. ...") },
+    { k: "doctorQualification", label: t("ডিগ্রি / পদবি", "Qualification"), ph: "MBBS, FCPS" },
+    { k: "patientName", label: t("রোগীর নাম", "Patient name"), ph: t("রোগীর নাম", "Patient name") },
+    { k: "patientAge", label: t("বয়স", "Age"), ph: t("যেমন: ৩৫ বছর", "e.g. 35 years") },
+    { k: "date", label: t("প্রেসক্রিপশনের তারিখ", "Rx date"), ph: t("দিন-মাস-বছর", "dd-mm-yyyy") },
+    { k: "patientAddress", label: t("ঠিকানা", "Address"), ph: t("রোগীর ঠিকানা", "Patient address") },
+  ];
+
+  return (
+    <section className="mt-3 overflow-hidden rounded-xl border border-border">
+      <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-2">
+        <Pencil className="h-3.5 w-3.5 text-primary" />
+        <p className="text-[11px] font-bold">{t("প্রেসক্রিপশনের তথ্য — প্রয়োজনে ঠিক করুন", "Prescription details — correct if needed")}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-3">
+        {cells.map((c) => (
+          <label key={c.k} className={`block bg-card px-3 py-2 ${c.k === "patientAddress" ? "col-span-2 sm:col-span-3" : ""}`}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{c.label}</span>
+            <input
+              value={meta[c.k]}
+              placeholder={c.ph}
+              onChange={(e) => onChange({ [c.k]: e.target.value } as Partial<RxMeta>)}
+              className="mt-0.5 w-full bg-transparent text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
+            />
+          </label>
+        ))}
+        <label className="col-span-2 block bg-card px-3 py-2 sm:col-span-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("ডাক্তারের পরামর্শ", "Doctor's advice")}
+          </span>
+          <textarea
+            value={meta.advice}
+            rows={2}
+            placeholder={t("বিশ্রাম, পরীক্ষা, ফলো-আপ ইত্যাদি", "Rest, tests, follow-up etc.")}
+            onChange={(e) => onChange({ advice: e.target.value })}
+            className="mt-0.5 w-full resize-y bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+          />
+        </label>
+      </div>
+    </section>
+  );
+}
+
+const TH = "whitespace-nowrap px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground";
+const CELL = "border-l border-border px-1.5 py-1.5 align-top";
+
+function CellInput({ value, onChange, w = "w-28", ph }: { value: string; onChange: (v: string) => void; w?: string; ph?: string }) {
+  return (
+    <input
+      value={value}
+      placeholder={ph ?? "—"}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${w} rounded-md bg-transparent px-1.5 py-1 text-[11px] font-semibold outline-none focus:bg-secondary placeholder:font-normal placeholder:text-muted-foreground/50`}
+    />
+  );
+}
+
+/** ঔষধের সম্পূর্ণ তালিকা — এক টেবিলে, প্রতিটি অপশন আলাদা সেলে ও এডিটযোগ্য */
+function RxTable({
+  items,
+  rows,
+  sel,
+  onSel,
+  onChange,
+}: {
+  items: RxReadItem[];
+  rows: Row[];
+  sel: Record<number, Sel>;
+  onSel: (i: number, s: Partial<Sel>) => void;
+  onChange: (i: number, patch: Partial<RxReadItem>) => void;
+}) {
+  const t = useT();
+  const [open, setOpen] = useState<number | null>(null);
+
+  const slots = (dose: string) => {
+    const p = (dose || "").split("+").map((x) => x.trim());
+    return p.length === 3 ? p : ["", "", ""];
+  };
+  const setSlot = (i: number, dose: string, k: number, v: string) => {
+    const cur = slots(dose);
+    const next = cur.map((x) => x || "0");
+    next[k] = v;
+    onChange(i, { dose: next.join("+") });
+  };
+
+  return (
+    <section className="mt-3 overflow-hidden rounded-xl border border-border">
+      <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-2">
+        <FileText className="h-3.5 w-3.5 text-primary" />
+        <p className="text-[11px] font-bold">{t("ঔষধের তালিকা — সব ঘর এডিট করা যায়", "Medicine table — every cell is editable")}</p>
+        <span className="ml-auto text-[10px] text-muted-foreground">{t.n(items.length)} {t("আইটেম", "items")}</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px] border-collapse text-[11px]">
+          <thead className="bg-secondary/40">
+            <tr>
+              <th className={TH}>#</th>
+              <th className={TH}>{t("ব্র্যান্ড", "Brand")}</th>
+              <th className={TH}>{t("জেনেরিক", "Generic")}</th>
+              <th className={TH}>{t("মাত্রা", "Strength")}</th>
+              <th className={TH}>{t("ফর্ম", "Form")}</th>
+              <th className={TH}>{t("সকাল", "Morn")}</th>
+              <th className={TH}>{t("দুপুর", "Noon")}</th>
+              <th className={TH}>{t("রাত", "Night")}</th>
+              <th className={TH}>{t("সময়কাল", "Duration")}</th>
+              <th className={TH}>{t("নির্দেশনা", "Timing")}</th>
+              <th className={TH}>{t("প্যাক / ইউনিট", "Pack / unit")}</th>
+              <th className={TH}>{t("পরিমাণ", "Qty")}</th>
+              <th className={TH}>{t("মূল্য", "Amount")}</th>
+              <th className={TH}>{t("অর্ডার", "Order")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, i) => {
+              const row = rows[i];
+              const matches = row?.matches ?? [];
+              const s = sel[i] ?? DEF_SEL;
+              const p = matches[s.match];
+              const d = slots(item.dose);
+              return (
+                <>
+                  <tr key={i} className={`border-t border-border ${s.skip ? "opacity-50" : ""}`}>
+                    <td className="px-2 py-1.5 align-top">
+                      <button
+                        onClick={() => setOpen(open === i ? null : i)}
+                        className="flex items-center gap-1 text-[10px] font-bold text-primary"
+                        aria-expanded={open === i}
+                      >
+                        {t.n(i + 1)}
+                        <ChevronDown className={`h-3 w-3 transition-transform ${open === i ? "rotate-180" : ""}`} />
+                      </button>
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.name} onChange={(v) => onChange(i, { name: v })} w="w-36" />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.generic} onChange={(v) => onChange(i, { generic: v })} w="w-32" />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.strength} onChange={(v) => onChange(i, { strength: v })} w="w-20" />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.form} onChange={(v) => onChange(i, { form: v })} w="w-20" />
+                    </td>
+                    {[0, 1, 2].map((k) => (
+                      <td key={k} className={CELL}>
+                        <select
+                          value={d[k] || "0"}
+                          onChange={(e) => setSlot(i, item.dose, k, e.target.value)}
+                          className="w-14 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary"
+                        >
+                          {DOSE_OPTS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    ))}
+                    <td className={CELL}>
+                      <CellInput value={item.duration} onChange={(v) => onChange(i, { duration: v })} w="w-20" ph={t("৭ দিন", "7 days")} />
+                    </td>
+                    <td className={CELL}>
+                      <CellInput value={item.instruction} onChange={(v) => onChange(i, { instruction: v })} w="w-28" ph={t("খাবারের পরে", "After food")} />
+                    </td>
+                    <td className={CELL}>
+                      <select
+                        value={String(s.match)}
+                        onChange={(e) => onSel(i, { match: Number(e.target.value), skip: false })}
+                        disabled={matches.length === 0}
+                        className="w-40 rounded-md bg-transparent px-1 py-1 text-[11px] font-semibold outline-none focus:bg-secondary disabled:opacity-50"
+                      >
+                        {matches.length === 0 ? (
+                          <option value="0">{t("ক্যাটালগে নেই", "Not in catalogue")}</option>
+                        ) : (
+                          matches.map((m, mi) => (
+                            <option key={m.id} value={mi}>
+                              {(t.en ? m.en || m.name : m.name)} · {packLabel(m)} · ৳{Math.round(m.price)}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </td>
+                    <td className={CELL}>
+                      <QtyBox qty={s.qty} onQty={(n) => onSel(i, { qty: n })} />
+                    </td>
+                    <td className={`${CELL} whitespace-nowrap font-extrabold text-primary`}>
+                      {p ? `৳${t.n(Math.round(p.price * s.qty))}` : "—"}
+                    </td>
+                    <td className={CELL}>
+                      <label className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={!s.skip}
+                          onChange={(e) => onSel(i, { skip: !e.target.checked })}
+                          className="h-3.5 w-3.5"
+                        />
+                        {s.skip ? t("বাদ", "Off") : t("আছে", "On")}
+                      </label>
+                    </td>
+                  </tr>
+                  {open === i && (
+                    <tr key={`d-${i}`} className="border-t border-border bg-secondary/20">
+                      <td colSpan={14} className="px-3 py-2">
+                        <p className="text-[11px] text-muted-foreground">
+                          {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
+                        </p>
+                        <ConfBreakdown item={item} />
+                        {matches.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-[10px] font-semibold text-muted-foreground">
+                              {t("সম্ভাব্য মিল — সঠিকটি বেছে নিন", "Possible matches — pick the correct one")}
+                            </p>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {matches.map((m, mi) => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => onSel(i, { match: mi, skip: false })}
+                                  className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
+                                    mi === s.match && !s.skip ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                                  }`}
+                                >
+                                  {(t.en ? m.en || m.name : m.name)} · {m.strength} · ৳{t.n(m.price)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-border bg-secondary/30 px-3 py-2 text-[10px] text-muted-foreground">
+        {t(
+          "মোবাইলে টেবিলটি ডানে-বামে স্ক্রল করুন। নম্বরে ট্যাপ করলে OCR কনফিডেন্স ও বিকল্প ঔষধ দেখা যাবে।",
+          "Scroll the table sideways on mobile. Tap the row number to see OCR confidence and alternative matches.",
+        )}
+      </p>
+    </section>
+  );
+}
