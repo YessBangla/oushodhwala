@@ -29,8 +29,9 @@ export async function suggestMedicineRows(term: string, limit: number) {
   const low = clean.toLowerCase();
   // যে নামগুলো লেখা অক্ষর দিয়ে শুরু হয় সেগুলো আগে দেখাই
   return rows.sort((a, b) => {
-    const sa = String(a.en ?? a.name ?? "").toLowerCase().startsWith(low) ? 0 : 1;
-    const sb = String(b.en ?? b.name ?? "").toLowerCase().startsWith(low) ? 0 : 1;
+    const sa = String(a["en"] ?? a["name"] ?? "").toLowerCase().startsWith(low) ? 0 : 1;
+    const sb = String(b["en"] ?? b["name"] ?? "").toLowerCase().startsWith(low) ? 0 : 1;
+
     return sa - sb;
   });
 }
