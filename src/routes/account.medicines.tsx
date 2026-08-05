@@ -131,12 +131,12 @@ function MedicineManagement() {
   const recent = (data?.recent || []) as MedWithReminder[];
 
   const forms = useMemo(() => {
-    const list = tab === "favorites" ? favorites : recent;
+    const list = (tab === "favorites" ? favorites : recent) as MedWithReminder[];
     return Array.from(new Set(list.map(i => i.form).filter(Boolean)));
   }, [tab, favorites, recent]);
 
   const items = useMemo(() => {
-    const list = tab === "favorites" ? favorites : recent;
+    const list = (tab === "favorites" ? favorites : recent) as MedWithReminder[];
     let filtered = list.filter(item => {
       const q = search.toLowerCase();
       const matchesSearch = (
@@ -256,7 +256,7 @@ function MedicineManagement() {
   };
 
   const exportData = (format: "json" | "csv") => {
-    const list = tab === "favorites" ? favorites : recent;
+    const list = (tab === "favorites" ? favorites : recent) as MedWithReminder[];
     if (list.length === 0) return;
 
     if (format === "json") {
