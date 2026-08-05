@@ -1591,7 +1591,7 @@ function RxTable({
                   </tr>
                   {open === i && (
                     <tr className="border-t border-border bg-secondary/20">
-                      <td colSpan={15} className="px-3 py-2">
+                      <td colSpan={16} className="px-3 py-2">
 
                         <p className="text-[11px] text-muted-foreground">
                           {t("লেখা ছিল", "Written")}: “{item.raw}” <ConfBadge c={item.confidence} />
