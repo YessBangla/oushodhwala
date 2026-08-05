@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Search } from "lucide-react";
+import { AlertCircle, Loader2, Search } from "lucide-react";
 
 import { useT } from "@/lib/i18n";
 import { suggestMedicines } from "@/lib/rx-suggest.functions";
@@ -32,8 +33,23 @@ export function MedicinePicker({
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
   const [term, setTerm] = useState("");
+  const [failed, setFailed] = useState(false);
+  const [position, setPosition] = useState({ left: 0, top: 0, width: 288 });
+
+  const positionPopup = () => {
+    const box = boxRef.current;
+    if (!box) return;
+    const rect = box.getBoundingClientRect();
+    const width = Math.min(360, Math.max(288, window.innerWidth - 16));
+    setPosition({
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      top: rect.bottom + 4,
+      width,
+    });
+  };
 
   // ডিবাউন্স — টাইপ থামার পরই কোয়েরি
   useEffect(() => {
@@ -44,6 +60,7 @@ export function MedicinePicker({
     }
     const my = ++seq.current;
     setLoading(true);
+    setFailed(false);
     const id = window.setTimeout(async () => {
       try {
         const r = await suggest({ data: { q, limit: 8 } });
@@ -52,7 +69,10 @@ export function MedicinePicker({
           setActive(0);
         }
       } catch {
-        if (my === seq.current) setRows([]);
+        if (my === seq.current) {
+          setRows([]);
+          setFailed(true);
+        }
       } finally {
         if (my === seq.current) setLoading(false);
       }
@@ -60,11 +80,25 @@ export function MedicinePicker({
     return () => window.clearTimeout(id);
   }, [term, open, suggest]);
 
+  // টেবিলের overflow পপ-আপ কেটে ফেলতে পারে, তাই portal-এর অবস্থান ইনপুটের সাথে রাখি।
+  useEffect(() => {
+    if (!open) return;
+    positionPopup();
+    const update = () => positionPopup();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
+
   // বাইরে ক্লিক করলে পপ-আপ বন্ধ
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (!boxRef.current?.contains(target) && !popupRef.current?.contains(target)) setOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -92,10 +126,12 @@ export function MedicinePicker({
           onChange(e.target.value);
           setTerm(e.target.value);
           setOpen(true);
+          positionPopup();
         }}
         onFocus={() => {
           setTerm(value);
           setOpen(true);
+          positionPopup();
         }}
         onKeyDown={(e) => {
           if (!open || !list.length) return;
@@ -119,10 +155,12 @@ export function MedicinePicker({
       />
       {err && <p className="px-1 pt-0.5 text-[9px] font-semibold leading-tight text-destructive">{err}</p>}
 
-      {open && (loading || list.length > 0) && (
+      {open && term.trim().length > 0 && typeof document !== "undefined" && createPortal(
         <div
+          ref={popupRef}
           role="listbox"
-          className="absolute left-0 top-full z-50 mt-1 max-h-72 w-72 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-xl"
+          style={{ left: position.left, top: position.top, width: position.width }}
+          className="fixed z-[100] max-h-72 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-xl"
         >
           {loading && list.length === 0 && (
             <p className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
@@ -152,10 +190,16 @@ export function MedicinePicker({
               <span className="shrink-0 text-[10px] font-bold text-primary">৳{Math.round(p.price)}</span>
             </button>
           ))}
-          {!loading && list.length === 0 && (
+          {failed && !loading && (
+            <p className="flex items-center gap-2 px-2 py-2 text-[11px] font-semibold text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" /> {t("ঔষধ খোঁজা যায়নি—আবার লিখুন", "Search failed—please type again")}
+            </p>
+          )}
+          {!failed && !loading && list.length === 0 && (
             <p className="px-2 py-2 text-[11px] text-muted-foreground">{t("কিছু পাওয়া যায়নি", "No match found")}</p>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
