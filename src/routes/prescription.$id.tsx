@@ -199,6 +199,8 @@ function RxReading() {
   const save = useServerFn(saveRxEdits);
   const audit = useServerFn(listRxAudit);
   const { add } = useStore();
+  const navigate = useNavigate();
+
 
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
