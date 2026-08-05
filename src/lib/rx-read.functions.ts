@@ -65,6 +65,7 @@ Rules (critical — a wrong medicine can harm a patient):
 - Extract strength (mg/ml), form, dose pattern (e.g. 1+0+1), duration and food instruction when written.
 - For EVERY line give "fieldConf": a separate 0–1 confidence for name, strength, form, dose, duration and instruction. Use 0 when that part is simply not written, and a low value (<0.6) when the handwriting is ambiguous.
 - For EVERY line give "reason": a short plain explanation of exactly which parts are uncertain and why (empty string when everything is clear).
+- Also return patient name, doctor name, date and any general advice if present.
 - Also return the hospital/chamber name, doctor qualification, patient age and patient address when they are printed or written on the page (empty string when absent).
 - Output must be valid JSON matching the schema.`;
 
