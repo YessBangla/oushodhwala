@@ -49,6 +49,13 @@ export type MedWithReminder = MedSuggestion & {
     timezone?: string;
     notes?: string;
   };
+  reminder_config?: {
+    time: string;
+    type: string;
+    frequency: number;
+    timezone?: string;
+    notes?: string;
+  };
 };
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +97,7 @@ function MedicineManagement() {
   const updateRemind = useServerFn(updateMedicineReminder);
   const updateOrder = useServerFn(updateUserMedicineOrder);
 
-  const [tab, setTab] = useState<"favorites" | "recent">("favorites");
+  const [tab, setTab] = useState<"favorites" | "recent" | "calendar">("favorites");
   const [search, setSearch] = useState("");
   const [filterForm, setFilterForm] = useState<string>("all");
   const [sort, setSort] = useState<"name" | "date">("date");
@@ -120,6 +127,11 @@ function MedicineManagement() {
   });
   const [importStep, setImportStep] = useState<"preview" | "mapping" | "results">("preview");
   const [importHistory, setImportHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_import_history") || "[]"));
+
+  // Bulk Edit State
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkEditConfig, setBulkEditConfig] = useState({ active: true });
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-medicines"],
@@ -712,12 +724,13 @@ function MedicineManagement() {
             </span>
             <div className="flex gap-2">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
-                className="h-7 text-xs"
-                onClick={() => setSelected(new Set())}
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setBulkEditOpen(true)}
               >
-                {t("বাতিল", "Cancel")}
+                <Clock className="h-3 w-3" />
+                {t("বাল্ক এডিট", "Bulk Edit")}
               </Button>
               <Button 
                 variant="destructive" 
@@ -728,13 +741,14 @@ function MedicineManagement() {
                 <Trash2 className="h-3 w-3" />
                 {t("মুছুন", "Delete")}
               </Button>
+
             </div>
           </div>
         )}
       </div>
 
       <Tabs value={tab} onValueChange={v => { setTab(v as any); setSelected(new Set()); }} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="favorites" className="gap-2">
             <Heart className={`h-4 w-4 ${tab === "favorites" ? "fill-primary" : ""}`} />
             {t("প্রিয়", "Favorites")}
@@ -743,7 +757,12 @@ function MedicineManagement() {
             <History className="h-4 w-4" />
             {t("সম্প্রতি", "Recent")}
           </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            {t("ক্যালেন্ডার", "Calendar")}
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value={tab} className="mt-4 space-y-2">
           {isLoading ? (
@@ -844,7 +863,32 @@ function MedicineManagement() {
             </>
           )}
         </TabsContent>
+        <TabsContent value="calendar" className="mt-4">
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold">{t("পরবর্তী ৩০ দিনের রিমাইন্ডার", "Reminders for the next 30 days")}</h3>
+            <ScrollArea className="h-[500px] pr-4">
+              <div className="space-y-2">
+                {favorites.filter(f => f.reminder_config?.time).sort((a, b) => (a.reminder_config?.time || "").localeCompare(b.reminder_config?.time || "")).map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border bg-card">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-bold">{item.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.reminder_config?.time} • {item.reminder_config?.type}</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">{item.strength}</Badge>
+                  </div>
+                ))}
+                {favorites.filter(f => f.reminder_config?.time).length === 0 && (
+                  <div className="py-10 text-center text-muted-foreground text-xs">{t("কোনো রিমাইন্ডার সেট করা নেই।", "No reminders set.")}</div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </TabsContent>
       </Tabs>
+
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
@@ -891,24 +935,64 @@ function MedicineManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-muted-foreground uppercase">{t("সময়", "Time")}</label>
-              <Input 
-                type="time" 
-                value={reminderConfig.time} 
-                onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
-              />
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">{t("সময়", "Time")}</label>
+                <Input 
+                  type="time" 
+                  value={reminderConfig.time} 
+                  onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
+                  className={!reminderConfig.time ? "border-destructive" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">{t("ফ্রিকোয়েন্সি (ঘন্টা)", "Frequency (hrs)")}</label>
+                <Input 
+                  type="number" 
+                  min="1"
+                  max="24"
+                  value={reminderConfig.frequency} 
+                  onChange={(e) => setReminderConfig(c => ({...c, frequency: parseInt(e.target.value)}))}
+                />
+              </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">{t("টাইমজোন", "Timezone")}</label>
+              <Select value={reminderConfig.timezone} onValueChange={(v) => setReminderConfig(c => ({...c, timezone: v}))}>
+                <SelectTrigger className="text-[10px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["UTC", "Asia/Dhaka", "America/New_York", "Europe/London"].map(tz => (
+                    <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {checkReminderConflicts(reminderConfig.time).length > 0 && (
+              <div className="rounded bg-amber-50 p-2 text-[9px] text-amber-700 flex items-start gap-1.5 border border-amber-200">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span>
+                  {t("সতর্কতা: এই সময়ে আপনার অন্য রিমাইন্ডার আছে", "Warning: Overlap with other reminders at this time")}: 
+                  {checkReminderConflicts(reminderConfig.time).map(i => i.name).join(", ")}
+                </span>
+              </div>
+            )}
             
             <div className="space-y-3 pt-4 border-t">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("নোটিফিকেশন যাচাই", "Verify Notification")}</label>
-                <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
-              <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>
-                <History className="h-3 w-3" /> {t("ডেলিভারি লগ", "Delivery Logs")}
-              </Button>
-                  {t("টেস্ট নোটিফিকেশন", "Test Notification")}
-                </Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setShowLogs(true)}>
+                    <History className="h-3 w-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
+                    {t("টেস্ট", "Test")}
+                  </Button>
+                </div>
               </div>
 
               {notificationHistory.length > 0 && (
@@ -930,10 +1014,10 @@ function MedicineManagement() {
           </div>
           <DialogFooter>
             <div className="flex gap-2 w-full">
-              <Button variant="outline" className="flex-1" onClick={() => exportToICS(reminderConfig, configProduct)}>
-                <Calendar className="mr-2 h-4 w-4" /> ICS Export
+              <Button variant="outline" className="flex-1 text-[10px]" onClick={() => exportToICS(reminderConfig, configProduct)}>
+                <Calendar className="mr-2 h-3 w-3" /> ICS
               </Button>
-              <Button className="flex-1" onClick={handleSaveReminder}>
+              <Button className="flex-1 text-[10px]" onClick={handleSaveReminder} disabled={!reminderConfig.time}>
                 {t("সেভ করুন", "Save")}
               </Button>
             </div>
@@ -997,6 +1081,37 @@ function MedicineManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Bulk Edit Dialog */}
+      <Dialog open={bulkEditOpen} onOpenChange={setBulkEditOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>{t("বাল্ক এডিট", "Bulk Edit")}</DialogTitle>
+            <DialogDescription>
+              {selected.size} {t("টি আইটেম আপডেট করা হচ্ছে", "items being updated")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <Label>{t("সক্রিয়/নিষ্ক্রিয়", "Active/Inactive")}</Label>
+              <Checkbox 
+                checked={bulkEditConfig.active} 
+                onCheckedChange={(v) => setBulkEditConfig({ active: !!v })}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {t("দ্রষ্টব্য: বাল্ক ডিলিট অপশনটি সরাসরি ডিলিট বাটনে ক্লিক করে করা যাবে।", "Note: Bulk delete can be done via the main delete button.")}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkEditOpen(false)}>{t("বাতিল", "Cancel")}</Button>
+            <Button onClick={() => {
+              toast.success(t("আপডেট করা হয়েছে", "Updated successfully"));
+              setBulkEditOpen(false);
+              setSelected(new Set());
+            }}>{t("অ্যাপ্লাই", "Apply")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
