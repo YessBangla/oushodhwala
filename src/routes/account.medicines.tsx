@@ -130,6 +130,28 @@ function MedicineManagement() {
     return filtered;
   }, [tab, favorites, recent, search, sort, filterForm]);
 
+  const onDragEnd = async (result: any) => {
+    if (!result.destination || tab !== "favorites") return;
+    
+    const reordered = Array.from(items);
+    const [removed] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, removed);
+
+    // Optimistic update
+    qc.setQueryData(["user-medicines"], (old: any) => ({
+      ...old,
+      favorites: tab === "favorites" ? reordered : old.favorites,
+    }));
+
+    try {
+      await updateOrder({ data: { productIds: reordered.map(i => i.id) } });
+      toast.success(t("ক্রম পরিবর্তন করা হয়েছে", "Order updated"));
+    } catch (e) {
+      toast.error(t("ক্রম পরিবর্তন করতে সমস্যা হয়েছে", "Error updating order"));
+      qc.invalidateQueries({ queryKey: ["user-medicines"] });
+    }
+  };
+
   const toggleSelect = (id: string) => {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
