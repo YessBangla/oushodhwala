@@ -963,8 +963,23 @@ function RxReading() {
                 </section>
               )}
 
+              {(orderIssues.unmatched > 0 || orderIssues.outOfStock > 0) && (
+                <p className="mt-4 flex items-start gap-2 rounded-xl border border-sale/40 bg-sale/5 p-3 text-[11px]">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sale" />
+                  <span>
+                    {t(
+                      `${t.n(orderIssues.unmatched)}টি ঔষধের মিল পাওয়া যায়নি ও ${t.n(orderIssues.outOfStock)}টি স্টকে নেই — এগুলো বাদ দিয়ে অর্ডার করতে পারেন।`,
+                      `${orderIssues.unmatched} medicine(s) unmatched and ${orderIssues.outOfStock} out of stock — you can exclude them before ordering.`,
+                    )}
+                    <button onClick={excludeUnavailable} className="ml-2 font-bold text-primary underline">
+                      {t("অপ্রাপ্য বাদ দিন", "Exclude unavailable")}
+                    </button>
+                  </span>
+                </p>
+              )}
+
               <section className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 py-3 backdrop-blur">
-                <div className="mx-auto flex max-w-3xl items-center gap-3">
+                <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
                   <div className="min-w-0">
                     <p className="text-[11px] text-muted-foreground">
                       {t("অর্ডার প্রিভিউ", "Order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")} ·{" "}
@@ -978,18 +993,25 @@ function RxReading() {
                     </p>
                   </div>
 
-                  <button
-                    onClick={addAll}
-                    disabled={order.lines.length === 0}
-                    className="ml-auto flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
-                  >
-                    <ShoppingCart className="h-4 w-4" /> {t("সব কার্টে যোগ করুন", "Add all to cart")}
-                  </button>
-                  <Link to="/cart" className="rounded-xl border border-border px-3 py-2.5 text-xs font-bold">
-                    {t("কার্ট", "Cart")}
-                  </Link>
+                  <div className="ml-auto flex items-center gap-2">
+                    <button
+                      onClick={() => addAll(false)}
+                      disabled={order.lines.length === 0}
+                      className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-xs font-bold disabled:opacity-50"
+                    >
+                      <ShoppingCart className="h-4 w-4" /> {t("কার্টে যোগ", "Add to cart")}
+                    </button>
+                    <button
+                      onClick={() => addAll(true)}
+                      disabled={order.lines.length === 0}
+                      className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
+                    >
+                      <Zap className="h-4 w-4" /> {t("এখনই অর্ডার করুন", "Order now")}
+                    </button>
+                  </div>
                 </div>
               </section>
+
             </>
           )}
 
