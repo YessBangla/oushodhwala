@@ -13,11 +13,12 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Filter, ArrowLeft, Clock, Activity } from "lucide-react";
+import { Download, Filter, ArrowLeft, Clock, Activity, Search, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { useState } from "react";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/account/audit-logs")({
   component: AuditLogsPage,
@@ -27,7 +28,9 @@ function AuditLogsPage() {
   const t = useT();
   const { user } = useAuth();
   const getLogs = useServerFn(getUserAuditLogs);
-  const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState("all");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   const { data: logsData, isLoading } = useQuery({
     queryKey: ["user-audit-logs"],
@@ -35,25 +38,53 @@ function AuditLogsPage() {
     queryFn: () => getLogs(),
   });
 
-  // Handle potential error response or array
   const logs = Array.isArray(logsData) ? (logsData as any[]) : [];
 
-  const filteredLogs = logs.filter(log => 
-    log.action?.toLowerCase().includes(filter.toLowerCase()) ||
-    JSON.stringify(log.metadata || {}).toLowerCase().includes(filter.toLowerCase())
-  );
+  const actions = useMemo(() => {
+    return ["all", ...Array.from(new Set(logs.map(l => l.action).filter(Boolean)))];
+  }, [logs]);
 
-  const exportLogs = () => {
-    if (!logs.length) return;
-    const csv = [
-      ["Date", "Action", "Metadata"],
-      ...logs.map(l => [l.created_at, l.action, JSON.stringify(l.metadata)])
-    ].map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      const matchesSearch = 
+        log.action?.toLowerCase().includes(search.toLowerCase()) ||
+        JSON.stringify(log.metadata || {}).toLowerCase().includes(search.toLowerCase());
+      
+      const matchesAction = actionFilter === "all" || log.action === actionFilter;
+      
+      let matchesDate = true;
+      if (dateRange.from || dateRange.to) {
+        const logDate = new Date(log.created_at);
+        if (dateRange.from && logDate < startOfDay(new Date(dateRange.from))) matchesDate = false;
+        if (dateRange.to && logDate > endOfDay(new Date(dateRange.to))) matchesDate = false;
+      }
+
+      return matchesSearch && matchesAction && matchesDate;
+    });
+  }, [logs, search, actionFilter, dateRange]);
+
+  const exportLogs = (formatType: "csv" | "json") => {
+    if (!filteredLogs.length) return;
+    
+    let blob: Blob;
+    let fileName: string;
+
+    if (formatType === "json") {
+      blob = new Blob([JSON.stringify(filteredLogs, null, 2)], { type: "application/json" });
+      fileName = "audit-logs.json";
+    } else {
+      const csv = [
+        ["Date", "Action", "Metadata"],
+        ...filteredLogs.map(l => [l.created_at, l.action, JSON.stringify(l.metadata)])
+      ].map(r => r.join(",")).join("\n");
+      blob = new Blob([csv], { type: "text/csv" });
+      fileName = "audit-logs.csv";
+    }
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "audit-logs.csv";
+    a.download = fileName;
     a.click();
   };
 
@@ -78,21 +109,52 @@ function AuditLogsPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={exportLogs} disabled={!logs.length}>
-          <Download className="mr-2 h-4 w-4" />
-          {t("এক্সপোর্ট", "Export")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportLogs("json")} disabled={!filteredLogs.length}>
+            JSON
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => exportLogs("csv")} disabled={!filteredLogs.length}>
+            <Download className="mr-2 h-4 w-4" />
+            CSV
+          </Button>
+        </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-2">
-        <div className="relative flex-1">
-          <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="mb-6 grid gap-4 sm:grid-cols-4">
+        <div className="relative sm:col-span-2">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input 
-            placeholder={t("অ্যাকশন বা তথ্য দিয়ে ফিল্টার করুন...", "Filter by action or metadata...")}
+            placeholder={t("অনুসন্ধান করুন...", "Search...")}
             className="pl-9"
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
           />
+        </div>
+        <Select value={actionFilter} onValueChange={setActionFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder={t("অ্যাকশন ফিল্টার", "Filter Action")} />
+          </SelectTrigger>
+          <SelectContent>
+            {actions.map(a => (
+              <SelectItem key={a} value={a}>
+                {a === "all" ? t("সব অ্যাকশন", "All Actions") : a.replace(/_/g, " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex gap-2">
+           <Input 
+            type="date" 
+            className="text-xs h-10" 
+            value={dateRange.from} 
+            onChange={e => setDateRange(prev => ({...prev, from: e.target.value}))}
+           />
+           <Input 
+            type="date" 
+            className="text-xs h-10" 
+            value={dateRange.to} 
+            onChange={e => setDateRange(prev => ({...prev, to: e.target.value}))}
+           />
         </div>
       </div>
 
