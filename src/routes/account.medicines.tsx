@@ -95,16 +95,16 @@ function MedicineManagement() {
   const [filterForm, setFilterForm] = useState<string>("all");
   const [sort, setSort] = useState<"name" | "date">("date");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [previewProduct, setPreviewProduct] = useState<MedSuggestion | null>(null);
+  const [previewProduct, setPreviewProduct] = useState<MedWithReminder | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   
   // Undo/Restore State
-  const [lastDeleted, setLastDeleted] = useState<{ list: MedSuggestion[], tab: string } | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<{ list: MedWithReminder[], tab: string } | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   // Reminder State
   const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
-  const [configProduct, setConfigProduct] = useState<MedSuggestion | null>(null);
+  const [configProduct, setConfigProduct] = useState<MedWithReminder | null>(null);
   const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
   const [notificationHistory, setNotificationHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_delivery_logs") || "[]"));
   const [showLogs, setShowLogs] = useState(false);
@@ -127,8 +127,8 @@ function MedicineManagement() {
     queryFn: () => getMeds(),
   });
 
-  const favorites = data?.favorites || [];
-  const recent = data?.recent || [];
+  const favorites = (data?.favorites || []) as MedWithReminder[];
+  const recent = (data?.recent || []) as MedWithReminder[];
 
   const forms = useMemo(() => {
     const list = tab === "favorites" ? favorites : recent;
@@ -200,12 +200,12 @@ function MedicineManagement() {
 
       if (tab === "favorites") {
         await removeFavs({ data: { ids: Array.from(selected) } });
-        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
+        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedWithReminder[];
         const next = local.filter(l => !selected.has(l.id));
         localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
       } else {
         await removeRecent({ data: { ids: Array.from(selected) } });
-        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
+        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedWithReminder[];
         const next = local.filter(l => !selected.has(l.id));
         localStorage.setItem("rx_recent_meds", JSON.stringify(next));
       }
@@ -361,13 +361,13 @@ function MedicineManagement() {
       localStorage.setItem("med_import_history", JSON.stringify(newHistory));
 
       if (tab === "favorites") {
-        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
+        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedWithReminder[];
         // Better deduplication: highlight existing in preview if we had time, but here we merge
         const next = [...local, ...meds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
         localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
         await sync({ data: { favIds: ids, recentIds: [] } });
       } else {
-        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
+        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedWithReminder[];
         const next = [...local, ...meds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
         localStorage.setItem("rx_recent_meds", JSON.stringify(next));
         await sync({ data: { favIds: [], recentIds: ids } });
@@ -387,12 +387,12 @@ function MedicineManagement() {
     try {
       const idsToRemove = new Set(batch.data.map((m: any) => m.id));
       if (batch.type === "favorites") {
-        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
+        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedWithReminder[];
         const next = local.filter(m => !idsToRemove.has(m.id));
         localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
         await removeFavs({ data: { ids: Array.from(idsToRemove) as string[] } });
       } else {
-        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
+        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedWithReminder[];
         const next = local.filter(m => !idsToRemove.has(m.id));
         localStorage.setItem("rx_recent_meds", JSON.stringify(next));
         await removeRecent({ data: { ids: Array.from(idsToRemove) as string[] } });
