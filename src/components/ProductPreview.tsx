@@ -13,8 +13,10 @@ import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
-import { Share2, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { Share2, Copy, Check, Lock, Globe, Clock } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Label } from "./ui/label";
 import { toast } from "sonner";
 
 export function ProductPreview({ 
