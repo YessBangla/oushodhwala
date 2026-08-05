@@ -172,7 +172,7 @@ function Prescription() {
           continue;
         }
       }
-      next.push({ file: f, url: URL.createObjectURL(f), id: `${f.name}-${f.size}-${Math.random()}`, quality: q });
+      next.push({ file: f, url: URL.createObjectURL(f), id: `${f.name}-${f.size}-${Math.random()}`, ...(q ? { quality: q } : {}) });
     }
     setChecking(false);
     if (picked.length + next.length > MAX_FILES) {
