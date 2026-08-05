@@ -76,6 +76,7 @@ function MedicineManagement() {
   const removeRecent = useServerFn(bulkRemoveUserRecent);
   const sync = useServerFn(syncUserMedicines);
   const updateRemind = useServerFn(updateMedicineReminder);
+  const updateOrder = useServerFn(updateUserMedicineOrder);
 
   const [tab, setTab] = useState<"favorites" | "recent">("favorites");
   const [search, setSearch] = useState("");
