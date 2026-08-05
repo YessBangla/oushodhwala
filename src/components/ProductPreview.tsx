@@ -13,8 +13,8 @@ import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
-import { Share2, Copy, Check, Lock, Globe, Clock } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Share2, Copy, Check, Lock, Globe, Clock, Trash2, Eye } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
@@ -33,9 +33,29 @@ export function ProductPreview({
   const [access, setAccess] = useState<"public" | "private">("public");
   const [expiry, setExpiry] = useState<"never" | "1h" | "1d" | "7d">("never");
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [revoked, setRevoked] = useState(false);
+  const [viewCount, setViewCount] = useState(0);
+
+  // Load tracking data from local storage for demo purposes
+  useEffect(() => {
+    if (open && product) {
+      const tracking = JSON.parse(localStorage.getItem(`share_track_${product.id}`) || '{"views": 0, "revoked": false}');
+      setViewCount(tracking.views);
+      setRevoked(tracking.revoked);
+    }
+  }, [open, product]);
+
+  const toggleRevoke = () => {
+    if (!product) return;
+    const next = !revoked;
+    setRevoked(next);
+    const tracking = { views: viewCount, revoked: next };
+    localStorage.setItem(`share_track_${product.id}`, JSON.stringify(tracking));
+    toast.success(next ? t("লিংক রিভোক করা হয়েছে", "Link revoked") : t("লিংক সচল করা হয়েছে", "Link reactivated"));
+  };
 
   const shareUrl = useMemo(() => {
-    if (typeof window === 'undefined' || !product) return '';
+    if (typeof window === 'undefined' || !product || revoked) return '';
     const base = `${window.location.origin}/store/product/${product.id}`;
     if (access === "private") {
       const token = shareToken || Math.random().toString(36).substring(2, 15);
@@ -153,8 +173,33 @@ export function ProductPreview({
                       <SelectItem value="7d">{t("৭ দিন", "7 Days")}</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
               </div>
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-muted-foreground uppercase">{t("ভিউ সংখ্যা", "Views")}</span>
+                    <span className="text-xs font-bold flex items-center gap-1"><Eye className="h-3 w-3" /> {viewCount}</span>
+                  </div>
+                  <div className="h-6 w-px bg-border" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-muted-foreground uppercase">{t("স্ট্যাটাস", "Status")}</span>
+                    <Badge variant={revoked ? "destructive" : "secondary"} className="h-4 text-[8px] px-1">
+                      {revoked ? t("রিভোকড", "Revoked") : t("সক্রিয়", "Active")}
+                    </Badge>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className={`h-7 text-[9px] gap-1.5 ${revoked ? 'border-primary' : 'text-destructive border-destructive hover:bg-destructive/10'}`}
+                  onClick={toggleRevoke}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  {revoked ? t("সচল করুন", "Reactivate") : t("লিংক রিভোক করুন", "Revoke Link")}
+                </Button>
+              </div>
+            </div>
             </div>
 
             <Separator />

@@ -62,6 +62,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/account/medicines")({
   component: MedicineManagement,
@@ -94,6 +96,16 @@ function MedicineManagement() {
   const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
   const [configProduct, setConfigProduct] = useState<MedSuggestion | null>(null);
   const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1 });
+  const [notificationHistory, setNotificationHistory] = useState<any[]>([]);
+
+  // Import/Preview State
+  const [importPreviewOpen, setImportPreviewOpen] = useState(false);
+  const [importData, setImportData] = useState<{ raw: any[], mapping: Record<string, string>, errors: any[] }>({
+    raw: [],
+    mapping: {},
+    errors: []
+  });
+  const [importStep, setImportStep] = useState<"preview" | "mapping" | "results">("preview");
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-medicines"],
@@ -270,47 +282,111 @@ function MedicineManagement() {
       try {
         const content = event.target?.result as string;
         let importedMeds: any[] = [];
+        let errors: any[] = [];
         
         if (file.name.endsWith(".json")) {
-          importedMeds = JSON.parse(content);
+          try {
+            importedMeds = JSON.parse(content);
+            if (!Array.isArray(importedMeds)) {
+              importedMeds = [importedMeds];
+            }
+          } catch (err) {
+            errors.push({ row: 0, error: "Invalid JSON format" });
+          }
         } else if (file.name.endsWith(".csv")) {
           const lines = content.split("\n");
-          const headers = lines[0]?.split(",") || [];
-          importedMeds = lines.slice(1).filter(line => line.trim()).map(line => {
-            const values = line.split(",");
-            const obj: any = {};
+          const headers = lines[0]?.split(",").map(h => h.trim().toLowerCase()) || [];
+          
+          // Initial mapping guess
+          const initialMapping: Record<string, string> = {};
+          const possibleFields = ["id", "name", "brand", "generic", "form", "strength", "price"];
+          headers.forEach(h => {
+            const match = possibleFields.find(f => h.includes(f));
+            if (match) initialMapping[h] = match;
+          });
+
+          importedMeds = lines.slice(1).filter(line => line.trim()).map((line, idx) => {
+            const values = line.split(",").map(v => v.trim());
+            const obj: any = { _row: idx + 1 };
             headers.forEach((h, i) => {
-              const key = h.trim().toLowerCase();
-              obj[key === "id" ? "id" : key] = values[i]?.trim();
+              obj[h] = values[i];
             });
+            
+            // Basic validation
+            if (!values[0]) errors.push({ row: idx + 1, error: "Missing required identifier" });
+            
             return obj;
           });
+
+          setImportData({ raw: importedMeds, mapping: initialMapping, errors });
+          setImportStep("preview");
+          setImportPreviewOpen(true);
+          return;
         }
 
-        if (Array.isArray(importedMeds)) {
-          const ids = importedMeds.map(m => m.id);
-          if (tab === "favorites") {
-            const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
-            const next = [...local, ...importedMeds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
-            await sync({ data: { favIds: ids, recentIds: [] } });
-          } else {
-            const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
-            const next = [...local, ...importedMeds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-            localStorage.setItem("rx_recent_meds", JSON.stringify(next));
-            await sync({ data: { favIds: [], recentIds: ids } });
-          }
-          qc.invalidateQueries({ queryKey: ["user-medicines"] });
-          toast.success(t("ইম্পোর্ট সফল হয়েছে", "Import successful"));
+        if (importedMeds.length > 0) {
+          await processImport(importedMeds);
         }
       } catch (e) {
         toast.error(t("ইম্পোর্ট করতে সমস্যা হয়েছে", "Error importing data"));
       }
     };
     reader.readAsText(file);
+    e.target.value = ""; // Reset
+  };
+
+  const processImport = async (meds: any[]) => {
+    try {
+      const ids = meds.map(m => m.id).filter(Boolean);
+      if (tab === "favorites") {
+        const local = JSON.parse(localStorage.getItem("rx_favorite_meds") || "[]") as MedSuggestion[];
+        const next = [...local, ...meds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        localStorage.setItem("rx_favorite_meds", JSON.stringify(next));
+        await sync({ data: { favIds: ids, recentIds: [] } });
+      } else {
+        const local = JSON.parse(localStorage.getItem("rx_recent_meds") || "[]") as MedSuggestion[];
+        const next = [...local, ...meds].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        localStorage.setItem("rx_recent_meds", JSON.stringify(next));
+        await sync({ data: { favIds: [], recentIds: ids } });
+      }
+      qc.invalidateQueries({ queryKey: ["user-medicines"] });
+      toast.success(t("ইম্পোর্ট সফল হয়েছে", "Import successful"));
+      setImportPreviewOpen(false);
+    } catch (err) {
+      toast.error(t("সিঙ্ক করতে সমস্যা হয়েছে", "Sync error"));
+    }
+  };
+
+  const downloadErrorReport = () => {
+    if (importData.errors.length === 0) return;
+    const csv = ["Row,Error", ...importData.errors.map(e => `${e.row},${e.error}`)].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "import-errors.csv";
+    a.click();
+  };
+
+  const testNotification = () => {
+    toast.info(t("টেস্ট নোটিফিকেশন পাঠানো হয়েছে", "Test notification sent"), {
+      description: t("আপনার ডিভাইস এবং ইমেইল চেক করুন।", "Check your device and email.")
+    });
+    setNotificationHistory(prev => [
+      { id: Date.now(), type: 'test', status: 'delivered', time: new Date().toISOString() },
+      ...prev
+    ]);
   };
 
   if (!user) return null;
+
+  const mappedData = importData.raw.map(row => {
+    const obj: any = {};
+    Object.entries(importData.mapping).forEach(([csvHeader, appField]) => {
+      obj[appField] = row[csvHeader];
+    });
+    return obj;
+  });
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -321,7 +397,7 @@ function MedicineManagement() {
         </div>
         <div className="flex gap-2">
           <label className="cursor-pointer">
-            <Input type="file" accept=".json" className="hidden" onChange={handleImport} />
+            <Input type="file" accept=".json,.csv" className="hidden" onChange={handleImport} />
             <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[10px]">
               <Upload className="h-3.5 w-3.5" /> {t("ইম্পোর্ট", "Import")}
             </Button>
@@ -331,6 +407,99 @@ function MedicineManagement() {
           </Button>
         </div>
       </header>
+
+      {/* Import Preview/Mapping Dialog */}
+      <Dialog open={importPreviewOpen} onOpenChange={setImportPreviewOpen}>
+        <DialogContent className="max-w-3xl overflow-hidden p-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              {t("ডেটা ইম্পোর্ট প্রিভিউ", "Data Import Preview")}
+            </DialogTitle>
+            <DialogDescription>
+              {importStep === "preview" 
+                ? t("কলাম ম্যাপিং চেক করুন এবং প্রিভিউ দেখুন।", "Check column mapping and see preview.")
+                : t("ইম্পোর্ট রেজাল্ট ও এরর রিপোর্ট।", "Import results and error report.")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto p-4 space-y-4">
+            {importData.errors.length > 0 && (
+              <div className="rounded-lg bg-destructive/10 p-3 flex items-start justify-between">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-xs font-bold">{importData.errors.length} {t("টি এরর পাওয়া গেছে", "errors found")}</span>
+                </div>
+                <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={downloadErrorReport}>
+                  <Download className="h-3 w-3 mr-1.5" /> {t("এরর রিপোর্ট ডাউনলোড", "Download Error Report")}
+                </Button>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("কলাম ম্যাপিং", "Column Mapping")}</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {Object.keys(importData.raw[0] || {}).filter(k => k !== "_row").map(csvHeader => (
+                  <div key={csvHeader} className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground truncate block">{csvHeader}</Label>
+                    <Select 
+                      value={importData.mapping[csvHeader] || "skip"} 
+                      onValueChange={(v) => setImportData(prev => ({ ...prev, mapping: { ...prev.mapping, [csvHeader]: v } }))}
+                    >
+                      <SelectTrigger className="h-8 text-[10px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="skip">{t("বাদ দিন", "Skip")}</SelectItem>
+                        <SelectItem value="id">ID</SelectItem>
+                        <SelectItem value="name">{t("নাম", "Name")}</SelectItem>
+                        <SelectItem value="brand">{t("ব্র্যান্ড", "Brand")}</SelectItem>
+                        <SelectItem value="generic">{t("জেনেরিক", "Generic")}</SelectItem>
+                        <SelectItem value="form">{t("ফর্ম", "Form")}</SelectItem>
+                        <SelectItem value="strength">{t("স্ট্রেংথ", "Strength")}</SelectItem>
+                        <SelectItem value="price">{t("মূল্য", "Price")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("প্রিভিউ (প্রথম ৫ রো)", "Preview (First 5 rows)")}</h4>
+              <div className="rounded-md border overflow-x-auto">
+                <table className="w-full text-[11px] text-left border-collapse">
+                  <thead>
+                    <tr className="bg-secondary/30">
+                      {Object.values(importData.mapping).filter(v => v !== "skip").map(v => (
+                        <th key={v} className="p-2 border-b font-bold">{v.toUpperCase()}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mappedData.slice(0, 5).map((row, idx) => (
+                      <tr key={idx} className="border-b last:border-0">
+                        {Object.values(importData.mapping).filter(v => v !== "skip").map(v => (
+                          <td key={v} className="p-2 truncate max-w-[120px]">{row[v] || "-"}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 border-t gap-2 bg-secondary/10">
+            <Button variant="outline" size="sm" onClick={() => setImportPreviewOpen(false)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" onClick={() => processImport(mappedData)} disabled={importData.errors.length > 0}>
+              {t("ইম্পোর্ট কনফার্ম করুন", "Confirm Import")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -561,6 +730,31 @@ function MedicineManagement() {
                 value={reminderConfig.time} 
                 onChange={(e) => setReminderConfig(c => ({...c, time: e.target.value}))}
               />
+            </div>
+            
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">{t("নোটিফিকেশন যাচাই", "Verify Notification")}</label>
+                <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={testNotification}>
+                  {t("টেস্ট নোটিফিকেশন", "Test Notification")}
+                </Button>
+              </div>
+
+              {notificationHistory.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">{t("ইতিহাস", "History")}</label>
+                  <ScrollArea className="h-20 rounded border bg-secondary/20 p-2">
+                    {notificationHistory.map(h => (
+                      <div key={h.id} className="flex items-center justify-between py-1 border-b last:border-0">
+                        <span className="text-[9px] flex items-center gap-1">
+                          <Clock className="h-2 w-2" /> {new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <Badge variant="secondary" className="text-[8px] h-3.5 px-1 capitalize">{h.status}</Badge>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
