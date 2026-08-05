@@ -204,6 +204,15 @@ function RxReading() {
   const [edited, setEdited] = useState<Result | null>(null);
   /** প্রেসক্রিপশনের হেডার তথ্য — হাসপাতাল, ডাক্তার, রোগী, বয়স, ঠিকানা, পরামর্শ */
   const [meta, setMeta] = useState<RxMeta>(EMPTY_META);
+  /** অটোসেভের অবস্থা */
+  const [dirty, setDirty] = useState(false);
+  const [savedAt, setSavedAt] = useState<string>("");
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
+  /** ভ্যালিডেশন ত্রুটি দেখানো হবে কিনা (প্রথম সেভ/ব্লার-এর পর) */
+  const [showErrors, setShowErrors] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+
 
   /** এই ব্রাউজারের গেস্ট কোড — লগইন থাকুক বা না থাকুক, ফলব্যাক হিসেবে লাগে */
   const guestToken = useMemo(() => getGuestToken(), []);
