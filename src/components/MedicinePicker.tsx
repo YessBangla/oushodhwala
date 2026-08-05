@@ -76,7 +76,7 @@ export function MedicinePicker({
       } finally {
         if (my === seq.current) setLoading(false);
       }
-    }, 220);
+    }, 300); // ব্র্যান্ড ইনপুটের জন্য debounce 300ms সেট করা হলো যাতে অপ্রয়োজনীয় সার্ভার কল কমে
     return () => window.clearTimeout(id);
   }, [term, open, suggest]);
 
