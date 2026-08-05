@@ -62,6 +62,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/account/medicines")({
   component: MedicineManagement,
