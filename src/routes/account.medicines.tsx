@@ -424,7 +424,7 @@ function MedicineManagement() {
 
 
   const checkReminderConflicts = (time: string) => {
-    const existing = items.filter(i => i.reminder?.time === time && i.id !== configProduct?.id);
+    const existing = (items as MedWithReminder[]).filter(i => i.reminder?.time === time && i.id !== configProduct?.id);
     return existing;
   };
 
