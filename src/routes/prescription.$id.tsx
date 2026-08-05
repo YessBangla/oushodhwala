@@ -560,14 +560,40 @@ function RxReading() {
     }
   };
 
-  const addAll = () => {
+  /** কার্টে যোগ — চাইলে সরাসরি চেকআউটে নিয়ে যায় */
+  const addAll = (checkout = false) => {
     if (order.lines.length === 0) {
       toast.error(t("কোনো ঔষধ নির্বাচন করা হয়নি", "No medicine selected"));
       return;
     }
     order.lines.forEach((l) => add({ id: l.p.id, kind: "product", name: l.p.name, price: l.p.price }, l.qty));
+    if (checkout) {
+      toast.success(t("অর্ডারে এগোচ্ছি...", "Proceeding to checkout..."));
+      void navigate({ to: "/checkout" });
+      return;
+    }
     toast.success(t("সব ঔষধ কার্টে যোগ হয়েছে", "All medicines added to cart"));
   };
+
+  /** অর্ডারের স্বাস্থ্য — কতগুলো লাইন মিলছে না বা স্টকে নেই */
+  const orderIssues = useMemo(() => {
+    if (!data) return { unmatched: 0, outOfStock: 0, excluded: 0 };
+    let unmatched = 0;
+    let outOfStock = 0;
+    let excluded = 0;
+    data.items.forEach((row, i) => {
+      const s = sel[i] ?? DEF_SEL;
+      if (s.skip) {
+        excluded++;
+        return;
+      }
+      const p = row.matches[s.match];
+      if (!p) unmatched++;
+      else if (p.stock <= 0) outOfStock++;
+    });
+    return { unmatched, outOfStock, excluded };
+  }, [data, sel]);
+
 
   const buildSummary = (): RxSummary | null => {
     if (!data) return null;
