@@ -885,7 +885,15 @@ function MedicineManagement() {
             <ScrollArea className="h-[500px] pr-4">
               <div className="space-y-2">
                 {favorites.filter(f => f.reminder_config?.time).sort((a, b) => (a.reminder_config?.time || "").localeCompare(b.reminder_config?.time || "")).map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border bg-card">
+                  <div 
+                    key={item.id} 
+                    className="flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setConfigProduct(item);
+                      setReminderConfig(item.reminder_config || { type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+                      setReminderConfigOpen(true);
+                    }}
+                  >
                     <div className="flex items-center gap-3">
                       <Clock className="h-4 w-4 text-primary" />
                       <div>
@@ -903,7 +911,63 @@ function MedicineManagement() {
             </ScrollArea>
           </div>
         </TabsContent>
+        <TabsContent value="health" className="mt-4">
+          <div className="space-y-6">
+            <h3 className="text-sm font-bold">{t("নোটিফিকেশন হেলথ ড্যাশবোর্ড", "Notification Health Dashboard")}</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border p-4 bg-card text-center">
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">{t("সফলতা হার", "Success Rate")}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {notificationHistory.length > 0 
+                    ? Math.round((notificationHistory.filter(h => h.status === 'success').length / notificationHistory.length) * 100) 
+                    : 0}%
+                </p>
+              </div>
+              <div className="rounded-xl border p-4 bg-card text-center">
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">{t("মোট ব্যর্থতা", "Total Failures")}</p>
+                <p className="text-2xl font-bold text-destructive">
+                  {notificationHistory.filter(h => h.status === 'failed').length}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase text-muted-foreground">{t("ব্যর্থতার কারণ বিশ্লেষণ", "Failure Reason Analysis")}</h4>
+              <div className="rounded-xl border p-4 bg-card space-y-2">
+                {Object.entries(notificationHistory.filter(h => h.status === 'failed').reduce((acc: any, curr) => {
+                  acc[curr.error || 'Unknown'] = (acc[curr.error || 'Unknown'] || 0) + 1;
+                  return acc;
+                }, {})).map(([error, count]: [string, any]) => (
+                  <div key={error} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{error}</span>
+                    <span className="font-bold">{count}</span>
+                  </div>
+                ))}
+                {notificationHistory.filter(h => h.status === 'failed').length === 0 && (
+                  <p className="text-[10px] text-center text-muted-foreground py-2">{t("কোনো ব্যর্থতা নেই।", "No failures found.")}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase text-muted-foreground">{t("টাইমজোন ভিত্তিক পরিসংখ্যান", "Timezone Statistics")}</h4>
+              <ScrollArea className="h-32 rounded-xl border p-4 bg-card">
+                {Object.entries(notificationHistory.reduce((acc: any, curr) => {
+                  acc[curr.timezone || 'UTC'] = (acc[curr.timezone || 'UTC'] || 0) + 1;
+                  return acc;
+                }, {})).map(([tz, count]: [string, any]) => (
+                  <div key={tz} className="flex justify-between text-xs py-1 border-b last:border-0">
+                    <span className="text-muted-foreground">{tz}</span>
+                    <span className="font-bold">{count}</span>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
 
 
       {/* Confirmation Dialog */}
