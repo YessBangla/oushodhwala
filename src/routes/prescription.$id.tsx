@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +8,9 @@ import {
   AlertTriangle,
   ChevronDown,
   Check,
+  CheckCheck,
+  PackageX,
+  Zap,
   Pencil,
   Minus,
   Plus,
@@ -196,6 +199,8 @@ function RxReading() {
   const save = useServerFn(saveRxEdits);
   const audit = useServerFn(listRxAudit);
   const { add } = useStore();
+  const navigate = useNavigate();
+
 
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -393,8 +398,10 @@ function RxReading() {
     setShowErrors(true);
   };
 
-  /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয় */
+  /** লাইন মুছে ফেলা — সিলেকশনও সরিয়ে নেওয়া হয়, ভুল হলে ফিরিয়ে আনা যায় */
   const removeRow = (i: number) => {
+    const gone = draft?.[i];
+    const goneSel = sel[i] ?? DEF_SEL;
     setDraft((d) => d?.filter((_, j) => j !== i) ?? d);
     setSel((p) => {
       const next: Record<number, Sel> = {};
@@ -409,7 +416,62 @@ function RxReading() {
     });
     setEdited((e) => (e ? ({ ...e, items: e.items.filter((_, j) => j !== i) } as Result) : e));
     touch();
+    if (gone) {
+      toast(t("লাইন মুছে ফেলা হয়েছে", "Line removed"), {
+        action: {
+          label: t("ফিরিয়ে আনুন", "Undo"),
+          onClick: () => {
+            setDraft((d) => {
+              const arr = [...(d ?? [])];
+              arr.splice(i, 0, gone);
+              return arr;
+            });
+            setSel((p) => {
+              const next: Record<number, Sel> = { [i]: goneSel };
+              Object.keys(p)
+                .map(Number)
+                .forEach((k) => (next[k >= i ? k + 1 : k] = p[k]!));
+              return next;
+            });
+            touch();
+          },
+        },
+      });
+    }
   };
+
+  /** সব ঔষধ অর্ডারে ফেরত */
+  const includeAll = () => {
+    setSel((p) => {
+      const next: Record<number, Sel> = {};
+      (draft ?? []).forEach((_, i) => (next[i] = { ...(p[i] ?? DEF_SEL), skip: false }));
+      return next;
+    });
+    toast.success(t("সব ঔষধ অর্ডারে যুক্ত", "All medicines included"));
+  };
+
+  /** স্টকে নেই বা মিল পাওয়া যায়নি — এমন লাইন বাদ দিন */
+  const excludeUnavailable = () => {
+    if (!data) return;
+    let n = 0;
+    setSel((p) => {
+      const next: Record<number, Sel> = { ...p };
+      data.items.forEach((row, i) => {
+        const cur = next[i] ?? DEF_SEL;
+        const match = row.matches[cur.match];
+        if (!match || match.stock <= 0) {
+          if (!cur.skip) n++;
+          next[i] = { ...cur, skip: true };
+        }
+      });
+      return next;
+    });
+    toast.success(
+      n ? t(`${t.n(n)}টি অপ্রাপ্য ঔষধ বাদ দেওয়া হয়েছে`, `${n} unavailable item(s) excluded`) : t("সব ঔষধই পাওয়া যাচ্ছে", "Everything is available"),
+    );
+  };
+
+
 
   /** সেভ / আপডেট — লগইন থাকলে সার্ভারে, গেস্ট হলে এই ডিভাইসে */
   const persist = useCallback(
@@ -498,14 +560,40 @@ function RxReading() {
     }
   };
 
-  const addAll = () => {
+  /** কার্টে যোগ — চাইলে সরাসরি চেকআউটে নিয়ে যায় */
+  const addAll = (checkout = false) => {
     if (order.lines.length === 0) {
       toast.error(t("কোনো ঔষধ নির্বাচন করা হয়নি", "No medicine selected"));
       return;
     }
     order.lines.forEach((l) => add({ id: l.p.id, kind: "product", name: l.p.name, price: l.p.price }, l.qty));
+    if (checkout) {
+      toast.success(t("অর্ডারে এগোচ্ছি...", "Proceeding to checkout..."));
+      void navigate({ to: "/checkout" });
+      return;
+    }
     toast.success(t("সব ঔষধ কার্টে যোগ হয়েছে", "All medicines added to cart"));
   };
+
+  /** অর্ডারের স্বাস্থ্য — কতগুলো লাইন মিলছে না বা স্টকে নেই */
+  const orderIssues = useMemo(() => {
+    if (!data) return { unmatched: 0, outOfStock: 0, excluded: 0 };
+    let unmatched = 0;
+    let outOfStock = 0;
+    let excluded = 0;
+    data.items.forEach((row, i) => {
+      const s = sel[i] ?? DEF_SEL;
+      if (s.skip) {
+        excluded++;
+        return;
+      }
+      const p = row.matches[s.match];
+      if (!p) unmatched++;
+      else if (p.stock <= 0) outOfStock++;
+    });
+    return { unmatched, outOfStock, excluded };
+  }, [data, sel]);
+
 
   const buildSummary = (): RxSummary | null => {
     if (!data) return null;
@@ -713,6 +801,32 @@ function RxReading() {
 
               <MetaEditor meta={meta} onChange={patchMeta} errors={showErrors ? errors.meta : {}} />
 
+              {/* দ্রুত অ্যাকশন — এক ক্লিকে সব যুক্ত/অপ্রাপ্য বাদ/নতুন লাইন */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={includeAll}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" /> {t("সব যুক্ত করুন", "Include all")}
+                </button>
+                <button
+                  onClick={excludeUnavailable}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <PackageX className="h-3.5 w-3.5" /> {t("অপ্রাপ্য বাদ দিন", "Exclude unavailable")}
+                </button>
+                <button
+                  onClick={addRow}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-bold"
+                >
+                  <Plus className="h-3.5 w-3.5" /> {t("নতুন ঔষধ", "Add medicine")}
+                </button>
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  {t.n(order.lines.length)} {t("অর্ডারে", "in order")}
+                  {orderIssues.excluded > 0 && ` · ${t.n(orderIssues.excluded)} ${t("বাদ", "excluded")}`}
+                </span>
+              </div>
+
               <RxTable
                 items={draft ?? []}
                 rows={data.items}
@@ -724,28 +838,34 @@ function RxReading() {
                 onAdd={addRow}
               />
 
-              <div className="mt-4 rounded-xl border border-border bg-card p-3">
-                <p className="text-[11px] text-muted-foreground">
-                  {t("চলতি অর্ডার প্রিভিউ", "Live order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")}
-                </p>
-                <p className="text-base font-extrabold text-primary">৳{t.n(order.total)}</p>
-              </div>
+              {/* যাচাই ধাপে স্টিকি বার — চলতি দাম ও নিশ্চিতকরণ সবসময় হাতের নাগালে */}
+              <section className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 py-3 backdrop-blur">
+                <div className="mx-auto flex max-w-3xl items-center gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("চলতি অর্ডার", "Live order")} · {t.n(order.lines.length)} {t("আইটেম", "items")}
+                      {autoSaving && ` · ${t("সেভ হচ্ছে…", "Saving…")}`}
+                    </p>
+                    <p className="text-base font-extrabold text-primary">৳{t.n(order.total)}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowErrors(true);
+                      if (errTotal > 0) {
+                        toast.error(t("আগে লাল চিহ্নিত ঘরগুলো ঠিক করুন", "Please fix the highlighted fields first"));
+                        return;
+                      }
+                      void confirm();
+                    }}
+                    disabled={saving}
+                    className="ml-auto flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                  >
+                    <Check className="h-4 w-4" />
+                    {saving ? t("সেভ হচ্ছে...", "Saving...") : t("নিশ্চিত করে দাম দেখুন", "Confirm & see prices")}
+                  </button>
+                </div>
+              </section>
 
-              <button
-                onClick={() => {
-                  setShowErrors(true);
-                  if (errTotal > 0) {
-                    toast.error(t("আগে লাল চিহ্নিত ঘরগুলো ঠিক করুন", "Please fix the highlighted fields first"));
-                    return;
-                  }
-                  void confirm();
-                }}
-                disabled={saving}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-              >
-                <Check className="h-4 w-4" />
-                {saving ? t("সেভ হচ্ছে...", "Saving...") : t("নিশ্চিত করে দাম দেখুন", "Confirm & see prices")}
-              </button>
             </>
           ) : (
 
@@ -875,8 +995,23 @@ function RxReading() {
                 </section>
               )}
 
+              {(orderIssues.unmatched > 0 || orderIssues.outOfStock > 0) && (
+                <p className="mt-4 flex items-start gap-2 rounded-xl border border-sale/40 bg-sale/5 p-3 text-[11px]">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sale" />
+                  <span>
+                    {t(
+                      `${t.n(orderIssues.unmatched)}টি ঔষধের মিল পাওয়া যায়নি ও ${t.n(orderIssues.outOfStock)}টি স্টকে নেই — এগুলো বাদ দিয়ে অর্ডার করতে পারেন।`,
+                      `${orderIssues.unmatched} medicine(s) unmatched and ${orderIssues.outOfStock} out of stock — you can exclude them before ordering.`,
+                    )}
+                    <button onClick={excludeUnavailable} className="ml-2 font-bold text-primary underline">
+                      {t("অপ্রাপ্য বাদ দিন", "Exclude unavailable")}
+                    </button>
+                  </span>
+                </p>
+              )}
+
               <section className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 py-3 backdrop-blur">
-                <div className="mx-auto flex max-w-3xl items-center gap-3">
+                <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
                   <div className="min-w-0">
                     <p className="text-[11px] text-muted-foreground">
                       {t("অর্ডার প্রিভিউ", "Order preview")} · {t.n(order.lines.length)} {t("আইটেম", "items")} ·{" "}
@@ -890,18 +1025,25 @@ function RxReading() {
                     </p>
                   </div>
 
-                  <button
-                    onClick={addAll}
-                    disabled={order.lines.length === 0}
-                    className="ml-auto flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
-                  >
-                    <ShoppingCart className="h-4 w-4" /> {t("সব কার্টে যোগ করুন", "Add all to cart")}
-                  </button>
-                  <Link to="/cart" className="rounded-xl border border-border px-3 py-2.5 text-xs font-bold">
-                    {t("কার্ট", "Cart")}
-                  </Link>
+                  <div className="ml-auto flex items-center gap-2">
+                    <button
+                      onClick={() => addAll(false)}
+                      disabled={order.lines.length === 0}
+                      className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-xs font-bold disabled:opacity-50"
+                    >
+                      <ShoppingCart className="h-4 w-4" /> {t("কার্টে যোগ", "Add to cart")}
+                    </button>
+                    <button
+                      onClick={() => addAll(true)}
+                      disabled={order.lines.length === 0}
+                      className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-50"
+                    >
+                      <Zap className="h-4 w-4" /> {t("এখনই অর্ডার করুন", "Order now")}
+                    </button>
+                  </div>
                 </div>
               </section>
+
             </>
           )}
 
