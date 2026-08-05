@@ -275,7 +275,7 @@ function MedicineManagement() {
           importedMeds = JSON.parse(content);
         } else if (file.name.endsWith(".csv")) {
           const lines = content.split("\n");
-          const headers = lines[0].split(",");
+          const headers = lines[0]?.split(",") || [];
           importedMeds = lines.slice(1).filter(line => line.trim()).map(line => {
             const values = line.split(",");
             const obj: any = {};
