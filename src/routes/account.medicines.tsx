@@ -96,11 +96,13 @@ function MedicineManagement() {
   const [reminderConfigOpen, setReminderConfigOpen] = useState(false);
   const [configProduct, setConfigProduct] = useState<MedSuggestion | null>(null);
   const [reminderConfig, setReminderConfig] = useState({ type: 'daily', time: '08:00', frequency: 1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-  const [notificationHistory, setNotificationHistory] = useState<any[]>([]);
+  const [notificationHistory, setNotificationHistory] = useState<any[]>(() => JSON.parse(localStorage.getItem("med_delivery_logs") || "[]"));
+  const [showLogs, setShowLogs] = useState(false);
 
   // Import/Preview State
   const [importPreviewOpen, setImportPreviewOpen] = useState(false);
-  const [importData, setImportData] = useState<{ raw: any[], mapping: Record<string, string>, errors: any[] }>({
+  const [importData, setImportData] = useState<{ raw: any[], mapping: Record<string, string>, errors: any[], diff?: { new: any[], updated: any[], deleted: any[] }, selectedRows?: Set<number> }>({
+    selectedRows: new Set(),
     raw: [],
     mapping: {},
     errors: []
@@ -395,6 +397,63 @@ function MedicineManagement() {
       toast.error(t("রোলব্যাক করতে সমস্যা হয়েছে", "Error during rollback"));
     }
   };
+  const exportHistoryBatch = (batchId: string) => {
+    const batch = importHistory.find(h => h.id === batchId);
+    if (!batch) return;
+    const headers = ["ID", "Name", "Brand", "Generic", "Form", "Strength", "Price"];
+    const rows = batch.data.map((i: any) => [i.id, i.name, i.brand || "", i.generic || "", i.form || "", i.strength || "", i.price]);
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rollback-data-${batchId}.csv`;
+    a.click();
+  };
+
+  const triggerNotification = async (reminder: any, attempt = 1) => {
+    const logId = Date.now().toString();
+    const newLog = { 
+      id: logId, 
+      reminderId: reminder.id, 
+      time: new Date().toISOString(), 
+      status: 'pending', 
+      timezone: reminder.timezone 
+    };
+    
+    setNotificationHistory(prev => {
+      const next = [newLog, ...prev].slice(0, 50);
+      localStorage.setItem("med_delivery_logs", JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      // Simulate delivery
+      if (Math.random() < 0.2) throw new Error("Network Timeout"); // 20% failure for demo
+      
+      setNotificationHistory(prev => {
+        const next = prev.map(l => l.id === logId ? { ...l, status: 'success' } : l);
+        localStorage.setItem("med_delivery_logs", JSON.stringify(next));
+        return next;
+      });
+      toast.success(t("নোটিফিকেশন সফলভাবে পাঠানো হয়েছে", "Notification delivered"));
+    } catch (err: any) {
+      const errorMsg = err.message || "Unknown error";
+      setNotificationHistory(prev => {
+        const next = prev.map(l => l.id === logId ? { ...l, status: 'failed', error: errorMsg, canRetry: attempt < 3 } : l);
+        localStorage.setItem("med_delivery_logs", JSON.stringify(next));
+        return next;
+      });
+
+      if (attempt < 3) {
+        toast.error(`${t("ব্যর্থ হয়েছে", "Failed")}: ${errorMsg}. ${t("পুনরায় চেষ্টা করা হচ্ছে...", "Retrying...")}`);
+        setTimeout(() => triggerNotification(reminder, attempt + 1), 5000);
+      } else {
+        toast.error(`${t("ব্যর্থ হয়েছে", "Failed")}: ${errorMsg}. ${t("ম্যানুয়ালি চেষ্টা করুন।", "Please try manually.")}`);
+      }
+    }
+  };
+
 
   const downloadErrorReport = () => {
     if (importData.errors.length === 0) return;
