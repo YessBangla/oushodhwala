@@ -25,6 +25,7 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as HomeDiagnosticsRouteImport } from './routes/home-diagnostics'
 import { Route as HomeServicesRouteImport } from './routes/home-services'
 import { Route as LabTestRouteImport } from './routes/lab-test'
+import { Route as MedicinesRouteImport } from './routes/medicines'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as OrdersRouteImport } from './routes/orders'
@@ -130,6 +131,11 @@ const HomeServicesRoute = HomeServicesRouteImport.update({
 const LabTestRoute = LabTestRouteImport.update({
   id: '/lab-test',
   path: '/lab-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MedicinesRoute = MedicinesRouteImport.update({
+  id: '/medicines',
+  path: '/medicines',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsRoute = NotificationsRouteImport.update({
@@ -280,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/home-diagnostics': typeof HomeDiagnosticsRoute
   '/home-services': typeof HomeServicesRoute
   '/lab-test': typeof LabTestRoute
+  '/medicines': typeof MedicinesRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/home-diagnostics': typeof HomeDiagnosticsRoute
   '/home-services': typeof HomeServicesRoute
   '/lab-test': typeof LabTestRoute
+  '/medicines': typeof MedicinesRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
@@ -369,6 +377,7 @@ export interface FileRoutesById {
   '/home-diagnostics': typeof HomeDiagnosticsRoute
   '/home-services': typeof HomeServicesRoute
   '/lab-test': typeof LabTestRoute
+  '/medicines': typeof MedicinesRoute
   '/notifications': typeof NotificationsRoute
   '/offers': typeof OffersRoute
   '/orders': typeof OrdersRoute
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
     | '/home-diagnostics'
     | '/home-services'
     | '/lab-test'
+    | '/medicines'
     | '/notifications'
     | '/offers'
     | '/orders'
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/home-diagnostics'
     | '/home-services'
     | '/lab-test'
+    | '/medicines'
     | '/notifications'
     | '/offers'
     | '/orders'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/home-diagnostics'
     | '/home-services'
     | '/lab-test'
+    | '/medicines'
     | '/notifications'
     | '/offers'
     | '/orders'
@@ -548,6 +560,7 @@ export interface RootRouteChildren {
   HomeDiagnosticsRoute: typeof HomeDiagnosticsRoute
   HomeServicesRoute: typeof HomeServicesRoute
   LabTestRoute: typeof LabTestRoute
+  MedicinesRoute: typeof MedicinesRoute
   NotificationsRoute: typeof NotificationsRoute
   OffersRoute: typeof OffersRoute
   OrdersRoute: typeof OrdersRoute
@@ -685,6 +698,13 @@ declare module '@tanstack/react-router' {
       path: '/lab-test'
       fullPath: '/lab-test'
       preLoaderRoute: typeof LabTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/medicines': {
+      id: '/medicines'
+      path: '/medicines'
+      fullPath: '/medicines'
+      preLoaderRoute: typeof MedicinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications': {
@@ -904,6 +924,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeDiagnosticsRoute: HomeDiagnosticsRoute,
   HomeServicesRoute: HomeServicesRoute,
   LabTestRoute: LabTestRoute,
+  MedicinesRoute: MedicinesRoute,
   NotificationsRoute: NotificationsRoute,
   OffersRoute: OffersRoute,
   OrdersRoute: OrdersRoute,
@@ -931,3 +952,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

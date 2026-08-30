@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -3308,6 +3308,13 @@ export type Database = {
             foreignKeyName: "user_favorites_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "medicine_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_favorites_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -3340,6 +3347,13 @@ export type Database = {
             foreignKeyName: "user_recent_medicines_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "medicine_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_recent_medicines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -3365,7 +3379,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      medicine_directory: {
+        Row: {
+          brand: string | null
+          category: string | null
+          company: string | null
+          en: string | null
+          form: string | null
+          generic: string | null
+          grp_bn: string | null
+          grp_en: string | null
+          id: string | null
+          image_url: string | null
+          mrp: number | null
+          name: string | null
+          pack: string | null
+          price: number | null
+          rx: boolean | null
+          strength: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_adjust_loyalty: {
@@ -4082,6 +4116,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      medicine_directory_facets: {
+        Args: never
+        Returns: {
+          cnt: number
+          kind: string
+          value: string
+        }[]
       }
       my_loyalty: {
         Args: never
