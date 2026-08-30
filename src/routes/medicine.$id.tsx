@@ -95,7 +95,7 @@ function MedicineBrandPage() {
   const sections: MedSection[] = [];
   if (g) {
     const add = (kind: MedSection["kind"], titleBn: string, titleEn: string, body: string) => {
-      if (body && body.trim()) sections.push({ kind, title: t(titleBn, titleEn), body });
+      if (body && body.trim()) sections.push({ kind: kind ?? "plain", title: t(titleBn, titleEn), body });
     };
     add("plain", "নির্দেশনা / ইন্ডিকেশন", "Indications", pick(g["indications"], g["indications_en"]));
     add("plain", "ফার্মাকোলজি", "Pharmacology", pick(g["pharmacology"], g["pharmacology_en"]));
@@ -112,7 +112,7 @@ function MedicineBrandPage() {
 
   return (
     <div className="pt-4">
-      <Link to="/medicines" className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+      <Link to="/medicines" search={{ q: "", group: "", company: "", sort: "name" }} className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
         <ArrowLeft className="h-3.5 w-3.5" /> {t("ঔষধের তালিকা", "Medicine directory")}
       </Link>
 
