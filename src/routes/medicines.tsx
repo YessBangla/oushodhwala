@@ -197,7 +197,7 @@ function MedicineDirectoryPage() {
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-border align-top">
                 <td className="px-3 py-2">
-                  <Link to="/product/$id" params={{ id: r.id }} className="font-semibold text-primary">
+                  <Link to="/medicine/$id" params={{ id: r.id }} className="font-semibold text-primary">
                     {r.en || r.name}
                   </Link>
                   <div className="text-[11px] text-muted-foreground">
