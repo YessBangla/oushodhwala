@@ -34,6 +34,8 @@ function useItems() {
   const items: Item[] = [
     { t: en ? "Home" : "হোম", to: "/", icon: HomeIcon },
     { t: en ? "Store" : "স্টোর", to: "/products", icon: Store, search: { q: "", category: "all", sort: "popular" } },
+    { t: en ? "Medicine List" : "ঔষধের তালিকা", to: "/medicines", icon: ListOrdered },
+
     { t: en ? "Lab Test" : "ল্যাব টেস্ট", to: "/lab-test", icon: FlaskConical },
     { t: en ? "Home Diagnostics" : "বাসায় ডায়াগনস্টিক", to: "/home-diagnostics", icon: Microscope },
     { t: en ? "Home Services" : "হোম সার্ভিস", to: "/home-services", icon: HeartHandshake },
