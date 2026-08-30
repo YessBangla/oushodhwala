@@ -41,6 +41,7 @@ import { Route as AccountNotificationsRouteImport } from './routes/account/notif
 import { Route as BookDoctorIdRouteImport } from './routes/book-doctor.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ConsultationIdRouteImport } from './routes/consultation.$id'
+import { Route as MedicineIdRouteImport } from './routes/medicine.$id'
 import { Route as PrescriptionIndexRouteImport } from './routes/prescription.index'
 import { Route as PrescriptionIdRouteImport } from './routes/prescription.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
@@ -213,6 +214,11 @@ const ConsultationIdRoute = ConsultationIdRouteImport.update({
   path: '/consultation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MedicineIdRoute = MedicineIdRouteImport.update({
+  id: '/medicine/$id',
+  path: '/medicine/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrescriptionIndexRoute = PrescriptionIndexRouteImport.update({
   id: '/prescription/',
   path: '/prescription/',
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
+  '/medicine/$id': typeof MedicineIdRoute
   '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx-share/$token': typeof RxShareTokenRoute
@@ -347,6 +354,7 @@ export interface FileRoutesByTo {
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
+  '/medicine/$id': typeof MedicineIdRoute
   '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx-share/$token': typeof RxShareTokenRoute
@@ -393,6 +401,7 @@ export interface FileRoutesById {
   '/book-doctor/$id': typeof BookDoctorIdRoute
   '/category/$slug': typeof CategorySlugRoute
   '/consultation/$id': typeof ConsultationIdRoute
+  '/medicine/$id': typeof MedicineIdRoute
   '/prescription/$id': typeof PrescriptionIdRoute
   '/product/$id': typeof ProductIdRoute
   '/rx-share/$token': typeof RxShareTokenRoute
@@ -440,6 +449,7 @@ export interface FileRouteTypes {
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
+    | '/medicine/$id'
     | '/prescription/$id'
     | '/product/$id'
     | '/rx-share/$token'
@@ -485,6 +495,7 @@ export interface FileRouteTypes {
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
+    | '/medicine/$id'
     | '/prescription/$id'
     | '/product/$id'
     | '/rx-share/$token'
@@ -530,6 +541,7 @@ export interface FileRouteTypes {
     | '/book-doctor/$id'
     | '/category/$slug'
     | '/consultation/$id'
+    | '/medicine/$id'
     | '/prescription/$id'
     | '/product/$id'
     | '/rx-share/$token'
@@ -573,6 +585,7 @@ export interface RootRouteChildren {
   BookDoctorIdRoute: typeof BookDoctorIdRoute
   CategorySlugRoute: typeof CategorySlugRoute
   ConsultationIdRoute: typeof ConsultationIdRoute
+  MedicineIdRoute: typeof MedicineIdRoute
   PrescriptionIdRoute: typeof PrescriptionIdRoute
   ProductIdRoute: typeof ProductIdRoute
   RxShareTokenRoute: typeof RxShareTokenRoute
@@ -812,6 +825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsultationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/medicine/$id': {
+      id: '/medicine/$id'
+      path: '/medicine/$id'
+      fullPath: '/medicine/$id'
+      preLoaderRoute: typeof MedicineIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prescription/': {
       id: '/prescription/'
       path: '/prescription'
@@ -937,6 +957,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookDoctorIdRoute: BookDoctorIdRoute,
   CategorySlugRoute: CategorySlugRoute,
   ConsultationIdRoute: ConsultationIdRoute,
+  MedicineIdRoute: MedicineIdRoute,
   PrescriptionIdRoute: PrescriptionIdRoute,
   ProductIdRoute: ProductIdRoute,
   RxShareTokenRoute: RxShareTokenRoute,
