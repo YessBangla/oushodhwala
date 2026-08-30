@@ -20,6 +20,8 @@ import {
   User,
   Home as HomeIcon,
   Microscope,
+  ListOrdered,
+
 } from "lucide-react";
 import { useCatalog } from "@/lib/catalog-db";
 import { useLang, pick } from "@/lib/lang";
